@@ -313,9 +313,27 @@
   }
   .upload-btn:hover { background: #2563eb; }
   .upload-btn:disabled { background: #334155; cursor: not-allowed; }
-  .progress-wrap { width: 100%; height: 6px; background: #1e293b; border-radius: 9999px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress-wrap { width: 100%; height: 6px; background: #1e293b; border-radius: 9999px; overflow: hidden; display: none; }
   .progress-bar { height: 100%; background: #3b82f6; width: 0%; transition: width 0.3s; border-radius: 9999px; }
-  #upload-filename { color: #94a3b8; font-size: 0.8rem; margin-top: 8px; display: none; }
+
+  /* ── file queue ── */
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #0f172a;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+  }
+  .file-item-name { flex: 1; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-item-size { color: #475569; white-space: nowrap; }
+  .file-item-status { font-size: 0.75rem; white-space: nowrap; min-width: 64px; text-align: right; }
+  .status-pending  { color: #475569; }
+  .status-uploading{ color: #60a5fa; }
+  .status-done     { color: #34d399; }
+  .status-error    { color: #f87171; }
 
   /* ── toast ── */
   #toast {
@@ -383,18 +401,26 @@
   <div class="card" style="padding: 20px;">
     <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
       <div class="upload-icon">☁️</div>
-      <strong>Click to choose a file</strong>
-      <p>or drag and drop here · up to 2 GB</p>
+      <strong>Click to choose files</strong>
+      <p>or drag and drop here · up to 50 files · 2 GB each</p>
     </div>
-    <input type="file" id="fileInput" style="display:none" onchange="onFileChosen(this)">
-    <div id="upload-filename"></div>
+    <input type="file" id="fileInput" style="display:none" multiple onchange="onFilesChosen(this)">
+
+    <div id="fileQueue" style="display:none; margin-bottom:12px;">
+      <div style="font-size:0.78rem; color:#64748b; margin-bottom:6px;">
+        <span id="queueCount"></span>
+        <button onclick="clearQueue()" style="float:right;background:none;border:none;color:#475569;cursor:pointer;font-size:0.78rem;">✕ Clear</button>
+      </div>
+      <div id="fileList"></div>
+    </div>
+
     <div style="display:flex; gap:8px; align-items:center;">
       <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
         📂 <span id="folderPickLabel">My Drive (root)</span> ▾
       </button>
-      <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload</button>
+      <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload all</button>
     </div>
-    <div class="progress-wrap" id="progressWrap">
+    <div class="progress-wrap" id="progressWrap" style="margin-top:10px;">
       <div class="progress-bar" id="progressBar"></div>
     </div>
   </div>
@@ -569,9 +595,48 @@ function filterTable(query) {
 }
 
 // ── Upload ──
-let chosenFile = null;
+let fileQueue = [];
 let folderStack = [{ id: 'root', name: 'My Drive' }];
 let selectedFolder = { id: 'root', name: 'My Drive' };
+
+function onFilesChosen(input) {
+  const files = Array.from(input.files).slice(0, 50);
+  fileQueue = files.map(f => ({ file: f, status: 'pending' }));
+  renderQueue();
+  document.getElementById('uploadBtn').disabled = fileQueue.length === 0;
+  input.value = '';
+}
+
+function renderQueue() {
+  const wrap = document.getElementById('fileQueue');
+  const list = document.getElementById('fileList');
+  const count = document.getElementById('queueCount');
+  if (fileQueue.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  count.textContent = fileQueue.length + ' file' + (fileQueue.length > 1 ? 's' : '') + ' selected';
+  list.innerHTML = fileQueue.map((item, i) => `
+    <div class="file-item" id="fitem-${i}">
+      <span class="file-item-name" title="${item.file.name}">📄 ${item.file.name}</span>
+      <span class="file-item-size">${formatBytes(item.file.size)}</span>
+      <span class="file-item-status status-${item.status}" id="fstatus-${i}">${statusLabel(item.status)}</span>
+    </div>`).join('');
+}
+
+function setFileStatus(i, status) {
+  fileQueue[i].status = status;
+  const el = document.getElementById('fstatus-' + i);
+  if (el) { el.className = 'file-item-status status-' + status; el.textContent = statusLabel(status); }
+}
+
+function statusLabel(s) {
+  return { pending: '⏳ Waiting', uploading: '⬆️ Uploading…', done: '✅ Done', error: '❌ Failed' }[s] || s;
+}
+
+function clearQueue() {
+  fileQueue = [];
+  document.getElementById('fileQueue').style.display = 'none';
+  document.getElementById('uploadBtn').disabled = true;
+}
 
 function openFolderModal() {
   folderStack = [{ id: 'root', name: 'My Drive' }];
@@ -640,20 +705,6 @@ function confirmFolder() {
   closeFolderModal();
 }
 
-function onFileChosen(input) {
-  chosenFile = input.files[0] || null;
-  const label = document.getElementById('upload-filename');
-  const btn = document.getElementById('uploadBtn');
-  if (chosenFile) {
-    label.textContent = '📄 ' + chosenFile.name + ' (' + formatBytes(chosenFile.size) + ')';
-    label.style.display = 'block';
-    btn.disabled = false;
-  } else {
-    label.style.display = 'none';
-    btn.disabled = true;
-  }
-}
-
 function formatBytes(b) {
   if (b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB';
   if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
@@ -662,7 +713,7 @@ function formatBytes(b) {
 }
 
 async function doUpload() {
-  if (!chosenFile) return;
+  if (fileQueue.length === 0) return;
   const folderId = selectedFolder.id;
   const btn = document.getElementById('uploadBtn');
   const wrap = document.getElementById('progressWrap');
@@ -671,38 +722,30 @@ async function doUpload() {
   btn.disabled = true;
   btn.textContent = 'Uploading…';
   wrap.style.display = 'block';
-  bar.style.width = '0%';
 
-  // Animate progress bar (fake progress for UX)
-  let pct = 0;
-  const ticker = setInterval(() => {
-    if (pct < 85) { pct += 2; bar.style.width = pct + '%'; }
-  }, 200);
+  let done = 0, failed = 0;
+  for (let i = 0; i < fileQueue.length; i++) {
+    setFileStatus(i, 'uploading');
+    bar.style.width = Math.round((i / fileQueue.length) * 100) + '%';
+    const form = new FormData();
+    form.append('file', fileQueue[i].file);
+    form.append('folder_id', folderId);
+    try {
+      const res = await fetch('/api/files/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.ok) { setFileStatus(i, 'done'); done++; }
+      else { setFileStatus(i, 'error'); failed++; }
+    } catch (e) { setFileStatus(i, 'error'); failed++; }
+  }
 
-  const form = new FormData();
-  form.append('file', chosenFile);
-  form.append('folder_id', folderId);
-
-  try {
-    const res = await fetch('/api/files/upload', { method: 'POST', body: form });
-    const data = await res.json();
-    clearInterval(ticker);
-    if (data.ok) {
-      bar.style.width = '100%';
-      showToast('✅ Uploaded: ' + data.entry.file_name, true);
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showToast('❌ ' + (data.error || 'Upload failed'), false);
-      wrap.style.display = 'none';
-      btn.disabled = false;
-      btn.textContent = 'Upload';
-    }
-  } catch (e) {
-    clearInterval(ticker);
-    showToast('❌ Network error', false);
-    wrap.style.display = 'none';
+  bar.style.width = '100%';
+  btn.textContent = 'Upload all';
+  if (failed === 0) {
+    showToast('✅ All ' + done + ' file' + (done > 1 ? 's' : '') + ' uploaded!', true);
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    showToast('⚠️ ' + done + ' uploaded, ' + failed + ' failed', false);
     btn.disabled = false;
-    btn.textContent = 'Upload';
   }
 }
 
@@ -713,13 +756,13 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault();
   dropZone.classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) {
+  const files = e.dataTransfer.files;
+  if (files.length) {
     const input = document.getElementById('fileInput');
     const dt = new DataTransfer();
-    dt.items.add(file);
+    Array.from(files).slice(0, 50).forEach(f => dt.items.add(f));
     input.files = dt.files;
-    onFileChosen(input);
+    onFilesChosen(input);
   }
 });
 
