@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
 
 
-def _is_authorized(update: Update, authorized_id: int) -> bool:
+def _is_authorized(update: Update, authorized_ids: set) -> bool:
     user = update.effective_user
-    if user is None or user.id != authorized_id:
+    if user is None or user.id not in authorized_ids:
         logger.warning(
             "Unauthorized file upload attempt from user_id=%s",
             user.id if user else "unknown",
@@ -55,8 +55,8 @@ def _extract_file_info(message) -> tuple[str, str, str, int] | None:
 
 
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    authorized_id: int = context.bot_data["authorized_user_id"]
-    if not _is_authorized(update, authorized_id):
+    authorized_ids: set = context.bot_data["authorized_user_ids"]
+    if not _is_authorized(update, authorized_ids):
         await update.message.reply_text("Not authorized.")
         return
 

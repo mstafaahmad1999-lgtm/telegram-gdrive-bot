@@ -30,19 +30,19 @@ def main() -> None:
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN is not set in .env")
 
-    authorized_user_id_str = os.getenv("AUTHORIZED_USER_ID")
-    if not authorized_user_id_str:
-        raise RuntimeError("AUTHORIZED_USER_ID is not set in .env")
+    authorized_user_ids_str = os.getenv("AUTHORIZED_USER_IDS", os.getenv("AUTHORIZED_USER_ID", ""))
+    if not authorized_user_ids_str:
+        raise RuntimeError("AUTHORIZED_USER_IDS is not set in .env")
 
     try:
-        authorized_user_id = int(authorized_user_id_str)
+        authorized_user_ids = {int(uid.strip()) for uid in authorized_user_ids_str.split(",") if uid.strip()}
     except ValueError:
-        raise RuntimeError("AUTHORIZED_USER_ID must be a numeric Telegram user ID")
+        raise RuntimeError("AUTHORIZED_USER_IDS must be comma-separated numeric Telegram user IDs")
 
     app = ApplicationBuilder().token(token).build()
 
-    # Store authorized user ID in bot_data so all handlers can access it
-    app.bot_data["authorized_user_id"] = authorized_user_id
+    # Store authorized user IDs in bot_data so all handlers can access it
+    app.bot_data["authorized_user_ids"] = authorized_user_ids
 
     # Command handlers
     app.add_handler(CommandHandler("start", start_handler))
@@ -61,7 +61,7 @@ def main() -> None:
     # Inline keyboard callbacks
     app.add_handler(CallbackQueryHandler(callback_handler))
 
-    logger.info("Bot starting. Authorized user ID: %d", authorized_user_id)
+    logger.info("Bot starting. Authorized user IDs: %s", authorized_user_ids)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     app.run_polling(drop_pending_updates=True)

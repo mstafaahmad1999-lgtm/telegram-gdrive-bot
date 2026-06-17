@@ -201,9 +201,9 @@ def _format_size(size_bytes: int) -> str:
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Route all inline keyboard callbacks."""
-    authorized_id: int = context.bot_data["authorized_user_id"]
+    authorized_ids: set = context.bot_data["authorized_user_ids"]
     user = update.effective_user
-    if user is None or user.id != authorized_id:
+    if user is None or user.id not in authorized_ids:
         await update.callback_query.answer("Not authorized.")
         return
 

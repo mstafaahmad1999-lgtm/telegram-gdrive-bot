@@ -9,9 +9,9 @@ import state
 logger = logging.getLogger(__name__)
 
 
-def _is_authorized(update: Update, authorized_id: int) -> bool:
+def _is_authorized(update: Update, authorized_ids: set) -> bool:
     user = update.effective_user
-    if user is None or user.id != authorized_id:
+    if user is None or user.id not in authorized_ids:
         logger.warning(
             "Unauthorized access attempt from user_id=%s username=%s",
             user.id if user else "unknown",
@@ -22,8 +22,8 @@ def _is_authorized(update: Update, authorized_id: int) -> bool:
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    authorized_id: int = context.bot_data["authorized_user_id"]
-    if not _is_authorized(update, authorized_id):
+    authorized_ids: set = context.bot_data["authorized_user_ids"]
+    if not _is_authorized(update, authorized_ids):
         await update.message.reply_text("Not authorized.")
         return
 
@@ -40,8 +40,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    authorized_id: int = context.bot_data["authorized_user_id"]
-    if not _is_authorized(update, authorized_id):
+    authorized_ids: set = context.bot_data["authorized_user_ids"]
+    if not _is_authorized(update, authorized_ids):
         await update.message.reply_text("Not authorized.")
         return
 
