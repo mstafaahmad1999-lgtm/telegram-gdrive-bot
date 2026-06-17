@@ -236,10 +236,11 @@ def api_delete_file():
 @app.route("/api/folders")
 @login_required
 def api_folders():
-    """Return top-level Drive folders for the upload folder picker."""
+    """Return Drive folders for a given parent (default: root)."""
+    parent = request.args.get("parent", "root")
     try:
         import drive_service
-        folders, _ = drive_service.list_folders("root")
+        folders, _ = drive_service.list_folders(parent)
         return jsonify({"ok": True, "folders": [{"id": f["id"], "name": f["name"]} for f in folders]})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500

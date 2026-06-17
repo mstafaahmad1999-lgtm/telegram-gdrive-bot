@@ -298,11 +298,14 @@
     </div>
     <input type="file" id="fileInput" style="display:none" onchange="onFileChosen(this)">
     <div id="upload-filename"></div>
-    <div class="upload-controls">
-      <select class="folder-select" id="folderSelect">
-        <option value="root">📂 My Drive (root)</option>
-      </select>
-      <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload</button>
+    <div class="upload-controls" style="flex-direction:column; align-items:stretch; gap:10px;">
+      <div id="folderBreadcrumb" style="font-size:0.8rem; color:#64748b;">📂 My Drive</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select class="folder-select" id="folderSelect" onchange="onFolderChange(this)">
+          <option value="root" data-name="My Drive">📂 My Drive (root)</option>
+        </select>
+        <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload</button>
+      </div>
     </div>
     <div class="progress-wrap" id="progressWrap">
       <div class="progress-bar" id="progressBar"></div>
@@ -462,20 +465,74 @@ function filterTable(query) {
 
 // ── Upload ──
 let chosenFile = null;
+// stack of {id, name} — tracks current navigation path
+let folderStack = [{ id: 'root', name: 'My Drive' }];
 
-async function loadFolders() {
+function updateBreadcrumb() {
+  document.getElementById('folderBreadcrumb').textContent =
+    '📂 ' + folderStack.map(f => f.name).join(' › ');
+}
+
+async function loadFolders(parentId) {
+  const sel = document.getElementById('folderSelect');
+  sel.innerHTML = '';
+
+  // "Stay here" option (current folder)
+  const current = folderStack[folderStack.length - 1];
+  const stayOpt = document.createElement('option');
+  stayOpt.value = current.id;
+  stayOpt.dataset.name = current.name;
+  stayOpt.dataset.action = 'stay';
+  stayOpt.textContent = '✅ Upload here: ' + current.name;
+  sel.appendChild(stayOpt);
+
+  // Back option (if not at root)
+  if (folderStack.length > 1) {
+    const backOpt = document.createElement('option');
+    backOpt.value = '__back__';
+    backOpt.textContent = '⬅️ Back to ' + folderStack[folderStack.length - 2].name;
+    sel.appendChild(backOpt);
+  }
+
   try {
-    const res = await fetch('/api/folders');
+    const res = await fetch('/api/folders?parent=' + parentId);
     const data = await res.json();
-    if (!data.ok) return;
-    const sel = document.getElementById('folderSelect');
-    data.folders.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value = f.id;
-      opt.textContent = '📁 ' + f.name;
-      sel.appendChild(opt);
-    });
+    if (data.ok && data.folders.length > 0) {
+      const sep = document.createElement('option');
+      sep.disabled = true;
+      sep.textContent = '── Subfolders ──';
+      sel.appendChild(sep);
+      data.folders.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.dataset.name = f.name;
+        opt.dataset.action = 'nav';
+        opt.textContent = '📁 ' + f.name + ' ▶';
+        sel.appendChild(opt);
+      });
+    }
   } catch (e) {}
+}
+
+async function onFolderChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const val = opt.value;
+
+  if (val === '__back__') {
+    folderStack.pop();
+    updateBreadcrumb();
+    await loadFolders(folderStack[folderStack.length - 1].id);
+    return;
+  }
+
+  if (opt.dataset.action === 'nav') {
+    folderStack.push({ id: val, name: opt.dataset.name });
+    updateBreadcrumb();
+    await loadFolders(val);
+    return;
+  }
+  // 'stay' — just update breadcrumb display
+  updateBreadcrumb();
 }
 
 function onFileChosen(input) {
@@ -501,7 +558,7 @@ function formatBytes(b) {
 
 async function doUpload() {
   if (!chosenFile) return;
-  const folderId = document.getElementById('folderSelect').value;
+  const folderId = folderStack[folderStack.length - 1].id;
   const btn = document.getElementById('uploadBtn');
   const wrap = document.getElementById('progressWrap');
   const bar = document.getElementById('progressBar');
@@ -561,7 +618,7 @@ dropZone.addEventListener('drop', e => {
   }
 });
 
-loadFolders();
+loadFolders('root');
 
 async function deleteFile(fileId, fileName, btn) {
   if (!confirm('Delete "' + fileName + '" from Google Drive?\n\nThis cannot be undone.')) return;
