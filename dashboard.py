@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for, Response
 
 load_dotenv()
 
@@ -25,7 +25,8 @@ DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin")
 DASHBOARD_SYNC_TOKEN = os.getenv("DASHBOARD_SYNC_TOKEN", "")
 HISTORY_FILE = "history.json"
 USERS_FILE = os.getenv("USERS_FILE", "users.json")
-MAX_HISTORY = 200
+MAX_HISTORY = 500
+PER_PAGE = 20
 
 AUTHORIZED_USER_IDS_STR = os.getenv("AUTHORIZED_USER_IDS", os.getenv("AUTHORIZED_USER_ID", ""))
 OWNER_ID = int(AUTHORIZED_USER_IDS_STR.split(",")[0].strip()) if AUTHORIZED_USER_IDS_STR else 0
@@ -142,7 +143,13 @@ def index():
     history = _load_history()
     users = _load_users()
     stats = _compute_stats(history)
-    recent = list(reversed(history[-20:]))
+
+    page = max(1, int(request.args.get("page", 1)))
+    all_reversed = list(reversed(history))
+    total = len(all_reversed)
+    total_pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+    page = min(page, total_pages)
+    recent = all_reversed[(page - 1) * PER_PAGE: page * PER_PAGE]
 
     for e in recent:
         ts = e.get("timestamp", "")
@@ -159,7 +166,16 @@ def index():
         recent=recent,
         users=users,
         owner_id=OWNER_ID,
+        page=page,
+        total_pages=total_pages,
+        total=total,
     )
+
+
+@app.route("/browser")
+@login_required
+def browser():
+    return render_template("browser.html")
 
 
 # ── API ───────────────────────────────────────────────────────────────────────
@@ -232,6 +248,96 @@ def api_delete_file():
         json.dump(history, f)
 
     return jsonify({"ok": True})
+
+
+# ── storage ──────────────────────────────────────────────────────────────────
+
+@app.route("/api/storage")
+@login_required
+def api_storage():
+    try:
+        import drive_service
+        quota = drive_service.get_storage_quota()
+        return jsonify({"ok": True, "quota": quota})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+# ── file browser ──────────────────────────────────────────────────────────────
+
+@app.route("/api/browser")
+@login_required
+def api_browser_list():
+    parent = request.args.get("parent", "root")
+    try:
+        import drive_service
+        contents = drive_service.list_folder_contents(parent)
+        name = drive_service.get_folder_name(parent)
+        return jsonify({"ok": True, "name": name, **contents})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/browser/rename", methods=["POST"])
+@login_required
+def api_browser_rename():
+    data = request.get_json(force=True)
+    file_id = data.get("file_id", "").strip()
+    new_name = data.get("new_name", "").strip()
+    if not file_id or not new_name:
+        return jsonify({"ok": False, "error": "Missing file_id or new_name"}), 400
+    try:
+        import drive_service
+        updated = drive_service.rename_file(file_id, new_name)
+        return jsonify({"ok": True, "name": updated.get("name")})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/browser/move", methods=["POST"])
+@login_required
+def api_browser_move():
+    data = request.get_json(force=True)
+    file_id = data.get("file_id", "").strip()
+    new_parent = data.get("new_parent", "root").strip()
+    old_parent = data.get("old_parent", "root").strip()
+    if not file_id:
+        return jsonify({"ok": False, "error": "Missing file_id"}), 400
+    try:
+        import drive_service
+        drive_service.move_file(file_id, new_parent, old_parent)
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/browser/download/<file_id>")
+@login_required
+def api_browser_download(file_id):
+    try:
+        import drive_service
+        from googleapiclient.http import MediaIoBaseDownload
+        import io
+        info = drive_service.get_file_info(file_id)
+        name = info.get("name", "file")
+        mime = info.get("mimeType", "application/octet-stream")
+        if mime.startswith("application/vnd.google-apps."):
+            return redirect(info.get("webViewLink", "/browser"))
+        service = drive_service.get_drive_service()
+        req = service.files().get_media(fileId=file_id)
+        buf = io.BytesIO()
+        dl = MediaIoBaseDownload(buf, req, chunksize=8 * 1024 * 1024)
+        done = False
+        while not done:
+            _, done = dl.next_chunk()
+        buf.seek(0)
+        return Response(
+            buf.read(),
+            mimetype=mime,
+            headers={"Content-Disposition": f'attachment; filename="{name}"'},
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
 
 
 # ── batch delete ─────────────────────────────────────────────────────────────

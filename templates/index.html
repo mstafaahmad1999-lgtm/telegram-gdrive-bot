@@ -395,12 +395,14 @@
   #toast.ok { background: #14532d; color: #86efac; border: 1px solid #166534; }
   #toast.err { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <nav>
   <div class="nav-brand"><span>☁️</span> Drive Bot Dashboard</div>
   <div class="nav-links">
+    <a href="/browser">📁 File Browser</a>
     <a href="/" onclick="location.reload()">↻ Refresh</a>
     <a href="/logout" class="logout-btn">Sign out</a>
   </div>
@@ -433,6 +435,14 @@
       {% else %}
       <div class="stat-value" style="font-size:1.1rem; color:#475569; padding-top:4px;">—</div>
       {% endif %}
+    </div>
+    <div class="stat-card" style="display:flex;align-items:center;gap:16px;">
+      <canvas id="storageChart" width="80" height="80" style="flex-shrink:0;"></canvas>
+      <div>
+        <div class="stat-label">Drive Storage</div>
+        <div class="stat-value" style="font-size:1.1rem;" id="storageUsed">—</div>
+        <div class="stat-sub" id="storageTotal">Loading…</div>
+      </div>
     </div>
   </div>
 
@@ -507,9 +517,10 @@
             {% endif %}
           </td>
           <td style="color:#64748b;">{{ e._dt }}</td>
-          <td>
+          <td style="display:flex;gap:6px;align-items:center;">
             {% if e.file_id %}
-            <button class="del-btn" onclick="deleteFile('{{ e.file_id }}', '{{ e.file_name }}', this)">🗑</button>
+            <a href="/api/browser/download/{{ e.file_id }}" class="del-btn" style="text-decoration:none;border-color:#1e3a5f;color:#60a5fa;" title="Download">⬇</a>
+            <button class="del-btn" onclick="deleteFile('{{ e.file_id }}', '{{ e.file_name }}', this)" title="Delete">🗑</button>
             {% endif %}
           </td>
         </tr>
@@ -520,6 +531,19 @@
     <div class="empty">No uploads yet. Send a file to the bot to get started.</div>
     {% endif %}
   </div>
+
+  <!-- ── Pagination ── -->
+  {% if total_pages > 1 %}
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px;">
+    {% if page > 1 %}
+    <a href="/?page={{ page - 1 }}" style="padding:7px 14px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;text-decoration:none;font-size:0.85rem;">← Prev</a>
+    {% endif %}
+    <span style="color:#64748b;font-size:0.85rem;">Page {{ page }} of {{ total_pages }} &nbsp;·&nbsp; {{ total }} uploads</span>
+    {% if page < total_pages %}
+    <a href="/?page={{ page + 1 }}" style="padding:7px 14px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;text-decoration:none;font-size:0.85rem;">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
 
   <!-- ── User Management ── -->
   <div class="section-header">
@@ -635,6 +659,40 @@ async function removeUser(uid) {
 document.getElementById('newUserId').addEventListener('keydown', e => {
   if (e.key === 'Enter') addUser();
 });
+
+// ── Storage chart ──
+(async () => {
+  try {
+    const res = await fetch('/api/storage');
+    const data = await res.json();
+    if (!data.ok) return;
+    const q = data.quota;
+    const used = parseInt(q.usageInDrive || 0);
+    const total = parseInt(q.limit || 0);
+    const free = Math.max(0, total - used);
+    const fmt = b => b >= 1e9 ? (b/1e9).toFixed(1)+' GB' : b >= 1e6 ? (b/1e6).toFixed(0)+' MB' : (b/1e3).toFixed(0)+' KB';
+    document.getElementById('storageUsed').textContent = fmt(used) + ' used';
+    document.getElementById('storageTotal').textContent = 'of ' + fmt(total) + ' total';
+    new Chart(document.getElementById('storageChart'), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [used, free],
+          backgroundColor: ['#3b82f6', '#1e293b'],
+          borderColor: ['#2563eb', '#334155'],
+          borderWidth: 1,
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        animation: { duration: 800 },
+      }
+    });
+  } catch(e) {
+    document.getElementById('storageTotal').textContent = 'Unavailable';
+  }
+})();
 
 // ── Batch select ──
 function onRowCheck() {

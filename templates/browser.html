@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Browser — Drive Bot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+  nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .nav-brand { font-weight: 700; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+  .nav-links { display: flex; align-items: center; gap: 16px; }
+  .nav-links a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+  .nav-links a:hover { color: #f1f5f9; }
+  .logout-btn { background: #334155; color: #cbd5e1; border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; text-decoration: none; }
+  .logout-btn:hover { background: #475569; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* breadcrumb */
+  .breadcrumb { display: flex; align-items: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .crumb { color: #60a5fa; cursor: pointer; font-size: 0.9rem; }
+  .crumb:hover { text-decoration: underline; }
+  .crumb-sep { color: #334155; font-size: 0.9rem; }
+  .crumb-current { color: #94a3b8; font-size: 0.9rem; }
+
+  /* card */
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid #334155; font-size: 0.8rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; justify-content: space-between; }
+
+  /* folders grid */
+  .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; padding: 16px; }
+  .folder-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 14px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 10px; }
+  .folder-card:hover { border-color: #3b82f6; background: #1e3a5f22; }
+  .folder-card span { font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* files table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #0f172a; color: #64748b; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 16px; text-align: left; }
+  tbody tr { border-top: 1px solid #1e293b; }
+  tbody tr:hover { background: #263347; }
+  td { padding: 11px 16px; font-size: 0.875rem; color: #cbd5e1; vertical-align: middle; }
+  td.name-cell { max-width: 320px; }
+  .file-name-wrap { display: flex; align-items: center; gap: 8px; }
+  .file-link { color: #60a5fa; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; max-width: 260px; }
+  .file-link:hover { text-decoration: underline; }
+  .rename-input { background: #0f172a; border: 1px solid #3b82f6; border-radius: 6px; color: #f1f5f9; padding: 4px 8px; font-size: 0.85rem; width: 220px; outline: none; }
+
+  /* action buttons */
+  .actions { display: flex; gap: 6px; align-items: center; }
+  .btn { background: transparent; border: 1px solid #334155; color: #94a3b8; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn:hover { background: #263347; color: #f1f5f9; }
+  .btn-blue { border-color: #1e3a5f; color: #60a5fa; }
+  .btn-blue:hover { background: #1e3a5f; }
+  .btn-red { border-color: #7f1d1d; color: #fca5a5; }
+  .btn-red:hover { background: #450a0a; }
+  .btn-green { border-color: #14532d; color: #86efac; }
+  .btn-green:hover { background: #14532d; }
+
+  .empty { color: #475569; font-size: 0.875rem; padding: 32px; text-align: center; }
+  .loading { color: #475569; font-size: 0.875rem; padding: 32px; text-align: center; }
+
+  /* toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 0.875rem; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 999; }
+  #toast.show { opacity: 1; }
+  #toast.ok { background: #14532d; color: #86efac; border: 1px solid #166534; }
+  #toast.err { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
+
+  /* move modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #1e293b; border: 1px solid #334155; border-radius: 16px; width: 400px; max-width: 95vw; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,0.5); overflow: hidden; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-weight: 600; font-size: 0.95rem; color: #f1f5f9; }
+  .modal-close { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; }
+  .modal-close:hover { color: #f1f5f9; }
+  .modal-breadcrumb { padding: 8px 16px; background: #0f172a; font-size: 0.78rem; color: #64748b; border-bottom: 1px solid #1e293b; }
+  .modal-breadcrumb span { cursor: pointer; }
+  .modal-breadcrumb span:hover { color: #60a5fa; }
+  .modal-body { overflow-y: auto; flex: 1; padding: 8px; }
+  .modal-folder-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+  .modal-folder-item:hover { background: #263347; }
+  .modal-folder-item span { font-size: 0.875rem; color: #cbd5e1; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .modal-current { font-size: 0.78rem; color: #64748b; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modal-confirm-btn { padding: 8px 18px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
+  .modal-confirm-btn:hover { background: #2563eb; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand"><span>☁️</span> Drive Bot Dashboard</div>
+  <div class="nav-links">
+    <a href="/">↩ Back to Dashboard</a>
+    <a href="/logout" class="logout-btn">Sign out</a>
+  </div>
+</nav>
+
+<main>
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <div class="card" id="foldersCard">
+    <div class="card-header"><span>📁 Folders</span></div>
+    <div class="folder-grid" id="folderGrid"><div class="loading">Loading…</div></div>
+  </div>
+
+  <div class="card" id="filesCard">
+    <div class="card-header">
+      <span>📄 Files</span>
+      <span id="fileCount" style="font-weight:400;color:#475569;"></span>
+    </div>
+    <div id="filesWrap"><div class="loading">Loading…</div></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<!-- Move modal -->
+<div class="modal-overlay" id="moveModal" onclick="if(event.target===this)closeMoveModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Move to folder</span>
+      <button class="modal-close" onclick="closeMoveModal()">✕</button>
+    </div>
+    <div class="modal-breadcrumb" id="moveBreadcrumb">📂 My Drive</div>
+    <div class="modal-body" id="moveBody"><div class="loading">Loading…</div></div>
+    <div class="modal-footer">
+      <span class="modal-current" id="moveCurrentLabel">📂 My Drive</span>
+      <button class="modal-confirm-btn" onclick="confirmMove()">📁 Move here</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let stack = [{ id: 'root', name: 'My Drive' }];
+let moveStack = [{ id: 'root', name: 'My Drive' }];
+let movingFile = null; // { id, oldParent }
+
+function showToast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => t.className = '', 3000);
+}
+
+function currentId() { return stack[stack.length - 1].id; }
+
+async function load(parentId) {
+  document.getElementById('folderGrid').innerHTML = '<div class="loading">Loading…</div>';
+  document.getElementById('filesWrap').innerHTML = '<div class="loading">Loading…</div>';
+  renderBreadcrumb();
+
+  const res = await fetch('/api/browser?parent=' + parentId);
+  const data = await res.json();
+  if (!data.ok) { showToast('❌ ' + data.error, false); return; }
+
+  renderFolders(data.folders);
+  renderFiles(data.files, parentId);
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  bc.innerHTML = stack.map((f, i) => {
+    if (i === stack.length - 1) return `<span class="crumb-current">📂 ${f.name}</span>`;
+    return `<span class="crumb" onclick="navTo(${i})">📂 ${f.name}</span><span class="crumb-sep">›</span>`;
+  }).join('');
+}
+
+function navTo(index) {
+  stack = stack.slice(0, index + 1);
+  load(currentId());
+}
+
+function renderFolders(folders) {
+  const grid = document.getElementById('folderGrid');
+  if (!folders.length) { grid.innerHTML = '<div class="empty">No subfolders</div>'; return; }
+  grid.innerHTML = folders.map(f =>
+    `<div class="folder-card" onclick="enterFolder('${f.id}','${escHtml(f.name)}')">
+       <span>📁</span><span title="${escHtml(f.name)}">${escHtml(f.name)}</span>
+     </div>`
+  ).join('');
+}
+
+function enterFolder(id, name) {
+  stack.push({ id, name });
+  load(id);
+}
+
+function renderFiles(files, parentId) {
+  const wrap = document.getElementById('filesWrap');
+  document.getElementById('fileCount').textContent = files.length ? files.length + ' file' + (files.length > 1 ? 's' : '') : '';
+  if (!files.length) { wrap.innerHTML = '<div class="empty">No files in this folder</div>'; return; }
+
+  const rows = files.map(f => {
+    const size = fmtBytes(parseInt(f.size || 0));
+    const date = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString() : '—';
+    const dl = f.webContentLink ? `<a class="btn btn-blue" href="/api/browser/download/${f.id}" title="Download">⬇ Download</a>` : '';
+    return `<tr id="row-${f.id}">
+      <td class="name-cell">
+        <div class="file-name-wrap">
+          <a class="file-link" href="${f.webViewLink || '#'}" target="_blank" title="${escHtml(f.name)}" id="name-${f.id}">${escHtml(f.name)}</a>
+        </div>
+      </td>
+      <td style="color:#64748b;">${size}</td>
+      <td style="color:#64748b;">${date}</td>
+      <td>
+        <div class="actions">
+          ${dl}
+          <button class="btn" onclick="startRename('${f.id}','${escHtml(f.name).replace(/'/g,"\\'")}')">✏️ Rename</button>
+          <button class="btn" onclick="startMove('${f.id}','${parentId}')">📁 Move</button>
+          <button class="btn btn-red" onclick="deleteFile('${f.id}','${escHtml(f.name).replace(/'/g,"\\'")}')">🗑 Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Size</th><th>Modified</th><th>Actions</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ── Rename ──
+function startRename(fileId, currentName) {
+  const el = document.getElementById('name-' + fileId);
+  if (!el) return;
+  const input = document.createElement('input');
+  input.className = 'rename-input';
+  input.value = currentName;
+  el.replaceWith(input);
+  input.focus();
+  input.select();
+  const save = async () => {
+    const newName = input.value.trim();
+    if (!newName || newName === currentName) { input.replaceWith(makeLink(fileId, currentName, el.href)); return; }
+    const res = await fetch('/api/browser/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: fileId, new_name: newName }) });
+    const data = await res.json();
+    if (data.ok) { showToast('✅ Renamed to ' + data.name, true); input.replaceWith(makeLink(fileId, data.name, el.href)); }
+    else { showToast('❌ ' + data.error, false); input.replaceWith(makeLink(fileId, currentName, el.href)); }
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') input.replaceWith(makeLink(fileId, currentName, el.href)); });
+  input.addEventListener('blur', save);
+}
+
+function makeLink(fileId, name, href) {
+  const a = document.createElement('a');
+  a.className = 'file-link'; a.id = 'name-' + fileId;
+  a.href = href || '#'; a.target = '_blank';
+  a.title = name; a.textContent = name;
+  return a;
+}
+
+// ── Delete ──
+async function deleteFile(fileId, name) {
+  if (!confirm('Delete "' + name + '"?\n\nThis cannot be undone.')) return;
+  const res = await fetch('/api/files/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: fileId }) });
+  const data = await res.json();
+  if (data.ok) { showToast('🗑 Deleted', true); document.getElementById('row-' + fileId)?.remove(); }
+  else showToast('❌ ' + (data.error || 'Failed'), false);
+}
+
+// ── Move ──
+function startMove(fileId, oldParent) {
+  movingFile = { id: fileId, oldParent };
+  moveStack = [{ id: 'root', name: 'My Drive' }];
+  document.getElementById('moveModal').classList.add('open');
+  loadMoveFolder('root');
+}
+
+function closeMoveModal() { document.getElementById('moveModal').classList.remove('open'); movingFile = null; }
+
+async function loadMoveFolder(parentId) {
+  document.getElementById('moveBody').innerHTML = '<div class="loading">Loading…</div>';
+  updateMoveBreadcrumb();
+  const res = await fetch('/api/browser?parent=' + parentId);
+  const data = await res.json();
+  const body = document.getElementById('moveBody');
+  if (!data.ok || !data.folders.length) { body.innerHTML = '<div class="empty">No subfolders here</div>'; return; }
+  body.innerHTML = data.folders.map(f =>
+    `<div class="modal-folder-item" onclick="enterMoveFolder('${f.id}','${escHtml(f.name).replace(/'/g,"\\'")}')">
+       <span>📁 ${escHtml(f.name)}</span><span style="color:#475569;font-size:0.75rem;">▶</span>
+     </div>`
+  ).join('');
+}
+
+function enterMoveFolder(id, name) {
+  moveStack.push({ id, name });
+  loadMoveFolder(id);
+}
+
+function updateMoveBreadcrumb() {
+  const crumbs = moveStack.map((f, i) => `<span onclick="moveNavTo(${i})">${f.name}</span>`).join(' › ');
+  document.getElementById('moveBreadcrumb').innerHTML = '📂 ' + crumbs;
+  document.getElementById('moveCurrentLabel').textContent = '📂 ' + moveStack.map(f => f.name).join(' › ');
+}
+
+function moveNavTo(i) { moveStack = moveStack.slice(0, i + 1); loadMoveFolder(moveStack[moveStack.length - 1].id); }
+
+async function confirmMove() {
+  if (!movingFile) return;
+  const newParent = moveStack[moveStack.length - 1].id;
+  if (newParent === movingFile.oldParent) { showToast('Already in this folder', false); return; }
+  const res = await fetch('/api/browser/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_id: movingFile.id, new_parent: newParent, old_parent: movingFile.oldParent }) });
+  const data = await res.json();
+  closeMoveModal();
+  if (data.ok) { showToast('✅ Moved!', true); document.getElementById('row-' + movingFile.id)?.remove(); }
+  else showToast('❌ ' + (data.error || 'Failed'), false);
+}
+
+// ── utils ──
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtBytes(b) {
+  if (b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB';
+  if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
+  if (b >= 1024) return (b/1024).toFixed(1) + ' KB';
+  return b ? b + ' B' : '—';
+}
+
+load('root');
+</script>
+</body>
+</html>

@@ -150,6 +150,28 @@ def move_file(file_id: str, new_parent_id: str, old_parent_id: str) -> dict:
     ).execute()
 
 
+def get_storage_quota() -> dict:
+    """Return Drive storage quota info."""
+    result = get_drive_service().about().get(fields="storageQuota").execute()
+    return result.get("storageQuota", {})
+
+
+def list_folder_contents(parent_id: str = "root") -> dict:
+    """Return folders and files inside a folder for the browser."""
+    service = get_drive_service()
+    fq = f"mimeType='application/vnd.google-apps.folder' and trashed=false and '{parent_id}' in parents"
+    folders = service.files().list(
+        q=fq, fields="files(id,name)", orderBy="name", pageSize=100
+    ).execute().get("files", [])
+    fq2 = f"mimeType!='application/vnd.google-apps.folder' and trashed=false and '{parent_id}' in parents"
+    files = service.files().list(
+        q=fq2,
+        fields="files(id,name,size,mimeType,webViewLink,webContentLink,modifiedTime)",
+        orderBy="name", pageSize=100,
+    ).execute().get("files", [])
+    return {"folders": folders, "files": files}
+
+
 def search_files(query: str, max_results: int = 10) -> list[dict]:
     """Search Drive for files whose name contains query."""
     safe = query.replace("'", "\\'")
