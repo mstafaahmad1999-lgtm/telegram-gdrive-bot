@@ -12,6 +12,8 @@ import history
 import state
 import user_manager
 
+_MANAGE_PREFIXES = ("fileinfo:", "renamefile:", "movefile:", "movehere:", "drivedelete:")
+
 logger = logging.getLogger(__name__)
 
 LABEL_MAX = 28
@@ -65,6 +67,7 @@ async def show_folder_picker(
     parent_id: str,
     page_token: str | None = None,
     status_message=None,
+    mode: str = "upload",
 ) -> None:
     try:
         folders, next_token = drive_service.list_folders(parent_id, page_token)
@@ -83,8 +86,11 @@ async def show_folder_picker(
 
     buttons: list[list[InlineKeyboardButton]] = []
 
-    # Upload here + Back row
-    action_row = [InlineKeyboardButton("✅ Upload here", callback_data=f"upload:{parent_id}")]
+    # Upload/Move here + Back row
+    if mode == "move":
+        action_row = [InlineKeyboardButton("📁 Move here", callback_data=f"movehere:{parent_id}")]
+    else:
+        action_row = [InlineKeyboardButton("✅ Upload here", callback_data=f"upload:{parent_id}")]
     if len(nav_stack) > 1:
         action_row.append(InlineKeyboardButton("⬅️ Back", callback_data=f"back:{parent_id}"))
     buttons.append(action_row)
@@ -464,3 +470,81 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await show_file_list(update, context, parent_id)
         except Exception as exc:
             await query.edit_message_text(f"❌ Could not delete file: {exc}")
+
+    elif data.startswith("fileinfo:"):
+        file_id = data[9:]
+        loop = asyncio.get_event_loop()
+        try:
+            info = await loop.run_in_executor(None, lambda: drive_service.get_file_info(file_id))
+        except Exception as exc:
+            await query.edit_message_text(f"❌ Could not get file info: {exc}")
+            return
+        name = info.get("name", "?")
+        size = _format_size(int(info.get("size", 0) or 0))
+        link = info.get("webViewLink", "")
+        parents = info.get("parents", ["root"])
+        old_parent = parents[0] if parents else "root"
+
+        buttons = []
+        if is_owner:
+            buttons.append([InlineKeyboardButton("✏️ Rename", callback_data=f"renamefile:{file_id}")])
+            buttons.append([InlineKeyboardButton("📁 Move to folder", callback_data=f"movefile:{file_id}:{old_parent}")])
+            buttons.append([InlineKeyboardButton("🗑 Delete from Drive", callback_data=f"drivedelete:{file_id}")])
+        if link:
+            buttons.append([InlineKeyboardButton("🔗 Open in Drive", url=link)])
+
+        await query.edit_message_text(
+            f"📄 *{name}*\n📦 {size}\n\nWhat do you want to do?",
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode="Markdown",
+        )
+
+    elif data.startswith("renamefile:") and is_owner:
+        file_id = data[11:]
+        state.set_file_action(user.id, {"action": "rename", "file_id": file_id})
+        await query.edit_message_text(
+            "✏️ *Rename file*\n\nReply with the new name:",
+            parse_mode="Markdown",
+        )
+
+    elif data.startswith("movefile:") and is_owner:
+        parts = data.split(":", 2)
+        if len(parts) != 3:
+            return
+        _, file_id, old_parent = parts
+        state.set_file_action(user.id, {"action": "move", "file_id": file_id, "old_parent": old_parent})
+        context.user_data["nav_stack"] = [("root", "My Drive")]
+        context.user_data["prev_tokens"] = []
+        await show_folder_picker(update, context, parent_id="root", status_message=query.message, mode="move")
+
+    elif data.startswith("movehere:") and is_owner:
+        new_parent_id = data[9:]
+        action = state.get_file_action(user.id)
+        if not action or action.get("action") != "move":
+            await query.edit_message_text("❌ No file selected to move.")
+            return
+        file_id = action["file_id"]
+        old_parent = action["old_parent"]
+        state.clear_file_action(user.id)
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(
+                None, lambda: drive_service.move_file(file_id, new_parent_id, old_parent)
+            )
+            folder_name = drive_service.get_folder_name(new_parent_id)
+            await query.edit_message_text(
+                f"✅ File moved to *{folder_name}*",
+                parse_mode="Markdown",
+            )
+        except Exception as exc:
+            await query.edit_message_text(f"❌ Move failed: {exc}")
+
+    elif data.startswith("drivedelete:") and is_owner:
+        file_id = data[12:]
+        try:
+            await asyncio.get_event_loop().run_in_executor(
+                None, lambda: drive_service.delete_file(file_id)
+            )
+            await query.edit_message_text("🗑 File deleted from Google Drive.")
+        except Exception as exc:
+            await query.edit_message_text(f"❌ Delete failed: {exc}")

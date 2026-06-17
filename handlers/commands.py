@@ -1,11 +1,13 @@
 """Handlers for all bot commands."""
+import asyncio
 import logging
 import os
 from datetime import datetime
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+import drive_service
 import history
 import state
 import user_manager
@@ -54,6 +56,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "• /whoami — show your Telegram user ID\n"
         "• /recent — show last 5 uploads\n"
         "• /stats — show upload statistics\n"
+        "• /search query — search files in Drive\n"
         "• /adduser ID — add a friend (owner only)\n"
         "• /removeuser ID — remove a friend (owner only)\n"
         "• /listusers — list all authorized users (owner only)\n\n"
@@ -223,5 +226,45 @@ async def listusers_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     await update.message.reply_text(
         "*Authorized users:*\n" + "\n".join(lines),
+        parse_mode="Markdown",
+    )
+
+
+async def search_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_authorized(update):
+        await update.message.reply_text("Not authorized.")
+        return
+
+    query = " ".join(context.args).strip() if context.args else ""
+    if not query:
+        await update.message.reply_text(
+            "Usage: `/search filename`\n\nExample: `/search photo` or `/search report`",
+            parse_mode="Markdown",
+        )
+        return
+
+    msg = await update.message.reply_text(f"🔍 Searching for *{query}*…", parse_mode="Markdown")
+
+    try:
+        loop = asyncio.get_event_loop()
+        files = await loop.run_in_executor(None, lambda: drive_service.search_files(query))
+    except Exception as exc:
+        await msg.edit_text(f"❌ Search failed: {exc}")
+        return
+
+    if not files:
+        await msg.edit_text(f"No files found matching *{query}*.", parse_mode="Markdown")
+        return
+
+    buttons = []
+    for f in files[:10]:
+        name = f.get("name", "?")
+        size = _format_size(int(f.get("size", 0) or 0))
+        label = f"{name[:28]}… ({size})" if len(name) > 28 else f"{name} ({size})"
+        buttons.append([InlineKeyboardButton(f"📄 {label}", callback_data=f"fileinfo:{f['id']}")])
+
+    await msg.edit_text(
+        f"🔍 *{len(files)} result{'s' if len(files) != 1 else ''}* for _{query}_:",
+        reply_markup=InlineKeyboardMarkup(buttons),
         parse_mode="Markdown",
     )

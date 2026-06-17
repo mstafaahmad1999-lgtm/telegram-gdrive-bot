@@ -18,6 +18,7 @@ from handlers.commands import (
     listusers_handler,
     recent_handler,
     removeuser_handler,
+    search_handler,
     start_handler,
     stats_handler,
     whoami_handler,
@@ -55,7 +56,13 @@ def main() -> None:
 
     owner_id = int(authorized_user_ids_str.split(",")[0].strip())
 
-    app = ApplicationBuilder().token(token).build()
+    builder = ApplicationBuilder().token(token)
+    local_bot_api = os.getenv("LOCAL_BOT_API", "").lower() == "true"
+    if local_bot_api:
+        local_port = int(os.getenv("LOCAL_BOT_API_PORT", "8081"))
+        builder = builder.base_url(f"http://127.0.0.1:{local_port}/bot").local_mode(True)
+        logger.info("Using local Bot API server on port %d (2 GB upload limit)", local_port)
+    app = builder.build()
 
     app.bot_data["authorized_user_ids"] = user_manager.get_all()
     app.bot_data["owner_id"] = owner_id
@@ -66,6 +73,7 @@ def main() -> None:
     app.add_handler(CommandHandler("whoami", whoami_handler))
     app.add_handler(CommandHandler("recent", recent_handler))
     app.add_handler(CommandHandler("stats", stats_handler))
+    app.add_handler(CommandHandler("search", search_handler))
     app.add_handler(CommandHandler("adduser", adduser_handler))
     app.add_handler(CommandHandler("removeuser", removeuser_handler))
     app.add_handler(CommandHandler("listusers", listusers_handler))

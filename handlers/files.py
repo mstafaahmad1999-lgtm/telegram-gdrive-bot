@@ -13,7 +13,8 @@ from handlers.navigation import show_folder_picker
 
 logger = logging.getLogger(__name__)
 
-MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
+_USE_LOCAL_API = os.getenv("LOCAL_BOT_API", "").lower() == "true"
+MAX_FILE_BYTES = 2 * 1024 * 1024 * 1024 if _USE_LOCAL_API else 20 * 1024 * 1024
 ALBUM_WAIT_SECONDS = 3  # wait this long for more files before showing picker
 
 
@@ -140,16 +141,40 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def new_folder_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle text message when bot is waiting for a new folder name."""
+    """Handle text messages when the bot is waiting for a folder name or file rename."""
     if not _is_authorized(update):
         return
 
+    user_id = update.effective_user.id
+    text = update.message.text.strip()
+
+    # Handle pending rename
+    action = state.get_file_action(user_id)
+    if action and action.get("action") == "rename":
+        if not text:
+            await update.message.reply_text("❌ Name cannot be empty.")
+            return
+        state.clear_file_action(user_id)
+        try:
+            import drive_service
+            loop = asyncio.get_event_loop()
+            updated = await loop.run_in_executor(
+                None, lambda: drive_service.rename_file(action["file_id"], text)
+            )
+            await update.message.reply_text(
+                f"✅ Renamed to *{updated['name']}*",
+                parse_mode="Markdown",
+            )
+        except Exception as exc:
+            await update.message.reply_text(f"❌ Rename failed: {exc}")
+        return
+
+    # Handle new folder name
     parent_id = context.user_data.get("awaiting_folder_name")
     if not parent_id:
         return
 
-    folder_name = update.message.text.strip()
-    if not folder_name:
+    if not text:
         await update.message.reply_text("❌ Folder name cannot be empty.")
         return
 
@@ -159,13 +184,12 @@ async def new_folder_name_handler(update: Update, context: ContextTypes.DEFAULT_
         import drive_service
         loop = asyncio.get_event_loop()
         new_folder = await loop.run_in_executor(
-            None, lambda: drive_service.create_folder(folder_name, parent_id)
+            None, lambda: drive_service.create_folder(text, parent_id)
         )
         await update.message.reply_text(
             f"✅ Folder *{new_folder['name']}* created!",
             parse_mode="Markdown",
         )
-        # Navigate into the new folder
         nav_stack: list = context.user_data.setdefault("nav_stack", [("root", "My Drive")])
         nav_stack.append((new_folder["id"], new_folder["name"]))
         msg = await update.message.reply_text("Loading…")

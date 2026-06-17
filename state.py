@@ -41,3 +41,19 @@ def set_album(user_id: int, album: AlbumBuffer) -> None:
 
 def clear_album(user_id: int) -> None:
     _albums.pop(user_id, None)
+
+
+# File action state (rename / move)
+_file_actions: dict[int, dict] = {}
+
+
+def set_file_action(user_id: int, action_data: dict) -> None:
+    _file_actions[user_id] = action_data
+
+
+def get_file_action(user_id: int) -> dict | None:
+    return _file_actions.get(user_id)
+
+
+def clear_file_action(user_id: int) -> None:
+    _file_actions.pop(user_id, None)

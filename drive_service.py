@@ -123,6 +123,46 @@ def delete_file(file_id: str) -> None:
     service.files().delete(fileId=file_id).execute()
 
 
+def get_file_info(file_id: str) -> dict:
+    """Return metadata for a single file."""
+    return get_drive_service().files().get(
+        fileId=file_id,
+        fields="id, name, size, mimeType, webViewLink, parents, createdTime",
+    ).execute()
+
+
+def rename_file(file_id: str, new_name: str) -> dict:
+    """Rename a file on Drive."""
+    return get_drive_service().files().update(
+        fileId=file_id,
+        body={"name": new_name},
+        fields="id, name, webViewLink",
+    ).execute()
+
+
+def move_file(file_id: str, new_parent_id: str, old_parent_id: str) -> dict:
+    """Move a file to a different folder."""
+    return get_drive_service().files().update(
+        fileId=file_id,
+        addParents=new_parent_id,
+        removeParents=old_parent_id,
+        fields="id, name, webViewLink, parents",
+    ).execute()
+
+
+def search_files(query: str, max_results: int = 10) -> list[dict]:
+    """Search Drive for files whose name contains query."""
+    safe = query.replace("'", "\\'")
+    q = f"name contains '{safe}' and trashed=false and mimeType!='application/vnd.google-apps.folder'"
+    result = get_drive_service().files().list(
+        q=q,
+        fields="files(id, name, size, mimeType, webViewLink, parents, createdTime)",
+        pageSize=max_results,
+        orderBy="createdTime desc",
+    ).execute()
+    return result.get("files", [])
+
+
 def upload_file(
     file_path: str,
     file_name: str,
