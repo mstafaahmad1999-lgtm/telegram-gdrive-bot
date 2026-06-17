@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 import state
+import user_manager
 from handlers.navigation import show_folder_picker
 
 logger = logging.getLogger(__name__)
@@ -15,9 +16,9 @@ logger = logging.getLogger(__name__)
 MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
 
 
-def _is_authorized(update: Update, authorized_ids: set) -> bool:
+def _is_authorized(update: Update) -> bool:
     user = update.effective_user
-    if user is None or user.id not in authorized_ids:
+    if user is None or not user_manager.is_authorized(user.id):
         logger.warning(
             "Unauthorized file upload attempt from user_id=%s",
             user.id if user else "unknown",
@@ -55,8 +56,7 @@ def _extract_file_info(message) -> tuple[str, str, str, int] | None:
 
 
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    authorized_ids: set = context.bot_data["authorized_user_ids"]
-    if not _is_authorized(update, authorized_ids):
+    if not _is_authorized(update):
         await update.message.reply_text("Not authorized.")
         return
 

@@ -9,6 +9,7 @@ from telegram.ext import ContextTypes
 
 import drive_service
 import state
+import user_manager
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +202,8 @@ def _format_size(size_bytes: int) -> str:
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Route all inline keyboard callbacks."""
-    authorized_ids: set = context.bot_data["authorized_user_ids"]
     user = update.effective_user
-    if user is None or user.id not in authorized_ids:
+    if user is None or not user_manager.is_authorized(user.id):
         await update.callback_query.answer("Not authorized.")
         return
 
