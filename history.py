@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from datetime import datetime
+import sync
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +29,17 @@ def _save() -> None:
 
 
 def add(user_id: int, file_name: str, file_size: int, folder_name: str, web_link: str) -> None:
-    _history.append({
+    entry = {
         "user_id": user_id,
         "file_name": file_name,
         "file_size": file_size,
         "folder_name": folder_name,
         "web_link": web_link,
         "timestamp": datetime.utcnow().isoformat(),
-    })
+    }
+    _history.append(entry)
     _save()
+    sync.push_history(entry)
 
 
 def get_recent(n: int = 5) -> list[dict]:

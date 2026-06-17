@@ -1,0 +1,18 @@
+[Unit]
+Description=Drive Bot Dashboard
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/dashboard
+Environment="PATH=/var/www/dashboard/venv/bin"
+ExecStart=/var/www/dashboard/venv/bin/gunicorn \
+    --workers 2 \
+    --bind 127.0.0.1:5000 \
+    --timeout 30 \
+    dashboard:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,10 +1,10 @@
 """Web dashboard for the Telegram → Google Drive bot.
 
-Run alongside bot.py:
-    python dashboard.py
+On VPS: served by gunicorn behind nginx at dashboard.sovan.info
+Locally: python dashboard.py → http://localhost:5000
 
-Access at: http://<phone-ip>:5000
-Default password: set DASHBOARD_PASSWORD in .env (fallback: admin)
+The Android bot pushes data here via POST /api/internal/push
+protected by the shared DASHBOARD_SYNC_TOKEN.
 """
 import json
 import os
@@ -20,8 +20,10 @@ app = Flask(__name__)
 app.secret_key = os.getenv("DASHBOARD_SECRET_KEY", os.urandom(24).hex())
 
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin")
+DASHBOARD_SYNC_TOKEN = os.getenv("DASHBOARD_SYNC_TOKEN", "")
 HISTORY_FILE = "history.json"
 USERS_FILE = os.getenv("USERS_FILE", "users.json")
+MAX_HISTORY = 200
 
 AUTHORIZED_USER_IDS_STR = os.getenv("AUTHORIZED_USER_IDS", os.getenv("AUTHORIZED_USER_ID", ""))
 OWNER_ID = int(AUTHORIZED_USER_IDS_STR.split(",")[0].strip()) if AUTHORIZED_USER_IDS_STR else 0
@@ -200,6 +202,41 @@ def api_remove_user():
 def api_stats():
     history = _load_history()
     return jsonify(_compute_stats(history))
+
+
+# ── internal push (called by Android bot) ────────────────────────────────────
+
+@app.route("/api/internal/push", methods=["POST"])
+def api_internal_push():
+    """Receive data pushed from the Android bot. Protected by shared token."""
+    if not DASHBOARD_SYNC_TOKEN:
+        return jsonify({"ok": False, "error": "Sync token not configured"}), 500
+
+    token = request.headers.get("X-Sync-Token", "")
+    if token != DASHBOARD_SYNC_TOKEN:
+        return jsonify({"ok": False, "error": "Forbidden"}), 403
+
+    data = request.get_json(force=True, silent=True) or {}
+    kind = data.get("type")
+
+    if kind == "history":
+        entry = data.get("entry")
+        if not entry or not isinstance(entry, dict):
+            return jsonify({"ok": False, "error": "Missing entry"}), 400
+        history = _load_history()
+        history.append(entry)
+        with open(HISTORY_FILE, "w") as f:
+            json.dump(history[-MAX_HISTORY:], f)
+        return jsonify({"ok": True})
+
+    if kind == "users":
+        users = data.get("users")
+        if not isinstance(users, list):
+            return jsonify({"ok": False, "error": "Missing users list"}), 400
+        _save_users([int(u) for u in users])
+        return jsonify({"ok": True})
+
+    return jsonify({"ok": False, "error": f"Unknown type: {kind}"}), 400
 
 
 # ── run ───────────────────────────────────────────────────────────────────────

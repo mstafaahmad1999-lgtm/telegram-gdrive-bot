@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import sync
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ def add(user_id: int) -> bool:
         return False
     _authorized_ids.add(user_id)
     _save()
+    sync.push_users(list(_authorized_ids))
     return True
 
 
@@ -48,6 +50,7 @@ def remove(user_id: int) -> bool:
         return False
     _authorized_ids.discard(user_id)
     _save()
+    sync.push_users(list(_authorized_ids))
     return True
 
 
