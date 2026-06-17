@@ -335,6 +335,48 @@
   .status-done     { color: #34d399; }
   .status-error    { color: #f87171; }
 
+  /* ── batch action bar ── */
+  .action-bar {
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    align-items: center;
+    gap: 16px;
+    z-index: 900;
+    white-space: nowrap;
+  }
+  .action-bar.visible { display: flex; }
+  .action-bar-label { color: #94a3b8; font-size: 0.875rem; }
+  .action-bar-label strong { color: #f1f5f9; }
+  .batch-del-btn {
+    padding: 8px 18px;
+    background: #7f1d1d;
+    color: #fca5a5;
+    border: 1px solid #991b1b;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .batch-del-btn:hover { background: #450a0a; }
+  .batch-cancel-btn {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .batch-cancel-btn:hover { color: #94a3b8; }
+  input[type=checkbox].row-check { accent-color: #3b82f6; width: 15px; height: 15px; cursor: pointer; }
+
   /* ── toast ── */
   #toast {
     position: fixed;
@@ -435,6 +477,7 @@
     <table id="uploadsTable">
       <thead>
         <tr>
+          <th style="width:36px;"><input type="checkbox" class="row-check" id="selectAll" onchange="toggleSelectAll(this)"></th>
           <th>File</th>
           <th>Folder</th>
           <th>Size</th>
@@ -446,6 +489,7 @@
       <tbody>
         {% for e in recent %}
         <tr>
+          <td><input type="checkbox" class="row-check file-check" data-id="{{ e.file_id or '' }}" data-name="{{ e.file_name }}" onchange="onRowCheck()" {% if not e.file_id %}disabled{% endif %}></td>
           <td class="filename">
             {% if e.web_link %}
             <a href="{{ e.web_link }}" target="_blank" rel="noopener">{{ e.file_name }}</a>
@@ -516,6 +560,13 @@
 
 </main>
 
+<!-- Batch action bar -->
+<div class="action-bar" id="actionBar">
+  <span class="action-bar-label"><strong id="selCount">0</strong> files selected</span>
+  <button class="batch-del-btn" onclick="batchDelete()">🗑 Delete selected</button>
+  <button class="batch-cancel-btn" onclick="clearSelection()">✕ Cancel</button>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -584,6 +635,51 @@ async function removeUser(uid) {
 document.getElementById('newUserId').addEventListener('keydown', e => {
   if (e.key === 'Enter') addUser();
 });
+
+// ── Batch select ──
+function onRowCheck() {
+  const checks = document.querySelectorAll('.file-check:not(:disabled)');
+  const checked = document.querySelectorAll('.file-check:checked');
+  document.getElementById('selectAll').checked = checked.length === checks.length && checks.length > 0;
+  document.getElementById('selectAll').indeterminate = checked.length > 0 && checked.length < checks.length;
+  document.getElementById('selCount').textContent = checked.length;
+  document.getElementById('actionBar').classList.toggle('visible', checked.length > 0);
+}
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.file-check:not(:disabled)').forEach(c => c.checked = cb.checked);
+  onRowCheck();
+}
+
+function clearSelection() {
+  document.querySelectorAll('.file-check').forEach(c => c.checked = false);
+  document.getElementById('selectAll').checked = false;
+  document.getElementById('selectAll').indeterminate = false;
+  document.getElementById('actionBar').classList.remove('visible');
+}
+
+async function batchDelete() {
+  const checked = document.querySelectorAll('.file-check:checked');
+  if (!checked.length) return;
+  const names = Array.from(checked).map(c => c.dataset.name).slice(0, 3).join(', ');
+  const more = checked.length > 3 ? ` and ${checked.length - 3} more` : '';
+  if (!confirm(`Delete ${checked.length} file${checked.length > 1 ? 's' : ''}?\n\n${names}${more}\n\nThis cannot be undone.`)) return;
+
+  const fileIds = Array.from(checked).map(c => c.dataset.id);
+  const res = await fetch('/api/files/delete-batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_ids: fileIds })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    showToast(`🗑 Deleted ${data.deleted} file${data.deleted > 1 ? 's' : ''}${data.failed ? `, ${data.failed} failed` : ''}`, data.failed === 0);
+    checked.forEach(c => c.closest('tr').remove());
+    clearSelection();
+  } else {
+    showToast('❌ ' + (data.error || 'Delete failed'), false);
+  }
+}
 
 // ── Search ──
 function filterTable(query) {

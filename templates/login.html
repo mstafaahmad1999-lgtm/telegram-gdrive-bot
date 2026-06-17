@@ -84,6 +84,14 @@
     transition: background 0.2s;
   }
   button:hover { background: #2563eb; }
+  .remember-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .remember-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
+  .remember-row label { color: #64748b; font-size: 0.85rem; font-weight: 400; text-transform: none; letter-spacing: 0; cursor: pointer; margin: 0; }
 </style>
 </head>
 <body>
@@ -99,6 +107,10 @@
   <form method="post">
     <label>Password</label>
     <input type="password" name="password" autofocus placeholder="••••••••">
+    <div class="remember-row">
+      <input type="checkbox" name="remember" id="remember">
+      <label for="remember">Remember me for 30 days</label>
+    </div>
     <button type="submit">Sign in →</button>
   </form>
 </div>

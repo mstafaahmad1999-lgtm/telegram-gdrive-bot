@@ -9,7 +9,7 @@ protected by the shared DASHBOARD_SYNC_TOKEN.
 import json
 import os
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
@@ -19,6 +19,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("DASHBOARD_SECRET_KEY", os.urandom(24).hex())
+app.permanent_session_lifetime = timedelta(days=30)
 
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin")
 DASHBOARD_SYNC_TOKEN = os.getenv("DASHBOARD_SYNC_TOKEN", "")
@@ -119,6 +120,8 @@ def login():
     error = None
     if request.method == "POST":
         if request.form.get("password") == DASHBOARD_PASSWORD:
+            if request.form.get("remember"):
+                session.permanent = True
             session["logged_in"] = True
             return redirect(url_for("index"))
         error = "Wrong password."
@@ -229,6 +232,31 @@ def api_delete_file():
         json.dump(history, f)
 
     return jsonify({"ok": True})
+
+
+# ── batch delete ─────────────────────────────────────────────────────────────
+
+@app.route("/api/files/delete-batch", methods=["POST"])
+@login_required
+def api_delete_files_batch():
+    file_ids = request.get_json(force=True).get("file_ids", [])
+    if not file_ids:
+        return jsonify({"ok": False, "error": "No file IDs provided"}), 400
+
+    import drive_service
+    deleted, failed = [], []
+    for fid in file_ids:
+        try:
+            drive_service.delete_file(fid)
+            deleted.append(fid)
+        except Exception:
+            failed.append(fid)
+
+    history = [e for e in _load_history() if e.get("file_id") not in deleted]
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f)
+
+    return jsonify({"ok": True, "deleted": len(deleted), "failed": len(failed)})
 
 
 # ── file upload from dashboard ───────────────────────────────────────────────
