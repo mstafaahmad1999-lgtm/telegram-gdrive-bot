@@ -164,8 +164,9 @@ async def show_file_list(
         link = f.get("webViewLink", "")
         lines.append(f"• [{name}]({link}) — {size}")
         if is_owner:
+            context.user_data[f"fp_{f['id'][-8:]}"] = parent_id
             buttons.append([
-                InlineKeyboardButton(f"🗑 Delete: {_truncate(f.get('name','?'), 20)}", callback_data=f"deletefile:{f['id']}:{parent_id}")
+                InlineKeyboardButton(f"🗑 Delete: {_truncate(f.get('name','?'), 20)}", callback_data=f"deletefile:{f['id']}")
             ])
 
     # Pagination
@@ -457,10 +458,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
 
     elif data.startswith("deletefile:") and is_owner:
-        parts = data.split(":", 2)
-        if len(parts) != 3:
-            return
-        _, file_id, parent_id = parts
+        file_id = data[11:]
+        parent_id = context.user_data.get(f"fp_{file_id[-8:]}", "root")
         try:
             await asyncio.get_event_loop().run_in_executor(
                 None, lambda: drive_service.delete_file(file_id)
@@ -485,10 +484,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         parents = info.get("parents", ["root"])
         old_parent = parents[0] if parents else "root"
 
+        # Store old_parent so movefile: callback_data stays under 64 bytes
+        context.user_data[f"fp_{file_id[-8:]}"] = old_parent
+
         buttons = []
         if is_owner:
             buttons.append([InlineKeyboardButton("✏️ Rename", callback_data=f"renamefile:{file_id}")])
-            buttons.append([InlineKeyboardButton("📁 Move to folder", callback_data=f"movefile:{file_id}:{old_parent}")])
+            buttons.append([InlineKeyboardButton("📁 Move to folder", callback_data=f"movefile:{file_id}")])
             buttons.append([InlineKeyboardButton("🗑 Delete from Drive", callback_data=f"drivedelete:{file_id}")])
         if link:
             buttons.append([InlineKeyboardButton("🔗 Open in Drive", url=link)])
@@ -508,10 +510,8 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
 
     elif data.startswith("movefile:") and is_owner:
-        parts = data.split(":", 2)
-        if len(parts) != 3:
-            return
-        _, file_id, old_parent = parts
+        file_id = data[9:]
+        old_parent = context.user_data.get(f"fp_{file_id[-8:]}", "root")
         state.set_file_action(user.id, {"action": "move", "file_id": file_id, "old_parent": old_parent})
         context.user_data["nav_stack"] = [("root", "My Drive")]
         context.user_data["prev_tokens"] = []
