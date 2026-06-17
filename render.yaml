@@ -1,0 +1,15 @@
+services:
+  - type: worker
+    name: telegram-gdrive-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: AUTHORIZED_USER_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_PATH
+        value: /etc/secrets/credentials.json
+      - key: GOOGLE_TOKEN_PATH
+        value: /etc/secrets/token.json
