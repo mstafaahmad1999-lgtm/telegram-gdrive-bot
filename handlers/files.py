@@ -1,4 +1,5 @@
-"""Handlers for incoming file/photo/video/audio messages."""
+"""Handlers for incoming file/photo/video/audio messages with album support."""
+import asyncio
 import logging
 import os
 import tempfile
@@ -12,17 +13,14 @@ from handlers.navigation import show_folder_picker
 
 logger = logging.getLogger(__name__)
 
-# Telegram bot API download limit (standard API)
 MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
+ALBUM_WAIT_SECONDS = 3  # wait this long for more files before showing picker
 
 
 def _is_authorized(update: Update) -> bool:
     user = update.effective_user
     if user is None or not user_manager.is_authorized(user.id):
-        logger.warning(
-            "Unauthorized file upload attempt from user_id=%s",
-            user.id if user else "unknown",
-        )
+        logger.warning("Unauthorized file upload attempt from user_id=%s", user.id if user else "unknown")
         return False
     return True
 
@@ -36,23 +34,37 @@ def _format_size(size_bytes: int) -> str:
 
 
 def _extract_file_info(message) -> tuple[str, str, str, int] | None:
-    """Return (file_id, file_name, mime_type, file_size) or None."""
     if message.document:
         d = message.document
         return d.file_id, d.file_name or "file", d.mime_type or "application/octet-stream", d.file_size or 0
     if message.video:
         v = message.video
-        name = v.file_name or f"video_{v.file_id[:8]}.mp4"
-        return v.file_id, name, v.mime_type or "video/mp4", v.file_size or 0
+        return v.file_id, v.file_name or f"video_{v.file_id[:8]}.mp4", v.mime_type or "video/mp4", v.file_size or 0
     if message.audio:
         a = message.audio
-        name = a.file_name or f"audio_{a.file_id[:8]}.mp3"
-        return a.file_id, name, a.mime_type or "audio/mpeg", a.file_size or 0
+        return a.file_id, a.file_name or f"audio_{a.file_id[:8]}.mp3", a.mime_type or "audio/mpeg", a.file_size or 0
     if message.photo:
-        # Largest photo is last in the list
         p = message.photo[-1]
         return p.file_id, f"photo_{p.file_id[:8]}.jpg", "image/jpeg", p.file_size or 0
     return None
+
+
+async def _flush_album(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int) -> None:
+    """Called after album wait timer expires — show folder picker for the buffered files."""
+    album = state.get_album(user_id)
+    if not album or not album.files:
+        return
+
+    count = len(album.files)
+    total_size = sum(f.file_size for f in album.files)
+    context.user_data["nav_stack"] = [("root", "My Drive")]
+
+    status_msg = await context.bot.send_message(
+        update.effective_chat.id,
+        f"📦 *{count} file{'s' if count > 1 else ''}* ({_format_size(total_size)})\n\nChoose a destination folder:",
+        parse_mode="Markdown",
+    )
+    await show_folder_picker(update, context, parent_id="root", status_message=status_msg)
 
 
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -72,35 +84,20 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await message.reply_text(
             f"⚠️ *File too large* ({_format_size(file_size)})\n\n"
             "The standard Telegram Bot API only supports downloading files up to *20 MB*.\n\n"
-            "For larger files (up to 2 GB), you need to run a self-hosted "
-            "[Telegram Bot API server](https://core.telegram.org/bots/api#using-a-local-bot-api-server) "
-            "and set `BOT_API_SERVER` in your `.env` to point to it.",
+            "For larger files (up to 2 GB), you need a self-hosted "
+            "[Telegram Bot API server](https://core.telegram.org/bots/api#using-a-local-bot-api-server).",
             parse_mode="Markdown",
         )
         return
 
     user_id = update.effective_user.id
 
-    # Warn if replacing an existing pending upload
-    existing = state.get_pending(user_id)
-    if existing:
-        try:
-            os.unlink(existing.file_path)
-        except OSError:
-            pass
-        await message.reply_text(
-            f"ℹ️ Previous pending upload (*{existing.file_name}*) was replaced.",
-            parse_mode="Markdown",
-        )
-
-    # Download to a temp file
+    # Download to temp file
     tmp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
     suffix = os.path.splitext(file_name)[1] or ""
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix, dir=tmp_dir)
     os.close(tmp_fd)
-
-    status_msg = await message.reply_text("⏬ Downloading file from Telegram…")
 
     try:
         tg_file = await context.bot.get_file(file_id)
@@ -112,17 +109,66 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             os.unlink(tmp_path)
         except OSError:
             pass
-        await status_msg.edit_text(f"❌ Failed to download the file: {exc}")
+        await message.reply_text(f"❌ Failed to download the file: {exc}")
         return
 
+    pending = state.PendingUpload(tmp_path, file_name, mime_type, actual_size)
+
+    # Check if this is part of an album (multiple files sent quickly)
+    album = state.get_album(user_id)
+    if album is None:
+        album = state.AlbumBuffer()
+        state.set_album(user_id, album)
+
+    # Cancel existing timer
+    if album.timer_task and not album.timer_task.done():
+        album.timer_task.cancel()
+
+    album.files.append(pending)
+    logger.info("Buffered file %s for user %s (album size: %d)", file_name, user_id, len(album.files))
+
+    # Set timer to flush album after wait period
+    async def _timer():
+        await asyncio.sleep(ALBUM_WAIT_SECONDS)
+        await _flush_album(update, context, user_id)
+
+    album.timer_task = asyncio.create_task(_timer())
+    state.set_album(user_id, album)
+
+    # Also update single pending for backward compat
     state.set_pending(user_id, tmp_path, file_name, mime_type, actual_size)
-    logger.info("Stored pending upload for user %s: %s (%s)", user_id, file_name, _format_size(actual_size))
 
-    await status_msg.edit_text(
-        f"📎 *{file_name}* ({_format_size(actual_size)})\n\nChoose a destination folder:",
-        parse_mode="Markdown",
-    )
 
-    # Reset navigation stack and show root folder picker
-    context.user_data["nav_stack"] = [("root", "My Drive")]
-    await show_folder_picker(update, context, parent_id="root", status_message=status_msg)
+async def new_folder_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle text message when bot is waiting for a new folder name."""
+    if not _is_authorized(update):
+        return
+
+    parent_id = context.user_data.get("awaiting_folder_name")
+    if not parent_id:
+        return
+
+    folder_name = update.message.text.strip()
+    if not folder_name:
+        await update.message.reply_text("❌ Folder name cannot be empty.")
+        return
+
+    context.user_data.pop("awaiting_folder_name", None)
+
+    try:
+        import drive_service
+        loop = asyncio.get_event_loop()
+        new_folder = await loop.run_in_executor(
+            None, lambda: drive_service.create_folder(folder_name, parent_id)
+        )
+        await update.message.reply_text(
+            f"✅ Folder *{new_folder['name']}* created!",
+            parse_mode="Markdown",
+        )
+        # Navigate into the new folder
+        nav_stack: list = context.user_data.setdefault("nav_stack", [("root", "My Drive")])
+        nav_stack.append((new_folder["id"], new_folder["name"]))
+        msg = await update.message.reply_text("Loading…")
+        await show_folder_picker(update, context, parent_id=new_folder["id"], status_message=msg)
+    except Exception as exc:
+        await update.message.reply_text(f"❌ Could not create folder: {exc}")

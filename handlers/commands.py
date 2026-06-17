@@ -1,10 +1,12 @@
-"""Handlers for /start, /cancel, /whoami, /adduser, /removeuser, /listusers."""
+"""Handlers for all bot commands."""
 import logging
 import os
+from datetime import datetime
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+import history
 import state
 import user_manager
 
@@ -24,9 +26,18 @@ def _is_authorized(update: Update) -> bool:
 
 
 def _is_owner(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
-    """Only the original owner (first ID in env) can manage users."""
     user = update.effective_user
     return user is not None and user.id == context.bot_data["owner_id"]
+
+
+def _format_size(size_bytes: int) -> str:
+    if size_bytes >= 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
+    if size_bytes >= 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    if size_bytes >= 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    return f"{size_bytes} B"
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -41,6 +52,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         "• /start — show this message\n"
         "• /cancel — cancel the current pending upload\n"
         "• /whoami — show your Telegram user ID\n"
+        "• /recent — show last 5 uploads\n"
+        "• /stats — show upload statistics\n"
         "• /adduser ID — add a friend (owner only)\n"
         "• /removeuser ID — remove a friend (owner only)\n"
         "• /listusers — list all authorized users (owner only)\n\n"
@@ -55,6 +68,19 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         return
 
     user_id = update.effective_user.id
+
+    # Cancel album buffer
+    album = state.get_album(user_id)
+    if album:
+        if album.timer_task and not album.timer_task.done():
+            album.timer_task.cancel()
+        for f in album.files:
+            try:
+                os.unlink(f.file_path)
+            except OSError:
+                pass
+        state.clear_album(user_id)
+
     pending = state.get_pending(user_id)
     if pending:
         try:
@@ -62,6 +88,8 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         except OSError:
             pass
         state.clear_pending(user_id)
+        await update.message.reply_text("✅ Pending upload cancelled.")
+    elif album:
         await update.message.reply_text("✅ Pending upload cancelled.")
     else:
         await update.message.reply_text("No pending upload to cancel.")
@@ -71,6 +99,58 @@ async def whoami_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     user = update.effective_user
     await update.message.reply_text(
         f"Your Telegram user ID is: `{user.id}`",
+        parse_mode="Markdown",
+    )
+
+
+async def recent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_authorized(update):
+        await update.message.reply_text("Not authorized.")
+        return
+
+    entries = history.get_recent(5)
+    if not entries:
+        await update.message.reply_text("No uploads yet.")
+        return
+
+    lines = ["🗂️ *Last 5 uploads:*\n"]
+    for e in entries:
+        name = e.get("file_name", "?")
+        size = _format_size(e.get("file_size", 0))
+        folder = e.get("folder_name", "?")
+        link = e.get("web_link", "")
+        ts = e.get("timestamp", "")
+        try:
+            dt = datetime.fromisoformat(ts).strftime("%b %d, %H:%M")
+        except Exception:
+            dt = ts[:10]
+        lines.append(f"• [{name}]({link})\n  📁 {folder} • {size} • {dt}")
+
+    await update.message.reply_text(
+        "\n\n".join(lines) if len(lines) > 1 else lines[0],
+        parse_mode="Markdown",
+        disable_web_page_preview=True,
+    )
+
+
+async def stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not _is_authorized(update):
+        await update.message.reply_text("Not authorized.")
+        return
+
+    stats = history.get_stats()
+    total_files = stats["total_files"]
+    total_size = _format_size(stats["total_size"])
+    num_users = len(stats["uploaders"])
+    top = stats["top_uploader"]
+    top_str = f"`{top}` ({stats['uploaders'][top]} files)" if top else "N/A"
+
+    await update.message.reply_text(
+        f"📈 *Upload Statistics*\n\n"
+        f"📄 Total files uploaded: *{total_files}*\n"
+        f"📦 Total size: *{total_size}*\n"
+        f"👥 Active uploaders: *{num_users}*\n"
+        f"🏆 Top uploader: {top_str}",
         parse_mode="Markdown",
     )
 
@@ -91,11 +171,10 @@ async def adduser_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         new_id = int(args[0])
     except ValueError:
-        await update.message.reply_text("Invalid ID. Must be a number like `123456789`.", parse_mode="Markdown")
+        await update.message.reply_text("Invalid ID. Must be a number.", parse_mode="Markdown")
         return
 
     if user_manager.add(new_id):
-        # Keep bot_data in sync
         context.bot_data["authorized_user_ids"] = user_manager.get_all()
         await update.message.reply_text(f"✅ User `{new_id}` added successfully!", parse_mode="Markdown")
         logger.info("Owner added user %d", new_id)
@@ -126,7 +205,6 @@ async def removeuser_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if user_manager.remove(rem_id):
         context.bot_data["authorized_user_ids"] = user_manager.get_all()
         await update.message.reply_text(f"✅ User `{rem_id}` removed.", parse_mode="Markdown")
-        logger.info("Owner removed user %d", rem_id)
     else:
         await update.message.reply_text(f"User `{rem_id}` was not in the authorized list.", parse_mode="Markdown")
 
@@ -143,5 +221,7 @@ async def listusers_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         tag = " (you)" if uid == owner_id else ""
         lines.append(f"• `{uid}`{tag}")
 
-    text = "*Authorized users:*\n" + "\n".join(lines)
-    await update.message.reply_text(text, parse_mode="Markdown")
+    await update.message.reply_text(
+        "*Authorized users:*\n" + "\n".join(lines),
+        parse_mode="Markdown",
+    )

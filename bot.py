@@ -16,12 +16,15 @@ from handlers.commands import (
     adduser_handler,
     cancel_handler,
     listusers_handler,
+    recent_handler,
     removeuser_handler,
     start_handler,
+    stats_handler,
     whoami_handler,
 )
-from handlers.files import file_handler
+from handlers.files import file_handler, new_folder_name_handler
 from handlers.navigation import callback_handler
+import history
 import user_manager
 
 load_dotenv()
@@ -47,10 +50,9 @@ def main() -> None:
     except ValueError:
         raise RuntimeError("AUTHORIZED_USER_IDS must be comma-separated numeric Telegram user IDs")
 
-    # Load persistent user store (merges env IDs with saved users.json)
     user_manager.load(initial_ids)
+    history.load()
 
-    # First ID in env is the owner
     owner_id = int(authorized_user_ids_str.split(",")[0].strip())
 
     app = ApplicationBuilder().token(token).build()
@@ -58,15 +60,17 @@ def main() -> None:
     app.bot_data["authorized_user_ids"] = user_manager.get_all()
     app.bot_data["owner_id"] = owner_id
 
-    # Command handlers
+    # Commands
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("cancel", cancel_handler))
     app.add_handler(CommandHandler("whoami", whoami_handler))
+    app.add_handler(CommandHandler("recent", recent_handler))
+    app.add_handler(CommandHandler("stats", stats_handler))
     app.add_handler(CommandHandler("adduser", adduser_handler))
     app.add_handler(CommandHandler("removeuser", removeuser_handler))
     app.add_handler(CommandHandler("listusers", listusers_handler))
 
-    # File handlers
+    # File handler
     file_filter = (
         filters.Document.ALL
         | filters.VIDEO
@@ -75,10 +79,16 @@ def main() -> None:
     )
     app.add_handler(MessageHandler(file_filter, file_handler))
 
+    # New folder name input (text while awaiting folder name)
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND,
+        new_folder_name_handler,
+    ))
+
     # Inline keyboard callbacks
     app.add_handler(CallbackQueryHandler(callback_handler))
 
-    logger.info("Bot starting. Owner ID: %d | Authorized users: %s", owner_id, user_manager.get_all())
+    logger.info("Bot starting. Owner: %d | Users: %s", owner_id, user_manager.get_all())
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     app.run_polling(drop_pending_updates=True)

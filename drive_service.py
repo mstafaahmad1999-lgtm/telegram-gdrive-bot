@@ -1,4 +1,4 @@
-"""Google Drive API wrapper: auth, folder listing, and file upload."""
+"""Google Drive API wrapper: auth, folder listing, file upload, and management."""
 import logging
 import os
 from typing import Callable
@@ -18,9 +18,7 @@ _service_cache = None
 
 
 def get_drive_service():
-    """Return an authenticated Drive service, refreshing token if needed."""
     global _service_cache
-
     token_path = os.getenv("GOOGLE_TOKEN_PATH", "token.json")
     credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
 
@@ -37,7 +35,6 @@ def get_drive_service():
                 logger.error("Drive token refresh failed: %s", exc)
                 raise
         else:
-            # No valid creds — user must run setup_google_auth.py
             raise FileNotFoundError(
                 f"No valid Drive credentials found at '{token_path}'. "
                 "Run setup_google_auth.py to authenticate."
@@ -53,7 +50,6 @@ def _save_token(creds: Credentials, path: str) -> None:
 
 
 def list_folders(parent_id: str = "root", page_token: str | None = None) -> tuple[list[dict], str | None]:
-    """Return up to PAGE_SIZE folders in parent_id, plus next_page_token if more exist."""
     service = get_drive_service()
     query = (
         f"mimeType='application/vnd.google-apps.folder' "
@@ -75,8 +71,30 @@ def list_folders(parent_id: str = "root", page_token: str | None = None) -> tupl
     return folders, next_token
 
 
+def list_files(parent_id: str = "root", page_token: str | None = None) -> tuple[list[dict], str | None]:
+    """List non-folder files in a folder."""
+    service = get_drive_service()
+    query = (
+        f"mimeType!='application/vnd.google-apps.folder' "
+        f"and trashed=false "
+        f"and '{parent_id}' in parents"
+    )
+    params = {
+        "q": query,
+        "fields": "nextPageToken, files(id, name, size, mimeType, webViewLink, createdTime)",
+        "pageSize": PAGE_SIZE,
+        "orderBy": "createdTime desc",
+    }
+    if page_token:
+        params["pageToken"] = page_token
+
+    result = service.files().list(**params).execute()
+    files = result.get("files", [])
+    next_token = result.get("nextPageToken")
+    return files, next_token
+
+
 def get_folder_name(folder_id: str) -> str:
-    """Return the display name of a folder (falls back to ID on error)."""
     if folder_id == "root":
         return "My Drive"
     try:
@@ -87,6 +105,24 @@ def get_folder_name(folder_id: str) -> str:
         return folder_id
 
 
+def create_folder(name: str, parent_id: str = "root") -> dict:
+    """Create a new folder and return its metadata."""
+    service = get_drive_service()
+    body = {
+        "name": name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+    }
+    folder = service.files().create(body=body, fields="id, name").execute()
+    return folder
+
+
+def delete_file(file_id: str) -> None:
+    """Permanently delete a file from Drive."""
+    service = get_drive_service()
+    service.files().delete(fileId=file_id).execute()
+
+
 def upload_file(
     file_path: str,
     file_name: str,
@@ -94,13 +130,12 @@ def upload_file(
     folder_id: str,
     progress_callback: Callable[[int], None] | None = None,
 ) -> dict:
-    """Upload file to Drive folder. Returns file resource dict with webViewLink."""
     service = get_drive_service()
     media = MediaFileUpload(
         file_path,
         mimetype=mime_type,
         resumable=True,
-        chunksize=5 * 1024 * 1024,  # 5 MB chunks
+        chunksize=5 * 1024 * 1024,
     )
     body = {"name": file_name, "parents": [folder_id]}
     request = service.files().create(
@@ -120,6 +155,6 @@ def upload_file(
                 try:
                     progress_callback(pct)
                 except Exception:
-                    pass  # progress reporting is best-effort
+                    pass
 
     return response
