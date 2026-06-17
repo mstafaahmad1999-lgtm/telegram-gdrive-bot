@@ -159,6 +159,8 @@ def index():
             e["_dt"] = ts[:10]
         e["_size"] = _format_size(e.get("file_size", 0))
         e["_owner"] = e.get("user_id") == OWNER_ID
+        ext = os.path.splitext(e.get("file_name", ""))[1].lower()
+        e["_previewable"] = ext in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".webm", ".mov", ".m4v"}
 
     return render_template(
         "index.html",

@@ -335,6 +335,33 @@
   .status-done     { color: #34d399; }
   .status-error    { color: #f87171; }
 
+  /* ── preview modal ── */
+  .preview-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 2000; align-items: center; justify-content: center;
+  }
+  .preview-overlay.open { display: flex; }
+  .preview-box {
+    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+    max-width: 90vw; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.7);
+  }
+  .preview-header {
+    padding: 12px 20px; border-bottom: 1px solid #334155;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .preview-title { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 500px; }
+  .preview-close { background: none; border: none; color: #64748b; font-size: 1.4rem; cursor: pointer; line-height: 1; flex-shrink: 0; }
+  .preview-close:hover { color: #f1f5f9; }
+  .preview-body { display: flex; align-items: center; justify-content: center; overflow: auto; flex: 1; padding: 16px; min-width: 300px; min-height: 200px; }
+  .preview-body img { max-width: 80vw; max-height: 75vh; border-radius: 8px; display: block; }
+  .preview-body iframe { border: none; border-radius: 8px; width: 70vw; height: 55vh; }
+  .preview-body .preview-unsupported { color: #64748b; font-size: 0.9rem; text-align: center; }
+  .preview-btn { background: transparent; border: 1px solid #1e3a5f; color: #60a5fa; border-radius: 6px; padding: 3px 10px; font-size: 0.75rem; cursor: pointer; transition: background 0.2s; }
+  .preview-btn:hover { background: #1e3a5f; }
+
   /* ── batch action bar ── */
   .action-bar {
     display: none;
@@ -436,11 +463,13 @@
       <div class="stat-value" style="font-size:1.1rem; color:#475569; padding-top:4px;">—</div>
       {% endif %}
     </div>
-    <div class="stat-card" style="display:flex;align-items:center;gap:16px;">
-      <canvas id="storageChart" width="80" height="80" style="flex-shrink:0;"></canvas>
+    <div class="stat-card" style="display:flex;align-items:center;gap:20px;">
+      <div style="width:72px;height:72px;flex-shrink:0;position:relative;">
+        <canvas id="storageChart"></canvas>
+      </div>
       <div>
         <div class="stat-label">Drive Storage</div>
-        <div class="stat-value" style="font-size:1.1rem;" id="storageUsed">—</div>
+        <div class="stat-value" style="font-size:1.15rem;" id="storageUsed">—</div>
         <div class="stat-sub" id="storageTotal">Loading…</div>
       </div>
     </div>
@@ -517,8 +546,11 @@
             {% endif %}
           </td>
           <td style="color:#64748b;">{{ e._dt }}</td>
-          <td style="display:flex;gap:6px;align-items:center;">
+          <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
             {% if e.file_id %}
+            {% if e._previewable %}
+            <button class="preview-btn" onclick="openPreview('{{ e.file_id }}','{{ e.file_name|replace("'","\\'") }}')">👁 Preview</button>
+            {% endif %}
             <a href="/api/browser/download/{{ e.file_id }}" class="del-btn" style="text-decoration:none;border-color:#1e3a5f;color:#60a5fa;" title="Download">⬇</a>
             <button class="del-btn" onclick="deleteFile('{{ e.file_id }}', '{{ e.file_name }}', this)" title="Delete">🗑</button>
             {% endif %}
@@ -583,6 +615,17 @@
   </div>
 
 </main>
+
+<!-- Preview modal -->
+<div class="preview-overlay" id="previewOverlay" onclick="if(event.target===this)closePreview()">
+  <div class="preview-box">
+    <div class="preview-header">
+      <span class="preview-title" id="previewTitle"></span>
+      <button class="preview-close" onclick="closePreview()">✕</button>
+    </div>
+    <div class="preview-body" id="previewBody"></div>
+  </div>
+</div>
 
 <!-- Batch action bar -->
 <div class="action-bar" id="actionBar">
@@ -660,6 +703,30 @@ document.getElementById('newUserId').addEventListener('keydown', e => {
   if (e.key === 'Enter') addUser();
 });
 
+// ── Preview ──
+const IMAGE_EXT = /\.(jpg|jpeg|png|gif|webp|bmp)$/i;
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v)$/i;
+
+function openPreview(fileId, fileName) {
+  document.getElementById('previewTitle').textContent = fileName;
+  const body = document.getElementById('previewBody');
+  if (IMAGE_EXT.test(fileName)) {
+    body.innerHTML = '<img src="/api/browser/download/' + fileId + '" alt="' + fileName + '">';
+  } else if (VIDEO_EXT.test(fileName)) {
+    body.innerHTML = '<iframe src="https://drive.google.com/file/d/' + fileId + '/preview" allowfullscreen></iframe>';
+  } else {
+    body.innerHTML = '<div class="preview-unsupported">Preview not available for this file type.</div>';
+  }
+  document.getElementById('previewOverlay').classList.add('open');
+}
+
+function closePreview() {
+  document.getElementById('previewOverlay').classList.remove('open');
+  document.getElementById('previewBody').innerHTML = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+
 // ── Storage chart ──
 (async () => {
   try {
@@ -680,11 +747,13 @@ document.getElementById('newUserId').addEventListener('keydown', e => {
           data: [used, free],
           backgroundColor: ['#3b82f6', '#1e293b'],
           borderColor: ['#2563eb', '#334155'],
-          borderWidth: 1,
+          borderWidth: 2,
         }]
       },
       options: {
-        cutout: '70%',
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         animation: { duration: 800 },
       }
