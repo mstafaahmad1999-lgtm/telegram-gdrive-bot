@@ -253,7 +253,7 @@ async def do_upload(
     )
 
     # Save to history
-    history.add(user_id, name, int(file_resource.get("size", pending.file_size) or 0), folder_name, link)
+    history.add(user_id, name, int(file_resource.get("size", pending.file_size) or 0), folder_name, link, file_resource.get("id", ""))
 
     # Notify owner if uploaded by a friend
     if user_id != owner_id and owner_id:
@@ -321,6 +321,7 @@ async def do_upload_album(
                 int(file_resource.get("size", pending.file_size) or 0),
                 folder_name,
                 file_resource.get("webViewLink", ""),
+                file_resource.get("id", ""),
             )
             try:
                 os.unlink(pending.file_path)

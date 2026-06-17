@@ -83,6 +83,17 @@
     padding: 10px 16px;
     text-align: left;
   }
+  .del-btn {
+    background: transparent;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .del-btn:hover { background: #450a0a; }
   tbody tr { border-top: 1px solid #1e293b; }
   tbody tr:hover { background: #263347; }
   td {
@@ -229,6 +240,7 @@
           <th>Size</th>
           <th>Uploader</th>
           <th>Date</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -251,6 +263,11 @@
             {% endif %}
           </td>
           <td style="color:#64748b;">{{ e._dt }}</td>
+          <td>
+            {% if e.file_id %}
+            <button class="del-btn" onclick="deleteFile('{{ e.file_id }}', '{{ e.file_name }}', this)">🗑</button>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -349,6 +366,26 @@ async function removeUser(uid) {
 document.getElementById('newUserId').addEventListener('keydown', e => {
   if (e.key === 'Enter') addUser();
 });
+
+async function deleteFile(fileId, fileName, btn) {
+  if (!confirm('Delete "' + fileName + '" from Google Drive?\n\nThis cannot be undone.')) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  const res = await fetch('/api/files/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_id: fileId })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('File deleted from Drive', true);
+    btn.closest('tr').remove();
+  } else {
+    showToast(data.error || 'Delete failed', false);
+    btn.disabled = false;
+    btn.textContent = '🗑';
+  }
+}
 </script>
 </body>
 </html>

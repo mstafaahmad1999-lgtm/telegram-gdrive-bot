@@ -28,13 +28,14 @@ def _save() -> None:
         json.dump(_history[-_MAX_ENTRIES:], f)
 
 
-def add(user_id: int, file_name: str, file_size: int, folder_name: str, web_link: str) -> None:
+def add(user_id: int, file_name: str, file_size: int, folder_name: str, web_link: str, file_id: str = "") -> None:
     entry = {
         "user_id": user_id,
         "file_name": file_name,
         "file_size": file_size,
         "folder_name": folder_name,
         "web_link": web_link,
+        "file_id": file_id,
         "timestamp": datetime.utcnow().isoformat(),
     }
     _history.append(entry)

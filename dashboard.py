@@ -204,6 +204,32 @@ def api_stats():
     return jsonify(_compute_stats(history))
 
 
+# ── file delete ───────────────────────────────────────────────────────────────
+
+@app.route("/api/files/delete", methods=["POST"])
+@login_required
+def api_delete_file():
+    data = request.get_json(force=True)
+    file_id = data.get("file_id", "").strip()
+    if not file_id:
+        return jsonify({"ok": False, "error": "Missing file_id"}), 400
+
+    # Delete from Google Drive
+    try:
+        import drive_service
+        drive_service.delete_file(file_id)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": f"Drive error: {exc}"}), 500
+
+    # Remove from local history.json
+    history = _load_history()
+    history = [e for e in history if e.get("file_id") != file_id]
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f)
+
+    return jsonify({"ok": True})
+
+
 # ── internal push (called by Android bot) ────────────────────────────────────
 
 @app.route("/api/internal/push", methods=["POST"])
