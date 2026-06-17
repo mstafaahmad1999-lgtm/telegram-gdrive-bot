@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive Bot Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* ── nav ── */
+  nav {
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .nav-brand { font-weight: 700; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+  .nav-brand span { font-size: 1.3rem; }
+  .nav-links { display: flex; align-items: center; gap: 16px; }
+  .nav-links a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+  .nav-links a:hover { color: #f1f5f9; }
+  .logout-btn {
+    background: #334155; color: #cbd5e1; border: none; border-radius: 6px;
+    padding: 6px 14px; font-size: 0.8rem; cursor: pointer; text-decoration: none;
+    transition: background 0.2s;
+  }
+  .logout-btn:hover { background: #475569; }
+
+  /* ── layout ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── stat cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .stat-label { color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-value { color: #f1f5f9; font-size: 1.7rem; font-weight: 700; line-height: 1; }
+  .stat-sub { color: #64748b; font-size: 0.78rem; margin-top: 4px; }
+
+  /* ── section header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-title { font-size: 1rem; font-weight: 600; color: #f1f5f9; }
+
+  /* ── tables ── */
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: #0f172a;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 16px;
+    text-align: left;
+  }
+  tbody tr { border-top: 1px solid #1e293b; }
+  tbody tr:hover { background: #263347; }
+  td {
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    color: #cbd5e1;
+    vertical-align: middle;
+  }
+  td.filename { max-width: 260px; }
+  td.filename a { color: #60a5fa; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  td.filename a:hover { color: #93c5fd; text-decoration: underline; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .badge-owner { background: #1d4ed820; color: #60a5fa; border: 1px solid #1d4ed8; }
+  .badge-friend { background: #16534220; color: #34d399; border: 1px solid #065f46; }
+  .empty { color: #475569; font-size: 0.875rem; padding: 32px; text-align: center; }
+
+  /* ── user mgmt ── */
+  .users-section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 680px) { .users-section { grid-template-columns: 1fr; } }
+
+  .user-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-top: 1px solid #263347; }
+  .user-row:first-child { border-top: none; }
+  .uid { font-family: monospace; font-size: 0.875rem; color: #cbd5e1; }
+  .you-tag { color: #fbbf24; font-size: 0.72rem; margin-left: 8px; }
+  .remove-btn {
+    background: transparent;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .remove-btn:hover { background: #450a0a; }
+
+  .add-form { padding: 20px; }
+  .add-form label { display: block; color: #94a3b8; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .add-form .hint { color: #475569; font-size: 0.78rem; margin-bottom: 12px; }
+  .input-row { display: flex; gap: 8px; }
+  .add-form input {
+    flex: 1;
+    padding: 9px 12px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .add-form input:focus { border-color: #3b82f6; }
+  .add-btn {
+    padding: 9px 18px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .add-btn:hover { background: #2563eb; }
+
+  /* ── toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; pointer-events: auto; }
+  #toast.ok { background: #14532d; color: #86efac; border: 1px solid #166534; }
+  #toast.err { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand"><span>☁️</span> Drive Bot Dashboard</div>
+  <div class="nav-links">
+    <a href="/" onclick="location.reload()">↻ Refresh</a>
+    <a href="/logout" class="logout-btn">Sign out</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ── Stats ── -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Uploads</div>
+      <div class="stat-value">{{ stats.total_files }}</div>
+      <div class="stat-sub">files ever uploaded</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Size</div>
+      <div class="stat-value">{{ stats.total_size }}</div>
+      <div class="stat-sub">uploaded to Drive</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Users</div>
+      <div class="stat-value">{{ users | length }}</div>
+      <div class="stat-sub">authorized uploaders</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Top Uploader</div>
+      {% if stats.top_uploader %}
+      <div class="stat-value" style="font-size:1.1rem; padding-top:4px;">{{ stats.top_uploader }}</div>
+      <div class="stat-sub">{{ stats.top_count }} files</div>
+      {% else %}
+      <div class="stat-value" style="font-size:1.1rem; color:#475569; padding-top:4px;">—</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Recent Uploads ── -->
+  <div class="section-header">
+    <div class="section-title">Recent Uploads</div>
+  </div>
+  <div class="card">
+    {% if recent %}
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Folder</th>
+          <th>Size</th>
+          <th>Uploader</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in recent %}
+        <tr>
+          <td class="filename">
+            {% if e.web_link %}
+            <a href="{{ e.web_link }}" target="_blank" rel="noopener">{{ e.file_name }}</a>
+            {% else %}
+            {{ e.file_name }}
+            {% endif %}
+          </td>
+          <td>📁 {{ e.folder_name or '—' }}</td>
+          <td>{{ e._size }}</td>
+          <td>
+            {% if e._owner %}
+            <span class="badge badge-owner">Owner</span>
+            {% else %}
+            <span class="badge badge-friend">{{ e.user_id }}</span>
+            {% endif %}
+          </td>
+          <td style="color:#64748b;">{{ e._dt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No uploads yet. Send a file to the bot to get started.</div>
+    {% endif %}
+  </div>
+
+  <!-- ── User Management ── -->
+  <div class="section-header">
+    <div class="section-title">User Management</div>
+  </div>
+  <div class="users-section">
+
+    <!-- User list -->
+    <div class="card">
+      {% if users %}
+        {% for uid in users | sort %}
+        <div class="user-row" id="user-{{ uid }}">
+          <div>
+            <span class="uid">{{ uid }}</span>
+            {% if uid == owner_id %}<span class="you-tag">★ owner</span>{% endif %}
+          </div>
+          {% if uid != owner_id %}
+          <button class="remove-btn" onclick="removeUser({{ uid }})">Remove</button>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="empty">No users yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- Add user form -->
+    <div class="card add-form">
+      <label>Add New User</label>
+      <p class="hint">Ask your friend to send <strong>/whoami</strong> to the bot — they'll get their Telegram ID.</p>
+      <div class="input-row">
+        <input type="number" id="newUserId" placeholder="Telegram user ID" min="1">
+        <button class="add-btn" onclick="addUser()">Add</button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+function showToast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => { t.className = ''; }, 3000);
+}
+
+async function addUser() {
+  const input = document.getElementById('newUserId');
+  const uid = input.value.trim();
+  if (!uid) { showToast('Enter a user ID', false); return; }
+
+  const res = await fetch('/api/users/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: uid })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('User ' + uid + ' added!', true);
+    input.value = '';
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast(data.error || 'Failed', false);
+  }
+}
+
+async function removeUser(uid) {
+  if (!confirm('Remove user ' + uid + '?')) return;
+  const res = await fetch('/api/users/remove', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: uid })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    showToast('User ' + uid + ' removed', true);
+    document.getElementById('user-' + uid)?.remove();
+  } else {
+    showToast(data.error || 'Failed', false);
+  }
+}
+
+document.getElementById('newUserId').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addUser();
+});
+</script>
+</body>
+</html>
