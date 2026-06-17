@@ -167,6 +167,66 @@
   }
   .add-btn:hover { background: #2563eb; }
 
+  /* ── search ── */
+  .search-bar {
+    width: 100%;
+    padding: 10px 14px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 12px;
+  }
+  .search-bar:focus { border-color: #3b82f6; }
+  .search-bar::placeholder { color: #475569; }
+
+  /* ── upload zone ── */
+  .upload-zone {
+    border: 2px dashed #334155;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 16px;
+  }
+  .upload-zone.drag { border-color: #3b82f6; background: #1e3a5f22; }
+  .upload-zone p { color: #64748b; font-size: 0.875rem; margin-top: 8px; }
+  .upload-zone strong { color: #94a3b8; }
+  .upload-icon { font-size: 2.5rem; }
+  .upload-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .folder-select {
+    flex: 1;
+    padding: 9px 12px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 0.875rem;
+    outline: none;
+    min-width: 140px;
+  }
+  .upload-btn {
+    padding: 9px 20px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .upload-btn:hover { background: #2563eb; }
+  .upload-btn:disabled { background: #334155; cursor: not-allowed; }
+  .progress-wrap { width: 100%; height: 6px; background: #1e293b; border-radius: 9999px; overflow: hidden; margin-top: 12px; display: none; }
+  .progress-bar { height: 100%; background: #3b82f6; width: 0%; transition: width 0.3s; border-radius: 9999px; }
+  #upload-filename { color: #94a3b8; font-size: 0.8rem; margin-top: 8px; display: none; }
+
   /* ── toast ── */
   #toast {
     position: fixed;
@@ -226,13 +286,37 @@
     </div>
   </div>
 
+  <!-- ── Upload to Drive ── -->
+  <div class="section-header">
+    <div class="section-title">Upload to Drive</div>
+  </div>
+  <div class="card" style="padding: 20px;">
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">☁️</div>
+      <strong>Click to choose a file</strong>
+      <p>or drag and drop here · up to 2 GB</p>
+    </div>
+    <input type="file" id="fileInput" style="display:none" onchange="onFileChosen(this)">
+    <div id="upload-filename"></div>
+    <div class="upload-controls">
+      <select class="folder-select" id="folderSelect">
+        <option value="root">📂 My Drive (root)</option>
+      </select>
+      <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload</button>
+    </div>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </div>
+
   <!-- ── Recent Uploads ── -->
   <div class="section-header">
     <div class="section-title">Recent Uploads</div>
   </div>
+  <input type="text" class="search-bar" id="searchBar" placeholder="🔍 Search by filename…" oninput="filterTable(this.value)">
   <div class="card">
     {% if recent %}
-    <table>
+    <table id="uploadsTable">
       <thead>
         <tr>
           <th>File</th>
@@ -366,6 +450,118 @@ async function removeUser(uid) {
 document.getElementById('newUserId').addEventListener('keydown', e => {
   if (e.key === 'Enter') addUser();
 });
+
+// ── Search ──
+function filterTable(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#uploadsTable tbody tr').forEach(row => {
+    const name = row.querySelector('.filename')?.textContent.toLowerCase() || '';
+    row.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+
+// ── Upload ──
+let chosenFile = null;
+
+async function loadFolders() {
+  try {
+    const res = await fetch('/api/folders');
+    const data = await res.json();
+    if (!data.ok) return;
+    const sel = document.getElementById('folderSelect');
+    data.folders.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = '📁 ' + f.name;
+      sel.appendChild(opt);
+    });
+  } catch (e) {}
+}
+
+function onFileChosen(input) {
+  chosenFile = input.files[0] || null;
+  const label = document.getElementById('upload-filename');
+  const btn = document.getElementById('uploadBtn');
+  if (chosenFile) {
+    label.textContent = '📄 ' + chosenFile.name + ' (' + formatBytes(chosenFile.size) + ')';
+    label.style.display = 'block';
+    btn.disabled = false;
+  } else {
+    label.style.display = 'none';
+    btn.disabled = true;
+  }
+}
+
+function formatBytes(b) {
+  if (b >= 1073741824) return (b/1073741824).toFixed(2) + ' GB';
+  if (b >= 1048576) return (b/1048576).toFixed(1) + ' MB';
+  if (b >= 1024) return (b/1024).toFixed(1) + ' KB';
+  return b + ' B';
+}
+
+async function doUpload() {
+  if (!chosenFile) return;
+  const folderId = document.getElementById('folderSelect').value;
+  const btn = document.getElementById('uploadBtn');
+  const wrap = document.getElementById('progressWrap');
+  const bar = document.getElementById('progressBar');
+
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+  wrap.style.display = 'block';
+  bar.style.width = '0%';
+
+  // Animate progress bar (fake progress for UX)
+  let pct = 0;
+  const ticker = setInterval(() => {
+    if (pct < 85) { pct += 2; bar.style.width = pct + '%'; }
+  }, 200);
+
+  const form = new FormData();
+  form.append('file', chosenFile);
+  form.append('folder_id', folderId);
+
+  try {
+    const res = await fetch('/api/files/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    clearInterval(ticker);
+    if (data.ok) {
+      bar.style.width = '100%';
+      showToast('✅ Uploaded: ' + data.entry.file_name, true);
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast('❌ ' + (data.error || 'Upload failed'), false);
+      wrap.style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = 'Upload';
+    }
+  } catch (e) {
+    clearInterval(ticker);
+    showToast('❌ Network error', false);
+    wrap.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'Upload';
+  }
+}
+
+// Drag and drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const input = document.getElementById('fileInput');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    onFileChosen(input);
+  }
+});
+
+loadFolders();
 
 async function deleteFile(fileId, fileName, btn) {
   if (!confirm('Delete "' + fileName + '" from Google Drive?\n\nThis cannot be undone.')) return;

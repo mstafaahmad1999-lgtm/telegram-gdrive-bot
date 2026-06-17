@@ -8,6 +8,7 @@ protected by the shared DASHBOARD_SYNC_TOKEN.
 """
 import json
 import os
+import tempfile
 from datetime import datetime
 from functools import wraps
 
@@ -228,6 +229,70 @@ def api_delete_file():
         json.dump(history, f)
 
     return jsonify({"ok": True})
+
+
+# ── file upload from dashboard ───────────────────────────────────────────────
+
+@app.route("/api/folders")
+@login_required
+def api_folders():
+    """Return top-level Drive folders for the upload folder picker."""
+    try:
+        import drive_service
+        folders, _ = drive_service.list_folders("root")
+        return jsonify({"ok": True, "folders": [{"id": f["id"], "name": f["name"]} for f in folders]})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/files/upload", methods=["POST"])
+@login_required
+def api_upload_file():
+    """Upload a file from the browser directly to Google Drive."""
+    if "file" not in request.files:
+        return jsonify({"ok": False, "error": "No file provided"}), 400
+
+    f = request.files["file"]
+    folder_id = request.form.get("folder_id", "root")
+
+    if not f.filename:
+        return jsonify({"ok": False, "error": "Empty filename"}), 400
+
+    suffix = os.path.splitext(f.filename)[1] or ""
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+    os.close(tmp_fd)
+    try:
+        f.save(tmp_path)
+        file_size = os.path.getsize(tmp_path)
+
+        import drive_service
+        resource = drive_service.upload_file(
+            tmp_path, f.filename, f.content_type or "application/octet-stream", folder_id
+        )
+        folder_name = drive_service.get_folder_name(folder_id)
+
+        entry = {
+            "user_id": OWNER_ID,
+            "file_name": resource.get("name", f.filename),
+            "file_size": int(resource.get("size", file_size) or file_size),
+            "folder_name": folder_name,
+            "web_link": resource.get("webViewLink", ""),
+            "file_id": resource.get("id", ""),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        history = _load_history()
+        history.append(entry)
+        with open(HISTORY_FILE, "w") as fh:
+            json.dump(history[-MAX_HISTORY:], fh)
+
+        return jsonify({"ok": True, "entry": entry})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 # ── internal push (called by Android bot) ────────────────────────────────────
