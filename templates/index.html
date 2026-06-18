@@ -400,11 +400,23 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .modal-bc span{cursor:pointer;transition:color .1s}
 .modal-bc span:hover{color:var(--accent-ink)}
 .modal-body{overflow-y:auto;flex:1;padding:6px}
-.folder-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:9px;cursor:none;transition:background .1s}
+.folder-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:none;transition:background .12s}
 .folder-item:hover{background:var(--bg)}
-.fi-name{font-size:.84rem;display:flex;align-items:center;gap:8px;color:var(--ink)}
-.fi-arr{font-size:.68rem;color:var(--ink-dim)}
-.folder-empty,.folder-loading{font-size:.74rem;color:var(--ink-dim);padding:22px;text-align:center}
+.fi-main{flex:1;display:flex;align-items:center;gap:10px;min-width:0;cursor:none}
+.fi-ic{display:flex;flex-shrink:0;color:var(--accent)}
+.fi-ic svg{width:19px;height:19px}
+.fi-name{font-size:.85rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-pick{
+  flex-shrink:0;font-size:.66rem;font-weight:600;color:var(--accent-ink);
+  background:rgba(10,186,181,.1);border:1px solid transparent;border-radius:7px;
+  padding:5px 11px;cursor:none;opacity:0;transition:opacity .12s,background .12s;font-family:'Inter',sans-serif
+}
+.folder-item:hover .fi-pick{opacity:1}
+.fi-pick:hover{background:var(--accent);color:#fff}
+.fi-arr{display:flex;flex-shrink:0;color:var(--ink-dim);cursor:none}
+.fi-arr svg{width:16px;height:16px}
+.folder-item:hover .fi-arr{color:var(--accent)}
+.folder-empty,.folder-loading{font-size:.76rem;color:var(--ink-dim);padding:26px;text-align:center;display:flex;align-items:center;justify-content:center}
 .modal-ft{padding:13px 20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .modal-cur{font-size:.7rem;color:var(--ink-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .select-btn{padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:.76rem;font-weight:600;cursor:none}
@@ -1069,24 +1081,37 @@ function updateModalBc(){
 function navTo(i){folderStack=folderStack.slice(0,i+1);updateModalBc();renderModalFolders(folderStack[folderStack.length-1].id)}
 async function renderModalFolders(parentId){
   const body=document.getElementById('modalBody');
-  body.innerHTML='<div class="folder-loading">Loading…</div>';
+  body.innerHTML='<div class="folder-loading"><span class="fp-spinner"></span>Loading…</div>';
   updateModalBc();
+  const FSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
   try{
     const res=await fetch('/api/folders?parent='+parentId);
     const d=await res.json();
     body.innerHTML='';
-    if(!d.ok||!d.folders.length){body.innerHTML='<div class="folder-empty">No subfolders here.</div>';return}
+    if(!d.ok||!d.folders.length){body.innerHTML='<div class="folder-empty">No subfolders here — use “Select here”.</div>';return}
     d.folders.forEach(f=>{
+      const enter=async()=>{folderStack.push({id:f.id,name:f.name});updateModalBc();await renderModalFolders(f.id)};
       const div=document.createElement('div');div.className='folder-item';
-      div.innerHTML=`<span class="fi-name">📁 ${f.name}</span><span class="fi-arr">›</span>`;
-      div.onclick=async()=>{folderStack.push({id:f.id,name:f.name});updateModalBc();await renderModalFolders(f.id)};
+      div.innerHTML=`
+        <div class="fi-main"><span class="fi-ic">${FSVG}</span><span class="fi-name">${f.name}</span></div>
+        <button class="fi-pick" type="button">Select</button>
+        <span class="fi-arr" title="Open">${CHEV}</span>`;
+      div.querySelector('.fi-main').onclick=enter;
+      div.querySelector('.fi-arr').onclick=enter;
+      div.querySelector('.fi-pick').onclick=e=>{e.stopPropagation();selectFolderDirect(f.id,f.name)};
       body.appendChild(div);
     });
   }catch(e){body.innerHTML='<div class="folder-empty">Failed to load.</div>'}
 }
+function selectFolderDirect(id,name){
+  selectedFolder={id:id,name:name};
+  document.getElementById('folderPickLabel').textContent=name;
+  closeFolderModal();
+}
 function confirmFolder(){
   selectedFolder=folderStack[folderStack.length-1];
-  document.getElementById('folderPickLabel').textContent=folderStack.length===1?'My Drive (root)':folderStack.map(f=>f.name).join(' › ');
+  document.getElementById('folderPickLabel').textContent=folderStack.length===1?'My Drive (root)':folderStack[folderStack.length-1].name;
   closeFolderModal();
 }
 
