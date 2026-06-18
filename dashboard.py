@@ -448,6 +448,51 @@ def api_upload_file():
             pass
 
 
+@app.route("/api/files/download-link", methods=["POST"])
+@login_required
+def api_download_link():
+    """Download media from a URL (reel/TikTok/etc) and upload it to Drive."""
+    data = request.get_json(silent=True) or {}
+    url = (data.get("url") or "").strip()
+    folder_id = data.get("folder_id", "root")
+    if not url:
+        return jsonify({"ok": False, "error": "No URL provided"}), 400
+
+    tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp")
+    path = None
+    try:
+        import downloader
+        import drive_service
+        path, file_name, mime_type, size = downloader.fetch_media(url, tmp_dir)
+        resource = drive_service.upload_file(path, file_name, mime_type, folder_id)
+        folder_name = drive_service.get_folder_name(folder_id)
+
+        entry = {
+            "user_id": OWNER_ID,
+            "file_name": resource.get("name", file_name),
+            "file_size": int(resource.get("size", size) or size),
+            "folder_name": folder_name,
+            "web_link": resource.get("webViewLink", ""),
+            "file_id": resource.get("id", ""),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        history = _load_history()
+        history.append(entry)
+        with open(HISTORY_FILE, "w") as fh:
+            json.dump(history[-MAX_HISTORY:], fh)
+
+        return jsonify({"ok": True, "entry": entry})
+    except Exception as exc:
+        reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "download failed"
+        return jsonify({"ok": False, "error": reason}), 500
+    finally:
+        if path:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+
 # ── internal push (called by Android bot) ────────────────────────────────────
 
 @app.route("/api/internal/push", methods=["POST"])

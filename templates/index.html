@@ -234,6 +234,15 @@ body{
 .side-upload svg{width:17px;height:17px}
 .side-upload:hover{background:var(--accent-ink)}
 
+/* link download */
+.link-row{display:flex;gap:8px;align-items:center}
+.link-input{flex:1;padding:11px 14px;background:var(--surface);border:1px solid var(--line);border-radius:9px;font-size:.8rem;color:var(--ink);outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.link-input:focus{border-color:var(--accent)}
+.link-input::placeholder{color:var(--ink-dim)}
+.link-preview{margin-top:12px}
+.link-preview .lp-meta{font-size:.76rem;color:var(--ink-dim)}
+.link-preview a{color:var(--accent-ink);font-weight:600}
+
 /* file queue */
 .file-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.82rem}
 .file-item-name{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -611,6 +620,34 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           </div>
         </div>
 
+        <!-- Download from link -->
+        <div class="sub-head" id="link">Download from link</div>
+        <div class="upload-section">
+          <div class="link-row">
+            <input type="text" id="linkInput" class="link-input" placeholder="Paste an Instagram / TikTok / Facebook / X / YouTube link…">
+            <button class="upload-btn" id="linkBtn" onclick="doDownloadLink()">Fetch</button>
+          </div>
+          <div class="upload-bar" style="margin-top:10px">
+            <div class="dest">
+              <span class="dest-lbl">Destination</span>
+              <button class="folder-pick-btn" id="linkFolderBtn" onclick="openFolderModal('link')" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;color:var(--accent)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span id="linkFolderLabel">My Drive (root)</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-left:auto;opacity:.6"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flux-loader" id="linkProgressWrap">
+            <div class="flux-label-wrap" id="linkFluxLabelWrap">
+              <div class="flux-label" id="linkFluxLabel"></div>
+            </div>
+            <div class="flux-track">
+              <div class="flux-fill" id="linkProgressBar"><span class="flux-sheen"></span></div>
+            </div>
+          </div>
+          <div id="linkPreview" class="link-preview"></div>
+        </div>
+
         <!-- Folders -->
         <div class="sub-head">Folders</div>
         <div class="fs-outer">
@@ -985,6 +1022,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePreview();clos
 
 /* ─── Upload ─── */
 let fileQueue=[],folderStack=[{id:'root',name:'My Drive'}],selectedFolder={id:'root',name:'My Drive'};
+let selectedLinkFolder={id:'root',name:'My Drive'},folderTarget='upload';
 
 function onFilesChosen(input){
   fileQueue=Array.from(input.files).slice(0,50).map(f=>({file:f,status:'pending'}));
@@ -1068,7 +1106,8 @@ dz.addEventListener('drop',e=>{
 });
 
 /* ─── Folder Modal (upload picker) ─── */
-function openFolderModal(){
+function openFolderModal(target){
+  folderTarget=(target==='link')?'link':'upload';
   folderStack=[{id:'root',name:'My Drive'}];
   document.getElementById('folderModal').classList.add('open');
   renderModalFolders('root');
@@ -1104,16 +1143,67 @@ async function renderModalFolders(parentId){
     });
   }catch(e){body.innerHTML='<div class="folder-empty">Failed to load.</div>'}
 }
-function selectFolderDirect(id,name){
-  selectedFolder={id:id,name:name};
-  document.getElementById('folderPickLabel').textContent=name;
+function _applyFolderChoice(id,name,label){
+  label=label||name;
+  if(folderTarget==='link'){
+    selectedLinkFolder={id:id,name:name};
+    document.getElementById('linkFolderLabel').textContent=label;
+  }else{
+    selectedFolder={id:id,name:name};
+    document.getElementById('folderPickLabel').textContent=label;
+  }
   closeFolderModal();
 }
+function selectFolderDirect(id,name){_applyFolderChoice(id,name)}
 function confirmFolder(){
-  selectedFolder=folderStack[folderStack.length-1];
-  document.getElementById('folderPickLabel').textContent=folderStack.length===1?'My Drive (root)':folderStack[folderStack.length-1].name;
-  closeFolderModal();
+  const sel=folderStack[folderStack.length-1];
+  _applyFolderChoice(sel.id,sel.name,folderStack.length===1?'My Drive (root)':sel.name);
 }
+
+/* ─── Download from link ─── */
+function setLinkFlux(pct,phase){
+  const bar=document.getElementById('linkProgressBar');bar.style.width=pct+'%';
+  const wrap=document.getElementById('linkFluxLabelWrap');
+  if(wrap.dataset.phase===phase)return;
+  wrap.dataset.phase=phase;
+  const lbl=document.getElementById('linkFluxLabel');
+  const next=document.createElement('div');next.className='flux-label';
+  next.innerHTML=phase.split('').map((c,i)=>`<span style="animation-delay:${.12+i*.03}s">${c===' '?'&nbsp;':c}</span>`).join('');
+  lbl.replaceWith(next);next.id='linkFluxLabel';
+}
+async function doDownloadLink(){
+  const inp=document.getElementById('linkInput'),url=inp.value.trim();
+  if(!url){showToast('Paste a link first',false);return}
+  const btn=document.getElementById('linkBtn'),wrap=document.getElementById('linkProgressWrap'),preview=document.getElementById('linkPreview');
+  btn.disabled=true;btn.textContent='Fetching…';preview.innerHTML='';
+  wrap.style.display='block';wrap.querySelector('.flux-label-wrap').dataset.phase='';
+  setLinkFlux(30,'downloading');
+  const tick=setInterval(()=>{const bar=document.getElementById('linkProgressBar');let w=parseInt(bar.style.width)||30;if(w<88)bar.style.width=(w+6)+'%';},450);
+  try{
+    const res=await fetch('/api/files/download-link',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url,folder_id:selectedLinkFolder.id})});
+    const d=await res.json();
+    clearInterval(tick);
+    if(d.ok){
+      setLinkFlux(100,'complete');
+      const e=d.entry;
+      preview.innerHTML=`<div class="lp-meta">✅ Uploaded <strong>${e.file_name}</strong> → ${e.folder_name} · ${formatBytes(e.file_size)} · <a href="${e.web_link}" target="_blank">Open in Drive</a></div>`;
+      showToast('Downloaded & uploaded!',true);
+      inp.value='';
+      setTimeout(()=>location.reload(),2000);
+    }else{
+      setLinkFlux(0,'failed');
+      preview.innerHTML=`<div class="lp-meta" style="color:var(--danger)">❌ ${d.error||'Failed'}</div>`;
+      showToast(d.error||'Download failed',false);
+    }
+  }catch(e){
+    clearInterval(tick);
+    preview.innerHTML=`<div class="lp-meta" style="color:var(--danger)">❌ Network error</div>`;
+    showToast('Network error',false);
+  }
+  btn.disabled=false;btn.textContent='Fetch';
+  setTimeout(()=>{wrap.style.display='none';},2000);
+}
+document.getElementById('linkInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')doDownloadLink()});
 
 /* ─── Table: search, batch, delete ─── */
 function filterTable(q){
