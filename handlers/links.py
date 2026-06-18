@@ -38,9 +38,18 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     tmp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
     loop = asyncio.get_event_loop()
     try:
-        path, file_name, mime_type, size = await loop.run_in_executor(
-            None, lambda: downloader.download_from_url(url, tmp_dir)
+        path, file_name, mime_type, size = await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: downloader.download_from_url(url, tmp_dir)),
+            timeout=90,
         )
+    except asyncio.TimeoutError:
+        logger.warning("Download timed out for %s", url)
+        await status.edit_text(
+            "❌ Download timed out (took too long).\n\n"
+            "The site is likely blocking anonymous access. Instagram & Facebook "
+            "usually need login cookies (see YTDLP_COOKIES). Try a TikTok, X, or YouTube link to test."
+        )
+        return
     except Exception as exc:
         logger.warning("Download failed for %s: %s", url, exc)
         reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "unknown error"
