@@ -38,7 +38,7 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     tmp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
     loop = asyncio.get_event_loop()
     try:
-        path, file_name, mime_type, size = await asyncio.wait_for(
+        path, file_name, mime_type, size, meta = await asyncio.wait_for(
             loop.run_in_executor(None, lambda: downloader.fetch_media(url, tmp_dir)),
             timeout=150,
         )
@@ -67,7 +67,8 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
     # Send a preview of the media so the user can check it before uploading
-    caption = "Choose a folder below to upload 👇"
+    uploader = (meta or {}).get("uploader") if isinstance(meta, dict) else ""
+    caption = (f"👤 {uploader}\n" if uploader else "") + "Choose a folder below to upload 👇"
     try:
         if mime_type.startswith("video/"):
             with open(path, "rb") as fh:

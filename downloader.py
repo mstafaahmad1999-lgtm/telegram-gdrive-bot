@@ -88,8 +88,24 @@ def download_from_url(url: str, dest_dir: str) -> tuple[str, str, str, int]:
         "video/mp4" if ext.lower() in (".mp4", ".mov", ".webm", ".m4v") else "application/octet-stream"
     )
     size = os.path.getsize(path)
+    meta = {
+        "title": info.get("title") or "",
+        "uploader": info.get("uploader") or info.get("channel") or info.get("uploader_id") or "",
+        "uploader_url": info.get("uploader_url") or info.get("channel_url") or "",
+        "duration": info.get("duration") or 0,
+        "width": info.get("width") or 0,
+        "height": info.get("height") or 0,
+        "source": info.get("extractor_key") or info.get("extractor") or "",
+        "view_count": info.get("view_count") or 0,
+        "like_count": info.get("like_count") or 0,
+    }
     logger.info("Downloaded %s (%d bytes) from %s", file_name, size, url)
-    return path, file_name, mime_type, size
+    return path, file_name, mime_type, size, meta
+
+
+def _empty_meta(source: str = "link") -> dict:
+    return {"title": "", "uploader": "", "uploader_url": "", "duration": 0,
+            "width": 0, "height": 0, "source": source, "view_count": 0, "like_count": 0}
 
 
 # ── Third-party API fallback (Cobalt-compatible) ─────────────────────────────
@@ -144,8 +160,21 @@ def tikwm_download(url: str, dest_dir: str) -> tuple[str, str, str, int]:
     path = os.path.join(dest_dir, file_name)
     _download_url_to(media, path)
     size = os.path.getsize(path)
+
+    author = d.get("author") if isinstance(d.get("author"), dict) else {}
+    uniq = author.get("unique_id") or ""
+    meta = {
+        "title": title,
+        "uploader": author.get("nickname") or uniq or "",
+        "uploader_url": ("https://www.tiktok.com/@" + uniq) if uniq else "",
+        "duration": d.get("duration") or 0,
+        "width": 0, "height": 0,
+        "source": "TikTok",
+        "view_count": d.get("play_count") or 0,
+        "like_count": d.get("digg_count") or 0,
+    }
     logger.info("Downloaded %s (%d bytes) via tikwm from %s", file_name, size, url)
-    return path, file_name, "video/mp4", size
+    return path, file_name, "video/mp4", size, meta
 
 
 def cobalt_download(url: str, dest_dir: str) -> tuple[str, str, str, int]:
@@ -195,7 +224,7 @@ def cobalt_download(url: str, dest_dir: str) -> tuple[str, str, str, int]:
     size = os.path.getsize(path)
     mime_type = mimetypes.guess_type(path)[0] or "video/mp4"
     logger.info("Downloaded %s (%d bytes) via API from %s", file_name, size, url)
-    return path, file_name, mime_type, size
+    return path, file_name, mime_type, size, _empty_meta("link")
 
 
 def fetch_media(url: str, dest_dir: str) -> tuple[str, str, str, int]:

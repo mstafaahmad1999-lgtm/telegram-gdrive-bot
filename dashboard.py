@@ -481,7 +481,7 @@ def api_link_fetch():
     tmp_dir = _link_tmp_dir()
     try:
         import downloader
-        path, file_name, mime_type, size = downloader.fetch_media(url, tmp_dir)
+        path, file_name, mime_type, size, meta = downloader.fetch_media(url, tmp_dir)
         return jsonify({
             "ok": True,
             "tmp": os.path.basename(path),
@@ -490,6 +490,7 @@ def api_link_fetch():
             "size": size,
             "is_video": mime_type.startswith("video/"),
             "is_image": mime_type.startswith("image/"),
+            "meta": meta or {},
         })
     except Exception as exc:
         reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "download failed"
@@ -499,12 +500,30 @@ def api_link_fetch():
 @app.route("/api/link/preview/<path:tmp>")
 @login_required
 def api_link_preview(tmp):
-    """Serve a downloaded temp file for in-browser preview."""
+    """Serve a downloaded temp file for in-browser preview or device download."""
     safe = os.path.basename(tmp)
     p = os.path.join(_link_tmp_dir(), safe)
     if not os.path.isfile(p):
         return jsonify({"ok": False, "error": "Preview expired"}), 404
+    if request.args.get("dl"):
+        name = os.path.basename(request.args.get("name") or safe)
+        return send_file(p, as_attachment=True, download_name=name)
     return send_file(p)
+
+
+@app.route("/api/link/cancel", methods=["POST"])
+@login_required
+def api_link_cancel():
+    """Discard a fetched temp file without uploading."""
+    data = request.get_json(silent=True) or {}
+    safe = os.path.basename(data.get("tmp") or "")
+    p = os.path.join(_link_tmp_dir(), safe)
+    if safe and os.path.isfile(p):
+        try:
+            os.unlink(p)
+        except OSError:
+            pass
+    return jsonify({"ok": True})
 
 
 @app.route("/api/link/upload", methods=["POST"])

@@ -281,7 +281,14 @@ body{
 .link-preview video,.link-preview img{width:100%;max-height:440px;border-radius:14px;border:1px solid var(--line);display:block;background:#000;animation:linkCardIn .4s var(--eout)}
 .link-preview .lp-meta{font-size:.78rem;color:var(--ink-dim);margin-top:10px}
 .link-preview a{color:var(--accent-ink);font-weight:600}
-.lp-upload{margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.lp-upload{margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lp-cancel:hover{border-color:var(--danger);color:var(--danger)}
+.lp-info{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.lp-info-row{display:flex;justify-content:space-between;gap:14px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:.78rem}
+.lp-info-row:last-child{border-bottom:none}
+.lp-info-row>span{color:var(--ink-dim);flex-shrink:0}
+.lp-info-row>strong{color:var(--ink);font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-info-row a{color:var(--accent-ink)}
 
 /* file queue */
 .file-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.82rem}
@@ -1267,10 +1274,26 @@ async function doFetchLink(){
       const media=d.is_video?`<video src="${purl}" controls playsinline preload="metadata"></video>`
                  :d.is_image?`<img src="${purl}" alt="">`
                  :`<div class="lp-meta">Downloaded ${d.file_name}</div>`;
-      preview.innerHTML=`${media}
-        <div class="lp-meta">${d.file_name} · ${formatBytes(d.size)}</div>
+      const m=d.meta||{};
+      const dur=m.duration?fmtDur(m.duration):'';
+      const res=(m.width&&m.height)?`${m.width}×${m.height}`:'';
+      const rows=[];
+      if(m.uploader)rows.push(['Uploader',m.uploader_url?`<a href="${m.uploader_url}" target="_blank">${m.uploader}</a>`:m.uploader]);
+      if(m.title)rows.push(['Title',m.title]);
+      if(m.source)rows.push(['Source',m.source]);
+      if(dur)rows.push(['Duration',dur]);
+      if(res)rows.push(['Resolution',res]);
+      if(m.view_count)rows.push(['Views',Number(m.view_count).toLocaleString()]);
+      if(m.like_count)rows.push(['Likes',Number(m.like_count).toLocaleString()]);
+      rows.push(['File',d.file_name]);
+      rows.push(['Size',formatBytes(d.size)]);
+      const info=`<div class="lp-info">${rows.map(r=>`<div class="lp-info-row"><span>${r[0]}</span><strong>${r[1]}</strong></div>`).join('')}</div>`;
+      const dlUrl=purl+'?dl=1&name='+encodeURIComponent(d.file_name);
+      preview.innerHTML=`${media}${info}
         <div class="lp-upload">
           <button class="upload-btn" onclick="uploadFetched()">⬆ Upload to Drive</button>
+          <a class="hbtn" href="${dlUrl}">⬇ Download to device</a>
+          <button class="hbtn lp-cancel" onclick="cancelFetched()">✕ Cancel</button>
           <span class="lp-meta">into <strong id="lpFolderName">${selectedLinkFolder.name||'My Drive'}</strong></span>
         </div>`;
       btn.disabled=false;btn.textContent='Fetch';
@@ -1302,6 +1325,15 @@ async function uploadFetched(){
   }catch(e){clearInterval(linkTick);showToast('Network error',false);}
   btn.disabled=false;btn.textContent='Fetch';
   setTimeout(()=>{wrap.style.display='none';},2000);
+}
+function fmtDur(s){s=Math.round(Number(s)||0);const m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0');}
+async function cancelFetched(){
+  if(fetchedTmp){try{await fetch('/api/link/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tmp:fetchedTmp})})}catch(e){}}
+  fetchedTmp=null;
+  document.getElementById('linkPreview').innerHTML='';
+  document.getElementById('linkInput').value='';
+  document.getElementById('linkProgressWrap').style.display='none';
+  showToast('Cancelled',true);
 }
 document.getElementById('linkInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')doFetchLink()});
 
