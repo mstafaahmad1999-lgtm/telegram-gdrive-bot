@@ -313,10 +313,15 @@ button:not(:disabled):hover .cascade-char,
 .fp-fmeta{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim);margin-top:3px}
 .fp-actions{display:flex;gap:4px;padding:0 11px 9px;opacity:0;transition:opacity .15s}
 .fp-card:hover .fp-actions{opacity:1}
-.fp-empty,.fp-loading{font-size:.76rem;color:var(--ink-dim);padding:36px;text-align:center}
-.fp-subfolders{margin-bottom:18px;display:flex;flex-wrap:wrap;gap:8px}
-.fp-subfolder{font-size:.72rem;color:var(--ink-dim);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:none;background:var(--surface);transition:all .15s}
-.fp-subfolder:hover{color:var(--ink);border-color:var(--accent)}
+.fp-empty,.fp-loading{font-size:.78rem;color:var(--ink-dim);padding:44px;text-align:center;grid-column:1/-1;display:flex;align-items:center;justify-content:center}
+.fp-folder .fp-thumb{background:rgba(10,186,181,.06)}
+.fp-folder-ic{display:flex}
+.fp-folder-ic svg{width:32px;height:32px;color:var(--accent)}
+.fp-folder .fp-fmeta{color:var(--accent-ink)}
+.play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(31,35,40,.3);font-size:1.7rem;color:#fff;opacity:0;transition:opacity .2s}
+.fp-card:hover .play-ov{opacity:1}
+.fp-spinner{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;display:inline-block;margin-right:9px;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── Table ── */
 .table-section{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:18px;overflow:hidden}
@@ -614,7 +619,6 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
               <button class="fp-close" id="fpClose">Close ✕</button>
             </div>
           </div>
-          <div id="fpSubfolders" class="fp-subfolders"></div>
           <div id="fpContent" class="fp-grid"></div>
         </div>
       </section>
@@ -848,7 +852,6 @@ function gotoFolder(id,name){
 async function openFolderPanel(folderId,folderName,frameEl){
   const panel=document.getElementById('folderPanel');
   const content=document.getElementById('fpContent');
-  const subs=document.getElementById('fpSubfolders');
 
   document.querySelectorAll('.folder-frame').forEach(f=>f.style.outline='none');
   if(frameEl)frameEl.style.outline='2px solid var(--accent)';
@@ -861,54 +864,62 @@ async function openFolderPanel(folderId,folderName,frameEl){
   document.getElementById('fpName').textContent=folderName;
   document.getElementById('fpLabel').textContent='Folder';
   document.getElementById('fpBrowseLink').href=`/browser?folder=${folderId}`;
-  content.innerHTML='<div class="fp-loading">Loading…</div>';
-  subs.innerHTML='';
+  content.innerHTML='<div class="fp-loading"><span class="fp-spinner"></span>Loading…</div>';
   panel.style.display='block';
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  const FSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const esc=s=>s.replace(/'/g,"\\'");
 
   try{
     const res=await fetch('/api/browser?parent='+folderId);
     const d=await res.json();
     if(!d.ok){content.innerHTML='<div class="fp-empty">Failed to load folder.</div>';return}
 
+    let html='';
+
+    // subfolders as folder cards
     if(d.folders&&d.folders.length){
-      subs.innerHTML=d.folders.map(f=>
-        `<button class="fp-subfolder" onclick="openFolderPanel('${f.id}','${f.name.replace(/'/g,"\\'")}',document.querySelector('[data-fid=\\'${f.id}\\']')||document.querySelector('.folder-frame'))">📁 ${f.name}</button>`
-      ).join('');
+      html+=d.folders.map(f=>`
+        <div class="fp-card fp-folder" onclick="openFolderPanel('${f.id}','${esc(f.name)}',null)">
+          <div class="fp-thumb"><span class="fp-folder-ic">${FSVG}</span></div>
+          <div class="fp-info">
+            <div class="fp-fname" title="${f.name}">${f.name}</div>
+            <div class="fp-fmeta">Folder</div>
+          </div>
+        </div>`).join('');
     }
 
-    if(!d.files||!d.files.length){
-      content.innerHTML='<div class="fp-empty">No files in this folder.</div>';return;
-    }
+    // files as media cards
     const IMAGE_MIME=/^image\//;
-    content.innerHTML=d.files.map(f=>{
-      const isImg=IMAGE_MIME.test(f.mimeType);
-      const isVid=f.mimeType&&f.mimeType.startsWith('video/');
-      const thumb=f.thumbnailLink?f.thumbnailLink.replace('=s220','=s300'):'';
-      const icon=fileIcon(f.mimeType);
-      const size=f.size?formatBytes(parseInt(f.size)):'';
-      const previewable=isImg||isVid;
-      return `<div class="fp-card">
-        <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${f.name.replace(/'/g,"\\'")}')`:''}" style="${previewable?'cursor:none':''}">
-          ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
-          ${isVid?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(31,35,40,.28);font-size:1.8rem;opacity:0;transition:opacity .2s" class="play-ov">▶</div>':''}
-        </div>
-        <div class="fp-info">
-          <div class="fp-fname" title="${f.name}">${f.name}</div>
-          <div class="fp-fmeta">${size}</div>
-        </div>
-        <div class="fp-actions">
-          ${previewable?`<button class="act-btn" onclick="openPreview('${f.id}','${f.name.replace(/'/g,"\\'")}')">Preview</button>`:''}
-          <a href="/api/browser/download/${f.id}" class="act-btn" style="display:inline-block">↓</a>
-          <button class="act-btn danger" onclick="deleteFolderFile('${f.id}','${f.name.replace(/'/g,"\\'")}',this)">✕</button>
-        </div>
-      </div>`;
-    }).join('');
+    if(d.files&&d.files.length){
+      html+=d.files.map(f=>{
+        const isImg=IMAGE_MIME.test(f.mimeType);
+        const isVid=f.mimeType&&f.mimeType.startsWith('video/');
+        const thumb=f.thumbnailLink?f.thumbnailLink.replace('=s220','=s300'):'';
+        const icon=fileIcon(f.mimeType);
+        const size=f.size?formatBytes(parseInt(f.size)):'';
+        const previewable=isImg||isVid;
+        return `<div class="fp-card">
+          <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${esc(f.name)}')`:''}" style="${previewable?'cursor:none':''}">
+            ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
+            ${isVid?'<div class="play-ov">▶</div>':''}
+          </div>
+          <div class="fp-info">
+            <div class="fp-fname" title="${f.name}">${f.name}</div>
+            <div class="fp-fmeta">${size}</div>
+          </div>
+          <div class="fp-actions">
+            ${previewable?`<button class="act-btn" onclick="openPreview('${f.id}','${esc(f.name)}')">Preview</button>`:''}
+            <a href="/api/browser/download/${f.id}" class="act-btn" style="display:inline-block">↓</a>
+            <button class="act-btn danger" onclick="deleteFolderFile('${f.id}','${esc(f.name)}',this)">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
 
-    document.querySelectorAll('.fp-card').forEach(c=>{
-      const ov=c.querySelector('.play-ov');
-      if(ov){c.addEventListener('mouseenter',()=>ov.style.opacity='1');c.addEventListener('mouseleave',()=>ov.style.opacity='0')}
-    });
+    if(!html){content.innerHTML='<div class="fp-empty">This folder is empty.</div>';return}
+    content.innerHTML=html;
   }catch(e){
     content.innerHTML='<div class="fp-empty">Failed to load folder contents.</div>';
   }
