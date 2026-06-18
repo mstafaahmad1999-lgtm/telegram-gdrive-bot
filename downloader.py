@@ -45,7 +45,18 @@ def download_from_url(url: str, dest_dir: str) -> tuple[str, str, str, int]:
         "no_warnings": True,
         "ignoreerrors": False,
         "retries": 3,
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        },
     }
+
+    # Optional cookies for sites that require login (Instagram, Facebook…).
+    # Set YTDLP_COOKIES in .env to a Netscape-format cookies.txt path.
+    cookies = os.getenv("YTDLP_COOKIES", "").strip()
+    if cookies and os.path.exists(cookies):
+        ydl_opts["cookiefile"] = cookies
+        logger.info("Using cookies file: %s", cookies)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)

@@ -43,10 +43,12 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
     except Exception as exc:
         logger.warning("Download failed for %s: %s", url, exc)
+        reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "unknown error"
         await status.edit_text(
-            "❌ *Couldn't download from that link.*\n\n"
-            "It may be private, age-restricted, removed, or from an unsupported site.",
-            parse_mode="Markdown",
+            "❌ Couldn't download from that link.\n\n"
+            f"Reason: {reason}\n\n"
+            "Note: Instagram & Facebook usually need login cookies "
+            "(see YTDLP_COOKIES). TikTok, X/Twitter, and YouTube normally work without."
         )
         return
 
