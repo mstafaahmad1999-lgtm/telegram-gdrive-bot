@@ -8,6 +8,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 import drive_service
+import folder_prefs
 import history
 import state
 import user_manager
@@ -94,6 +95,28 @@ async def show_folder_picker(
     if len(nav_stack) > 1:
         action_row.append(InlineKeyboardButton("⬅️ Back", callback_data=f"back:{parent_id}"))
     buttons.append(action_row)
+
+    # Auto-suggest row — show last-used folder for this file type (upload mode only)
+    if mode == "upload":
+        user_id = update.effective_user.id
+        album = state.get_album(user_id)
+        pending = state.get_pending(user_id)
+        mime = None
+        if album and album.files:
+            mime = album.files[0].mime_type
+        elif pending:
+            mime = pending.mime_type
+        if mime:
+            suggestion = folder_prefs.get_suggestion(mime)
+            if suggestion and suggestion["folder_id"] != parent_id:
+                cat_emoji = {"video": "🎬", "image": "🖼️", "audio": "🎵"}.get(
+                    mime.split("/")[0], "📄"
+                )
+                sname = _truncate(suggestion["folder_name"], 30)
+                buttons.append([InlineKeyboardButton(
+                    f"⚡ {cat_emoji} Last used: {sname}",
+                    callback_data=f"upload:{suggestion['folder_id']}",
+                )])
 
     # List files + New folder row (owner only for new folder)
     extra_row = [InlineKeyboardButton("📋 List files", callback_data=f"listfiles:{parent_id}")]
@@ -245,6 +268,8 @@ async def do_upload(
         )
         return
 
+    folder_prefs.record(pending.mime_type, folder_id, folder_name)
+
     name = file_resource.get("name", pending.file_name)
     size_str = _format_size(int(file_resource.get("size", pending.file_size) or pending.file_size))
     link = file_resource.get("webViewLink", "")
@@ -302,6 +327,9 @@ async def do_upload_album(
     owner_id = context.bot_data.get("owner_id")
     folder_name = drive_service.get_folder_name(folder_id)
     total = len(files)
+
+    if files:
+        folder_prefs.record(files[0].mime_type, folder_id, folder_name)
 
     await query.edit_message_text(f"⏳ Uploading {total} files…\n{_progress_bar(0)}")
 
@@ -394,12 +422,49 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     elif data.startswith("upload:"):
         folder_id = data[7:]
         album = state.get_album(user.id)
-        if album and album.files:
+        is_album = bool(album and album.files)
+
+        # Duplicate check (single file only — albums use auto-generated names)
+        if not is_album:
+            pending = state.get_pending(user.id)
+            if pending:
+                loop = asyncio.get_event_loop()
+                try:
+                    is_dup = await loop.run_in_executor(
+                        None, lambda: drive_service.check_duplicate(folder_id, pending.file_name)
+                    )
+                    if is_dup:
+                        fname = _truncate(pending.file_name, 35)
+                        folder_name = drive_service.get_folder_name(folder_id)
+                        await query.edit_message_text(
+                            f"⚠️ *Duplicate detected!*\n\n"
+                            f"`{fname}` already exists in *{folder_name}*.\n\n"
+                            "What would you like to do?",
+                            reply_markup=InlineKeyboardMarkup([
+                                [InlineKeyboardButton("⚠️ Upload anyway", callback_data=f"forceupload:{folder_id}")],
+                                [InlineKeyboardButton("❌ Cancel", callback_data="dupcancel:")],
+                            ]),
+                            parse_mode="Markdown",
+                        )
+                        return
+                except Exception as exc:
+                    logger.warning("Duplicate check failed (proceeding): %s", exc)
+
+        if is_album:
             if album.timer_task:
                 album.timer_task.cancel()
             await do_upload_album(update, context, folder_id, album.files)
         else:
             await do_upload(update, context, folder_id)
+
+    elif data.startswith("forceupload:"):
+        folder_id = data[12:]
+        await do_upload(update, context, folder_id)
+
+    elif data == "dupcancel:":
+        state.clear_pending(user.id)
+        state.clear_album(user.id)
+        await query.edit_message_text("❌ Upload cancelled.")
 
     elif data.startswith("back:"):
         nav_stack: list = context.user_data.get("nav_stack", [("root", "My Drive")])

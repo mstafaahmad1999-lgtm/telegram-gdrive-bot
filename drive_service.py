@@ -172,6 +172,14 @@ def list_folder_contents(parent_id: str = "root") -> dict:
     return {"folders": folders, "files": files}
 
 
+def check_duplicate(folder_id: str, file_name: str) -> bool:
+    """Return True if a file with this exact name exists in the folder."""
+    safe = file_name.replace("'", "\\'")
+    q = f"name='{safe}' and '{folder_id}' in parents and trashed=false"
+    result = get_drive_service().files().list(q=q, fields="files(id)", pageSize=1).execute()
+    return len(result.get("files", [])) > 0
+
+
 def search_files(query: str, max_results: int = 10) -> list[dict]:
     """Search Drive for files whose name contains query."""
     safe = query.replace("'", "\\'")
