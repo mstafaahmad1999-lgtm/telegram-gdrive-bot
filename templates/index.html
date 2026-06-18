@@ -16,11 +16,11 @@ button{font-family:inherit}
 
 /* ── Tokens ── */
 :root{
-  --bg:       #080808;
-  --fg:       #f0f0f0;
-  --dim:      #888;
-  --line:     #222;
-  --hover:    #111;
+  --bg:       #F4EFE8;
+  --fg:       #1C1917;
+  --dim:      #8A8580;
+  --line:     #D0C9C0;
+  --hover:    #EBE5DC;
   --danger:   #c0392b;
   --dang-txt: #e57373;
   --ease:     cubic-bezier(0.25,0.46,0.45,0.94);
@@ -31,7 +31,7 @@ button{font-family:inherit}
   --wgrey:    var(--dim);
   --mid:      var(--line);
   --deep:     var(--hover);
-  --film:     #040404;
+  --film:     #E6E0D8;
   --gold:     var(--fg);
 }
 
@@ -827,7 +827,7 @@ async function openFolderPanel(folderId,folderName,frameEl){
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
 
   try{
-    const res=await fetch('/api/browser/contents?folder='+folderId);
+    const res=await fetch('/api/browser?parent='+folderId);
     const d=await res.json();
     if(!d.ok){content.innerHTML='<div class="fp-empty">Failed to load folder.</div>';return}
 
