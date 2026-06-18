@@ -200,8 +200,48 @@ nav.scroll{background:var(--bone);padding:13px 44px;border-color:var(--mid)}
 }
 .upload-btn:disabled{opacity:.3;cursor:not-allowed}
 .upload-btn:not(:disabled):hover{opacity:.8}
-.progress-wrap{height:2px;background:var(--deep);display:none;margin-top:10px}
-.progress-bar{height:100%;background:var(--charcoal);width:0%;transition:width .3s}
+/* ── Flux Progress Loader ── */
+.flux-loader{display:none;margin-top:18px;width:100%}
+.flux-label-wrap{position:relative;height:36px;margin-bottom:10px;perspective:900px}
+.flux-label{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:600;
+  letter-spacing:.06em;color:var(--wgrey);
+  transform-style:preserve-3d;
+  animation:fluxLabelIn .9s cubic-bezier(.22,1,.36,1) forwards
+}
+@keyframes fluxLabelIn{
+  from{opacity:0;transform:translateZ(-380px) scale(.65);filter:blur(14px)}
+  40%{opacity:1;transform:translateZ(60px) scale(1.08);filter:blur(0)}
+  70%{transform:translateZ(-8px) scale(.985)}
+  to{opacity:1;transform:translateZ(0) scale(1);filter:blur(0)}
+}
+.flux-label span{
+  display:inline-block;opacity:0;
+  animation:fluxLetterIn .45s cubic-bezier(.22,1,.36,1) forwards
+}
+@keyframes fluxLetterIn{
+  from{opacity:0;transform:translateY(12px);filter:blur(8px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+.flux-track{
+  position:relative;height:10px;width:100%;border-radius:99px;overflow:hidden;
+  background:var(--deep);
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.09),inset 0 -1px 2px rgba(255,255,255,.6)
+}
+.flux-fill{
+  position:relative;height:100%;border-radius:99px;width:0%;
+  background:linear-gradient(90deg,#1d6ffb 0%,#4baeff 35%,#74e1ff 55%,#4baeff 78%,#1d6ffb 100%);
+  box-shadow:0 0 18px rgba(29,111,251,.55),0 0 32px rgba(116,225,255,.4),inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -2px 3px rgba(0,40,120,.35);
+  transition:width .55s cubic-bezier(.22,1,.36,1)
+}
+.flux-sheen{
+  position:absolute;inset-y:0;left:0;width:50%;border-radius:99px;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
+  mix-blend-mode:screen;
+  animation:sheenSweep 1.6s linear infinite
+}
+@keyframes sheenSweep{from{transform:translateX(-110%)} to{transform:translateX(420%)}}
 
 /* File queue */
 .file-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--deep);font-size:.8rem}
@@ -570,8 +610,15 @@ input[type=checkbox].row-check{accent-color:var(--charcoal);width:14px;height:14
       </button>
       <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload all</button>
     </div>
-    <div class="progress-wrap" id="progressWrap">
-      <div class="progress-bar" id="progressBar"></div>
+    <div class="flux-loader" id="progressWrap">
+      <div class="flux-label-wrap" id="fluxLabelWrap">
+        <div class="flux-label" id="fluxLabel"></div>
+      </div>
+      <div class="flux-track">
+        <div class="flux-fill" id="progressBar">
+          <span class="flux-sheen"></span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -987,13 +1034,34 @@ function setFileStatus(i,s){
 function statusLabel(s){return{pending:'Waiting',uploading:'Uploading…',done:'Done',error:'Failed'}[s]||s}
 function clearQueue(){fileQueue=[];document.getElementById('fileQueue').style.display='none';document.getElementById('uploadBtn').disabled=true}
 
+function setFluxProgress(pct,phase){
+  const bar=document.getElementById('progressBar');
+  bar.style.width=pct+'%';
+  const wrap=document.getElementById('fluxLabelWrap');
+  const cur=wrap.dataset.phase;
+  if(cur===phase)return;
+  wrap.dataset.phase=phase;
+  const lbl=document.getElementById('fluxLabel');
+  const next=document.createElement('div');
+  next.className='flux-label';
+  next.innerHTML=phase.split('').map((c,i)=>`<span style="animation-delay:${.18+i*.035}s">${c===' '?'&nbsp;':c}</span>`).join('');
+  lbl.replaceWith(next);
+  next.id='fluxLabel';
+}
+
 async function doUpload(){
   if(!fileQueue.length)return;
-  const btn=document.getElementById('uploadBtn'),wrap=document.getElementById('progressWrap'),bar=document.getElementById('progressBar');
+  const btn=document.getElementById('uploadBtn'),wrap=document.getElementById('progressWrap');
   btn.disabled=true;btn.textContent='Uploading…';wrap.style.display='block';
+  wrap.querySelector('.flux-label-wrap').dataset.phase='';
+  setFluxProgress(0,'uploading');
   let done=0,failed=0;
+  const phases=[{at:0,label:'uploading'},{at:40,label:'processing'},{at:75,label:'finalizing'},{at:100,label:'complete'}];
+  function phaseFor(pct){let l=phases[0].label;for(const p of phases)if(pct>=p.at)l=p.label;return l}
   for(let i=0;i<fileQueue.length;i++){
-    setFileStatus(i,'uploading');bar.style.width=Math.round(i/fileQueue.length*100)+'%';
+    setFileStatus(i,'uploading');
+    const pct=Math.round(i/fileQueue.length*100);
+    setFluxProgress(pct,phaseFor(pct));
     const form=new FormData();form.append('file',fileQueue[i].file);form.append('folder_id',selectedFolder.id);
     try{
       const res=await fetch('/api/files/upload',{method:'POST',body:form});
@@ -1001,8 +1069,10 @@ async function doUpload(){
       if(d.ok){setFileStatus(i,'done');done++}else{setFileStatus(i,'error');failed++}
     }catch(e){setFileStatus(i,'error');failed++}
   }
-  bar.style.width='100%';btn.textContent='Upload all';
-  if(!failed){showToast('All '+done+' file'+(done>1?'s':'')+' uploaded!',true);setTimeout(()=>location.reload(),1200)}
+  setFluxProgress(100,'complete');
+  btn.textContent='Upload all';
+  setTimeout(()=>{wrap.style.display='none';},1800);
+  if(!failed){showToast('All '+done+' file'+(done>1?'s':'')+' uploaded!',true);setTimeout(()=>location.reload(),2200)}
   else{showToast(done+' uploaded, '+failed+' failed',false);btn.disabled=false}
 }
 
