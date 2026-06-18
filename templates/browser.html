@@ -3,187 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>File Browser — Drive Bot</title>
+<title>File Browser — Drive Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit}
 
-  nav { background: #1e293b; border-bottom: 1px solid #334155; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-  .nav-brand { font-weight: 700; font-size: 1rem; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
-  .nav-links { display: flex; align-items: center; gap: 16px; }
-  .nav-links a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; }
-  .nav-links a:hover { color: #f1f5f9; }
-  .logout-btn { background: #334155; color: #cbd5e1; border: none; border-radius: 6px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; text-decoration: none; }
+:root{
+  --bone:    #F4EFE8;
+  --charcoal:#1C1917;
+  --wgrey:   #8A8580;
+  --mid:     #C8C2BB;
+  --deep:    #E6E0D8;
+  --ease:    cubic-bezier(0.25,0.46,0.45,0.94);
+  --eout:    cubic-bezier(0.16,1,0.3,1);
+}
 
-  main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bone);color:var(--charcoal);min-height:100vh;cursor:none;overflow-x:hidden}
+@media(pointer:coarse){body{cursor:auto}#cur{display:none!important}}
 
-  /* breadcrumb */
-  .breadcrumb { display: flex; align-items: center; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
-  .crumb { color: #60a5fa; cursor: pointer; font-size: 0.9rem; }
-  .crumb:hover { text-decoration: underline; }
-  .crumb-sep { color: #334155; }
-  .crumb-current { color: #94a3b8; font-size: 0.9rem; }
+/* ── Cursor ── */
+#cur{position:fixed;top:0;left:0;width:11px;height:11px;border:1.5px solid var(--charcoal);border-radius:50%;pointer-events:none;z-index:9999;will-change:transform;transition:width .25s var(--eout),height .25s var(--eout),background .2s}
+#cur.big{width:34px;height:34px;background:rgba(28,25,23,.08)}
 
-  /* section header */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .section-title { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+/* ── Nav ── */
+nav{position:sticky;top:0;z-index:800;display:flex;align-items:center;justify-content:space-between;padding:14px 44px;background:var(--bone);border-bottom:1px solid var(--mid)}
+.nav-logo{font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.18em;color:var(--charcoal)}
+.nav-r{display:flex;align-items:center;gap:22px}
+.nav-r a{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.12em;color:var(--wgrey);transition:color .2s}
+.nav-r a:hover{color:var(--charcoal)}
+.nav-out{font-family:'DM Mono',monospace;font-size:.63rem;letter-spacing:.12em;color:var(--wgrey);background:none;border:1px solid var(--mid);padding:5px 13px;cursor:none;transition:all .2s}
+.nav-out:hover{color:var(--charcoal);border-color:var(--charcoal)}
 
-  /* folders */
-  .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 32px; }
-  .folder-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px 12px; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: center; gap: 10px; }
-  .folder-card:hover { border-color: #3b82f6; background: #1e3a5f33; }
-  .folder-card span { font-size: 0.85rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ── Breadcrumb ── */
+.bc-bar{padding:18px 44px;border-bottom:1px solid var(--deep);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.crumb{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--wgrey);cursor:none;transition:color .2s}
+.crumb:hover{color:var(--charcoal)}
+.crumb-sep{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--mid)}
+.crumb-cur{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--charcoal)}
 
-  /* gallery */
-  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-  .gallery-card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
-    overflow: hidden;
-    transition: border-color 0.15s, transform 0.15s;
-    position: relative;
-  }
-  .gallery-card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+/* ── Layout ── */
+main{max-width:1280px;margin:0 auto;padding:36px 44px 80px}
 
-  .gallery-thumb {
-    width: 100%; aspect-ratio: 16/10; background: #0f172a;
-    position: relative; cursor: pointer; overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.2s; }
-  .gallery-thumb img.loading { opacity: 0; }
-  .gallery-thumb img.loaded { opacity: 1; }
-  .thumb-placeholder { font-size: 3rem; color: #334155; user-select: none; }
-  .thumb-placeholder.vid { color: #1d4ed8; }
-  .thumb-placeholder.img { color: #065f46; }
-  .thumb-placeholder.doc { color: #92400e; }
+/* ── Section headers ── */
+.sec-hd{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--mid);margin-bottom:20px}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.4rem,2.5vw,2rem);font-weight:300;letter-spacing:-.01em}
+.sec-meta{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--wgrey);letter-spacing:.1em}
 
-  .play-overlay {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.35); opacity: 0; transition: opacity 0.2s; pointer-events: none;
-  }
-  .play-btn-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; padding-left: 4px; }
-  .gallery-thumb:hover .play-overlay { opacity: 1; }
+/* ── Folders ── */
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1px;background:var(--mid);border:1px solid var(--mid);margin-bottom:48px}
+.folder-card{background:var(--bone);padding:18px 16px;cursor:none;transition:background .15s;display:flex;align-items:center;gap:10px}
+.folder-card:hover{background:var(--deep)}
+.folder-icon{font-size:1rem;flex-shrink:0}
+.folder-name{font-family:'DM Sans',sans-serif;font-weight:300;font-size:.88rem;color:var(--charcoal);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.no-folders{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.12em;color:var(--wgrey);padding:16px 0}
 
-  .gallery-info { padding: 10px 12px 4px; }
-  .gallery-name { font-size: 0.8rem; color: #cbd5e1; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
-  .gallery-meta { font-size: 0.72rem; color: #475569; }
+/* ── Gallery ── */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1px;background:var(--mid);border:1px solid var(--mid)}
+.gallery-card{background:var(--bone);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:background .15s}
+.gallery-card:hover{background:var(--deep)}
 
-  .gallery-actions {
-    padding: 8px 10px 10px;
-    display: flex; gap: 5px; flex-wrap: wrap;
-  }
-  .act-btn {
-    flex: 1; min-width: 0; padding: 5px 6px; border-radius: 6px; border: 1px solid #334155;
-    background: transparent; color: #94a3b8; font-size: 0.7rem; cursor: pointer;
-    transition: all 0.15s; white-space: nowrap; text-align: center; text-decoration: none; display: inline-block;
-  }
-  .act-btn:hover { background: #263347; color: #f1f5f9; border-color: #475569; }
-  .act-btn.red { border-color: #7f1d1d; color: #fca5a5; }
-  .act-btn.red:hover { background: #450a0a; }
-  .act-btn.blue { border-color: #1e3a5f; color: #60a5fa; }
-  .act-btn.blue:hover { background: #1e3a5f; }
+.g-thumb{aspect-ratio:3/4;overflow:hidden;background:var(--deep);position:relative;display:flex;align-items:center;justify-content:center;cursor:none}
+.g-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s var(--ease),opacity .3s}
+.g-thumb img.loading{opacity:0}
+.g-thumb img.loaded{opacity:1}
+.gallery-card:hover .g-thumb img{transform:scale(1.04)}
+.g-icon{font-size:2.6rem;color:var(--mid);user-select:none}
 
-  .rename-input { background: #0f172a; border: 1px solid #3b82f6; border-radius: 6px; color: #f1f5f9; padding: 4px 8px; font-size: 0.8rem; width: 100%; outline: none; }
+.play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(28,25,23,.28);opacity:0;transition:opacity .2s;pointer-events:none}
+.play-ring{width:44px;height:44px;border:1.5px solid rgba(244,239,232,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:var(--bone);padding-left:3px}
+.g-thumb:hover .play-ov{opacity:1}
 
-  .empty { color: #475569; font-size: 0.875rem; padding: 48px; text-align: center; }
-  .loading-msg { color: #475569; font-size: 0.875rem; padding: 48px; text-align: center; }
+.g-info{padding:11px 13px 6px}
+.g-name{font-family:'DM Sans',sans-serif;font-weight:300;font-size:.82rem;color:var(--charcoal);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.g-meta{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--wgrey);letter-spacing:.06em}
 
-  /* preview modal */
-  .preview-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
-  .preview-overlay.open { display: flex; }
-  .preview-box { background: #1e293b; border: 1px solid #334155; border-radius: 16px; max-width: 92vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 32px 64px rgba(0,0,0,0.8); }
-  .preview-header { padding: 12px 20px; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .preview-title { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60vw; }
-  .preview-close { background: none; border: none; color: #64748b; font-size: 1.4rem; cursor: pointer; flex-shrink: 0; }
-  .preview-close:hover { color: #f1f5f9; }
-  .preview-body { display: flex; align-items: center; justify-content: center; overflow: auto; flex: 1; padding: 16px; min-width: 300px; min-height: 200px; }
-  .preview-body img { max-width: 85vw; max-height: 78vh; border-radius: 8px; display: block; }
-  .preview-body iframe { border: none; border-radius: 8px; width: 75vw; height: 60vh; }
-  .preview-body video { max-width: 85vw; max-height: 78vh; border-radius: 8px; }
-  .preview-footer { padding: 12px 20px; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 8px; }
-  .pf-btn { padding: 7px 16px; border-radius: 8px; border: 1px solid #334155; background: transparent; color: #94a3b8; font-size: 0.85rem; cursor: pointer; text-decoration: none; display: inline-block; }
-  .pf-btn:hover { background: #263347; color: #f1f5f9; }
-  .pf-btn.blue { border-color: #1e3a5f; color: #60a5fa; }
-  .pf-btn.blue:hover { background: #1e3a5f; }
+.g-actions{padding:7px 10px 11px;display:flex;gap:4px;flex-wrap:wrap;opacity:0;transition:opacity .2s}
+.gallery-card:hover .g-actions{opacity:1}
+.act{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.08em;padding:4px 9px;border:1px solid var(--mid);background:transparent;color:var(--wgrey);cursor:none;transition:all .2s;white-space:nowrap;display:inline-block}
+.act:hover{border-color:var(--charcoal);color:var(--charcoal)}
+.act.danger:hover{border-color:#9b2020;color:#9b2020}
+.act:disabled{opacity:.3;cursor:not-allowed}
 
-  /* move modal */
-  .move-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; align-items: center; justify-content: center; }
-  .move-overlay.open { display: flex; }
-  .move-modal { background: #1e293b; border: 1px solid #334155; border-radius: 16px; width: 400px; max-width: 95vw; max-height: 70vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,0.5); overflow: hidden; }
-  .move-header { padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
-  .move-title { font-weight: 600; font-size: 0.95rem; color: #f1f5f9; }
-  .move-close { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; }
-  .move-breadcrumb { padding: 8px 16px; background: #0f172a; font-size: 0.78rem; color: #64748b; border-bottom: 1px solid #1e293b; }
-  .move-breadcrumb span { cursor: pointer; }
-  .move-breadcrumb span:hover { color: #60a5fa; }
-  .move-body { overflow-y: auto; flex: 1; padding: 8px; }
-  .move-folder-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
-  .move-folder-item:hover { background: #263347; }
-  .move-folder-item span { font-size: 0.875rem; color: #cbd5e1; }
-  .move-footer { padding: 14px 20px; border-top: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .move-current { font-size: 0.78rem; color: #64748b; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .move-confirm { padding: 8px 18px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
-  .move-confirm:hover { background: #2563eb; }
+.rename-inp{background:var(--bone);border:none;border-bottom:1px solid var(--charcoal);color:var(--charcoal);font-family:'DM Sans',sans-serif;font-size:.82rem;width:100%;outline:none;padding:1px 0}
 
-  #toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 0.875rem; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 9999; }
-  #toast.show { opacity: 1; }
-  #toast.ok { background: #14532d; color: #86efac; border: 1px solid #166534; }
-  #toast.err { background: #450a0a; color: #fca5a5; border: 1px solid #7f1d1d; }
+/* ── Empty / Loading ── */
+.empty-msg,.load-msg{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.14em;color:var(--wgrey);padding:48px;text-align:center;text-transform:uppercase}
+
+/* ── Preview modal ── */
+#previewOverlay{display:none;position:fixed;inset:0;background:rgba(20,18,16,.9);z-index:3000;align-items:center;justify-content:center}
+#previewOverlay.open{display:flex}
+.preview-box{background:var(--bone);border:1px solid var(--mid);max-width:93vw;max-height:93vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px rgba(28,25,23,.3)}
+.preview-hd{padding:13px 20px;border-bottom:1px solid var(--mid);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.preview-title{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.1em;color:var(--charcoal);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
+.preview-x{background:none;border:none;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--wgrey);cursor:none}
+.preview-x:hover{color:var(--charcoal)}
+.preview-body{display:flex;align-items:center;justify-content:center;overflow:auto;flex:1;padding:16px;min-width:280px;min-height:180px}
+.preview-body img{max-width:84vw;max-height:76vh;display:block}
+.preview-body iframe{border:none;width:74vw;height:58vh}
+.preview-ft{padding:12px 20px;border-top:1px solid var(--mid);display:flex;justify-content:flex-end;gap:8px}
+
+/* ── Move modal ── */
+#moveOverlay{display:none;position:fixed;inset:0;background:rgba(28,25,23,.6);z-index:4000;align-items:center;justify-content:center}
+#moveOverlay.open{display:flex}
+.move-box{background:var(--bone);border:1px solid var(--mid);width:420px;max-width:95vw;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 32px 64px rgba(28,25,23,.18);overflow:hidden}
+.move-hd{padding:16px 20px;border-bottom:1px solid var(--mid);display:flex;align-items:center;justify-content:space-between}
+.move-title-txt{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:300}
+.move-x{background:none;border:none;font-family:'DM Mono',monospace;font-size:.63rem;color:var(--wgrey);cursor:none}
+.move-x:hover{color:var(--charcoal)}
+.move-bc{padding:9px 20px;background:var(--deep);font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--wgrey);border-bottom:1px solid var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.move-bc span{cursor:pointer;transition:color .15s}
+.move-bc span:hover{color:var(--charcoal)}
+.move-body{overflow-y:auto;flex:1;padding:6px}
+.move-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:none;transition:background .15s}
+.move-item:hover{background:var(--deep)}
+.move-item-name{font-family:'DM Sans',sans-serif;font-weight:300;font-size:.88rem;display:flex;align-items:center;gap:8px}
+.move-item-arr{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--mid)}
+.move-empty{font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.1em;color:var(--wgrey);padding:22px;text-align:center}
+.move-ft{padding:13px 20px;border-top:1px solid var(--mid);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.move-cur{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--wgrey);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.move-confirm-btn{padding:8px 18px;background:var(--charcoal);color:var(--bone);border:none;font-family:'DM Mono',monospace;font-size:.63rem;letter-spacing:.1em;cursor:none}
+.move-confirm-btn:hover{opacity:.8}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.08em;padding:12px 20px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;border:1px solid}
+#toast.show{opacity:1}
+#toast.ok{background:var(--bone);border-color:#3a7a52;color:#3a7a52}
+#toast.err{background:var(--bone);border-color:#9b2020;color:#9b2020}
+
+/* ── Responsive ── */
+@media(max-width:767px){
+  nav{padding:14px 20px}
+  .bc-bar{padding:14px 20px}
+  main{padding:24px 20px 60px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  #cur{display:none!important}body{cursor:auto!important}
+}
 </style>
 </head>
 <body>
 
+<div id="cur"></div>
+
 <nav>
-  <div class="nav-brand"><span>☁️</span> File Browser</div>
-  <div class="nav-links">
-    <a href="/">↩ Dashboard</a>
-    <a href="/logout" class="logout-btn">Sign out</a>
+  <span class="nav-logo">DRIVE ARCHIVE</span>
+  <div class="nav-r">
+    <a href="/">← Dashboard</a>
+    <a href="/logout" class="nav-out">Sign out</a>
   </div>
 </nav>
 
-<main>
-  <div class="breadcrumb" id="breadcrumb"></div>
+<div class="bc-bar" id="breadcrumb"></div>
 
+<main>
+  <!-- Folders -->
   <div id="foldersSection">
-    <div class="section-header"><span class="section-title">📁 Folders</span></div>
-    <div class="folder-grid" id="folderGrid"><div class="loading-msg">Loading…</div></div>
+    <div class="sec-hd">
+      <h2 class="sec-title">Folders</h2>
+      <span class="sec-meta" id="folderCount"></span>
+    </div>
+    <div class="folder-grid" id="folderGrid"><div class="load-msg">Loading…</div></div>
   </div>
 
-  <div id="filesSection" style="margin-top:28px;">
-    <div class="section-header">
-      <span class="section-title">📄 Files</span>
-      <span id="fileCount" style="font-size:0.8rem;color:#475569;"></span>
+  <!-- Files -->
+  <div id="filesSection">
+    <div class="sec-hd">
+      <h2 class="sec-title">Files</h2>
+      <span class="sec-meta" id="fileCount"></span>
     </div>
-    <div class="gallery-grid" id="galleryGrid"><div class="loading-msg" style="grid-column:1/-1;">Loading…</div></div>
+    <div class="gallery-grid" id="galleryGrid"><div class="load-msg" style="grid-column:1/-1">Loading…</div></div>
   </div>
 </main>
 
-<!-- Preview modal -->
-<div class="preview-overlay" id="previewOverlay" onclick="if(event.target===this)closePreview()">
+<!-- Preview -->
+<div id="previewOverlay" onclick="if(event.target===this)closePreview()">
   <div class="preview-box">
-    <div class="preview-header">
+    <div class="preview-hd">
       <span class="preview-title" id="previewTitle"></span>
-      <button class="preview-close" onclick="closePreview()">✕</button>
+      <button class="preview-x" onclick="closePreview()">Close ✕</button>
     </div>
     <div class="preview-body" id="previewBody"></div>
-    <div class="preview-footer" id="previewFooter"></div>
+    <div class="preview-ft" id="previewFt"></div>
   </div>
 </div>
 
-<!-- Move modal -->
-<div class="move-overlay" id="moveOverlay" onclick="if(event.target===this)closeMoveModal()">
-  <div class="move-modal">
-    <div class="move-header">
-      <span class="move-title">Move to folder</span>
-      <button class="move-close" onclick="closeMoveModal()">✕</button>
+<!-- Move -->
+<div id="moveOverlay" onclick="if(event.target===this)closeMoveModal()">
+  <div class="move-box">
+    <div class="move-hd">
+      <span class="move-title-txt">Move to folder</span>
+      <button class="move-x" onclick="closeMoveModal()">Close ✕</button>
     </div>
-    <div class="move-breadcrumb" id="moveBreadcrumb"></div>
+    <div class="move-bc" id="moveBc"></div>
     <div class="move-body" id="moveBody"></div>
-    <div class="move-footer">
-      <span class="move-current" id="moveCurrentLabel"></span>
-      <button class="move-confirm" onclick="confirmMove()">📁 Move here</button>
+    <div class="move-ft">
+      <span class="move-cur" id="moveCur"></span>
+      <button class="move-confirm-btn" onclick="confirmMove()">Move here</button>
     </div>
   </div>
 </div>
@@ -191,234 +212,190 @@
 <div id="toast"></div>
 
 <script>
-// ── state ──
-let stack = [{ id: 'root', name: 'My Drive' }];
-let moveStack = [{ id: 'root', name: 'My Drive' }];
-let movingFile = null;
+/* ─── Cursor ─── */
+const cur=document.getElementById('cur');
+let mx=0,my=0,cx=0,cy=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+(function tick(){cx+=(mx-cx)*.18;cy+=(my-cy)*.18;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
+document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.folder-card,.gallery-card,.g-thumb,.move-item'))cur.classList.add('big')});
+document.addEventListener('mouseout', e=>{if(e.target.closest('a,button,.folder-card,.gallery-card,.g-thumb,.move-item'))cur.classList.remove('big')});
 
-const IMAGE_EXT = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
-const VIDEO_EXT = /\.(mp4|webm|mov|m4v|avi|mkv)$/i;
+/* ─── State ─── */
+let stack=[{id:'root',name:'My Drive'}];
+let moveStack=[{id:'root',name:'My Drive'}];
+let movingFile=null;
 
-function showToast(msg, ok) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'show ' + (ok ? 'ok' : 'err');
-  setTimeout(() => t.className = '', 3000);
-}
+const IMG=/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
+const VID=/\.(mp4|webm|mov|m4v|avi|mkv)$/i;
 
-function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtBytes(b) {
-  b = parseInt(b || 0);
-  if (b >= 1073741824) return (b/1073741824).toFixed(2)+' GB';
-  if (b >= 1048576) return (b/1048576).toFixed(1)+' MB';
-  if (b >= 1024) return (b/1024).toFixed(1)+' KB';
-  return b ? b+' B' : '—';
-}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtBytes(b){b=parseInt(b||0);if(b>=1073741824)return(b/1073741824).toFixed(2)+' GB';if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(1)+' KB';return b?b+' B':'—'}
+function showToast(msg,ok){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+(ok?'ok':'err');setTimeout(()=>t.className='',3200)}
+function currentId(){return stack[stack.length-1].id}
 
-function thumbIcon(name) {
-  if (VIDEO_EXT.test(name)) return '<span class="thumb-placeholder vid">🎬</span>';
-  if (IMAGE_EXT.test(name)) return '<span class="thumb-placeholder img">🖼️</span>';
-  if (/\.(pdf)$/i.test(name)) return '<span class="thumb-placeholder doc">📕</span>';
-  if (/\.(doc|docx)$/i.test(name)) return '<span class="thumb-placeholder doc">📝</span>';
-  return '<span class="thumb-placeholder">📄</span>';
-}
-
-// ── navigation ──
-function currentId() { return stack[stack.length - 1].id; }
-
-async function load(parentId) {
-  document.getElementById('folderGrid').innerHTML = '<div class="loading-msg">Loading…</div>';
-  document.getElementById('galleryGrid').innerHTML = '<div class="loading-msg" style="grid-column:1/-1;">Loading…</div>';
+/* ─── Load folder ─── */
+async function load(parentId){
+  document.getElementById('folderGrid').innerHTML='<div class="load-msg">Loading…</div>';
+  document.getElementById('galleryGrid').innerHTML='<div class="load-msg" style="grid-column:1/-1">Loading…</div>';
   renderBreadcrumb();
 
-  const res = await fetch('/api/browser?parent=' + parentId);
-  const data = await res.json();
-  if (!data.ok) { showToast('❌ ' + data.error, false); return; }
-
-  renderFolders(data.folders);
-  renderGallery(data.files, parentId);
-}
-
-function renderBreadcrumb() {
-  document.getElementById('breadcrumb').innerHTML = stack.map((f, i) =>
-    i === stack.length - 1
-      ? `<span class="crumb-current">📂 ${escH(f.name)}</span>`
-      : `<span class="crumb" onclick="navTo(${i})">📂 ${escH(f.name)}</span><span class="crumb-sep">›</span>`
-  ).join('');
-}
-
-function navTo(i) { stack = stack.slice(0, i + 1); load(currentId()); }
-
-function renderFolders(folders) {
-  const grid = document.getElementById('folderGrid');
-  if (!folders.length) { grid.innerHTML = '<div style="color:#475569;font-size:0.85rem;padding:12px 0;">No subfolders</div>'; return; }
-  grid.innerHTML = folders.map(f =>
-    `<div class="folder-card" onclick="enterFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
-       <span style="font-size:1.2rem;flex-shrink:0;">📁</span>
-       <span title="${escH(f.name)}">${escH(f.name)}</span>
-     </div>`
-  ).join('');
-}
-
-function enterFolder(id, name) { stack.push({ id, name }); load(id); }
-
-// ── gallery ──
-function renderGallery(files, parentId) {
-  const grid = document.getElementById('galleryGrid');
-  document.getElementById('fileCount').textContent = files.length ? files.length + ' file' + (files.length > 1 ? 's' : '') : '';
-
-  if (!files.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">No files in this folder</div>';
-    return;
+  /* check for ?folder= param on first load */
+  if(parentId==='root'){
+    const p=new URLSearchParams(location.search).get('folder');
+    if(p){stack=[{id:'root',name:'My Drive'},{id:p,name:'…'}];parentId=p;renderBreadcrumb()}
   }
 
-  grid.innerHTML = files.map(f => {
-    const isImg = IMAGE_EXT.test(f.name);
-    const isVid = VIDEO_EXT.test(f.name);
-    const previewable = isImg || isVid;
-    const date = f.modifiedTime ? new Date(f.modifiedTime).toLocaleDateString() : '—';
-    const dlHref = `/api/browser/download/${f.id}`;
+  const res=await fetch('/api/browser?parent='+parentId);
+  const d=await res.json();
+  if(!d.ok){showToast(d.error||'Failed to load',false);return}
 
-    let thumbHtml;
-    if (f.thumbnailLink) {
-      thumbHtml = `<img src="/api/browser/thumbnail/${f.id}" class="loading"
-        onload="this.classList.remove('loading');this.classList.add('loaded')"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-        alt="${escH(f.name)}">
-        <div style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;">${thumbIcon(f.name)}</div>`;
-    } else {
-      thumbHtml = thumbIcon(f.name);
-    }
+  /* update name from API if we only have '…' */
+  if(stack[stack.length-1].name==='…'&&d.current_name){
+    stack[stack.length-1].name=d.current_name;renderBreadcrumb();
+  }
 
-    const playOverlay = isVid ? `<div class="play-overlay"><div class="play-btn-icon">▶</div></div>` : '';
-    const thumbClick = previewable ? `onclick="openPreview('${f.id}','${escH(f.name).replace(/'/g,"\\'")}','${isVid?'video':'image'}', '${escH(f.webViewLink||'')}')"` : `onclick="window.open('${escH(f.webViewLink||'#')}','_blank')"`;
+  renderFolders(d.folders);
+  renderGallery(d.files,parentId);
+}
+
+/* ─── Breadcrumb ─── */
+function renderBreadcrumb(){
+  document.getElementById('breadcrumb').innerHTML=stack.map((f,i)=>
+    i===stack.length-1
+      ?`<span class="crumb-cur">${escH(f.name)}</span>`
+      :`<span class="crumb" onclick="navTo(${i})">${escH(f.name)}</span><span class="crumb-sep">›</span>`
+  ).join('');
+}
+function navTo(i){stack=stack.slice(0,i+1);load(currentId())}
+
+/* ─── Folders ─── */
+function renderFolders(folders){
+  const g=document.getElementById('folderGrid');
+  document.getElementById('folderCount').textContent=folders.length?folders.length+' folder'+(folders.length>1?'s':''):'';
+  if(!folders.length){
+    g.outerHTML='<div class="no-folders" id="folderGrid">No subfolders</div>';
+    return;
+  }
+  g.innerHTML=folders.map(f=>
+    `<div class="folder-card" onclick="enterFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
+      <span class="folder-icon">📁</span>
+      <span class="folder-name" title="${escH(f.name)}">${escH(f.name)}</span>
+    </div>`
+  ).join('');
+}
+function enterFolder(id,name){stack.push({id,name});load(id)}
+
+/* ─── Gallery ─── */
+function renderGallery(files,parentId){
+  const g=document.getElementById('galleryGrid');
+  document.getElementById('fileCount').textContent=files.length?files.length+' file'+(files.length>1?'s':''):'';
+  if(!files.length){g.innerHTML='<div class="empty-msg" style="grid-column:1/-1">No files in this folder</div>';return}
+
+  g.innerHTML=files.map(f=>{
+    const isImg=IMG.test(f.name),isVid=VID.test(f.name),prev=isImg||isVid;
+    const date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString():'';
+    const esc=escH(f.name).replace(/'/g,"\\'");
+    const icon=isVid?'🎬':isImg?'🖼':'📄';
+
+    let thumb=f.thumbnailLink
+      ?`<img src="/api/browser/thumbnail/${f.id}" class="loading"
+          onload="this.classList.remove('loading');this.classList.add('loaded')"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          alt="${escH(f.name)}">
+         <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;"><span class="g-icon">${icon}</span></div>`
+      :`<span class="g-icon">${icon}</span>`;
+
+    const playOv=isVid?`<div class="play-ov"><div class="play-ring">▶</div></div>`:'';
+    const thumbClick=prev
+      ?`onclick="openPreview('${f.id}','${esc}','${isVid?'video':'image'}','${escH(f.webViewLink||'')}')"`
+      :`onclick="window.open('${escH(f.webViewLink||'#')}','_blank')"`;
 
     return `<div class="gallery-card" id="gcard-${f.id}">
-      <div class="gallery-thumb" ${thumbClick}>
-        ${thumbHtml}
-        ${playOverlay}
+      <div class="g-thumb" ${thumbClick}>${thumb}${playOv}</div>
+      <div class="g-info">
+        <span class="g-name" id="gname-${f.id}" title="${escH(f.name)}">${escH(f.name)}</span>
+        <span class="g-meta">${fmtBytes(f.size)}${date?' · '+date:''}</span>
       </div>
-      <div class="gallery-info">
-        <span class="gallery-name" id="gname-${f.id}" title="${escH(f.name)}">${escH(f.name)}</span>
-        <span class="gallery-meta">${fmtBytes(f.size)} · ${date}</span>
-      </div>
-      <div class="gallery-actions">
-        <a class="act-btn blue" href="${dlHref}" title="Download">⬇ Download</a>
-        <button class="act-btn" onclick="startRename('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">✏️ Rename</button>
-        <button class="act-btn" onclick="startMove('${f.id}','${parentId}')">📁 Move</button>
-        <button class="act-btn red" onclick="deleteFile('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">🗑 Delete</button>
+      <div class="g-actions">
+        ${prev?`<button class="act" onclick="openPreview('${f.id}','${esc}','${isVid?'video':'image'}','${escH(f.webViewLink||'')}')">Preview</button>`:''}
+        <a class="act" href="/api/browser/download/${f.id}">↓ Download</a>
+        <button class="act" onclick="startRename('${f.id}','${esc}')">Rename</button>
+        <button class="act" onclick="startMove('${f.id}','${parentId}')">Move</button>
+        <button class="act danger" onclick="deleteFile('${f.id}','${esc}')">Delete</button>
       </div>
     </div>`;
   }).join('');
 }
 
-// ── preview ──
-function openPreview(fileId, fileName, type, viewLink) {
-  document.getElementById('previewTitle').textContent = fileName;
-  const body = document.getElementById('previewBody');
-  const footer = document.getElementById('previewFooter');
-
-  if (type === 'image') {
-    body.innerHTML = `<img src="/api/browser/download/${fileId}" alt="${escH(fileName)}">`;
-  } else {
-    body.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
-  }
-
-  footer.innerHTML = `<a class="pf-btn blue" href="/api/browser/download/${fileId}">⬇ Download</a>
-    ${viewLink ? `<a class="pf-btn" href="${escH(viewLink)}" target="_blank">↗ Open in Drive</a>` : ''}`;
-
+/* ─── Preview ─── */
+function openPreview(fileId,fileName,type,viewLink){
+  document.getElementById('previewTitle').textContent=fileName;
+  const body=document.getElementById('previewBody'),ft=document.getElementById('previewFt');
+  body.innerHTML=type==='image'
+    ?`<img src="/api/browser/download/${fileId}" alt="${escH(fileName)}">`
+    :`<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
+  ft.innerHTML=`<a class="act" href="/api/browser/download/${fileId}" style="display:inline-block">↓ Download</a>${viewLink?`<a class="act" href="${escH(viewLink)}" target="_blank">↗ Open in Drive</a>`:''}`;
   document.getElementById('previewOverlay').classList.add('open');
 }
+function closePreview(){document.getElementById('previewOverlay').classList.remove('open');document.getElementById('previewBody').innerHTML='';document.getElementById('previewFt').innerHTML=''}
 
-function closePreview() {
-  document.getElementById('previewOverlay').classList.remove('open');
-  document.getElementById('previewBody').innerHTML = '';
-  document.getElementById('previewFooter').innerHTML = '';
-}
-
-// ── rename ──
-function startRename(fileId, currentName) {
-  const nameEl = document.getElementById('gname-' + fileId);
-  if (!nameEl) return;
-  const input = document.createElement('input');
-  input.className = 'rename-input'; input.value = currentName;
-  nameEl.replaceWith(input);
-  input.focus(); input.select();
-
-  const restore = (name) => {
-    const span = document.createElement('span');
-    span.className = 'gallery-name'; span.id = 'gname-' + fileId;
-    span.title = name; span.textContent = name;
-    input.replaceWith(span);
+/* ─── Rename ─── */
+function startRename(fileId,currentName){
+  const nameEl=document.getElementById('gname-'+fileId);if(!nameEl)return;
+  const inp=document.createElement('input');inp.className='rename-inp';inp.value=currentName;
+  nameEl.replaceWith(inp);inp.focus();inp.select();
+  const restore=n=>{const s=document.createElement('span');s.className='g-name';s.id='gname-'+fileId;s.title=n;s.textContent=n;inp.replaceWith(s)};
+  const save=async()=>{
+    const n=inp.value.trim();if(!n||n===currentName){restore(currentName);return}
+    const res=await fetch('/api/browser/rename',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:fileId,new_name:n})});
+    const d=await res.json();d.ok?(showToast('Renamed',true),restore(d.name)):(showToast(d.error||'Failed',false),restore(currentName));
   };
-
-  const save = async () => {
-    const newName = input.value.trim();
-    if (!newName || newName === currentName) { restore(currentName); return; }
-    const res = await fetch('/api/browser/rename', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ file_id: fileId, new_name: newName }) });
-    const data = await res.json();
-    if (data.ok) { showToast('✅ Renamed', true); restore(data.name); }
-    else { showToast('❌ ' + data.error, false); restore(currentName); }
-  };
-
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') restore(currentName); });
-  input.addEventListener('blur', save);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')save();if(e.key==='Escape')restore(currentName)});
+  inp.addEventListener('blur',save);
 }
 
-// ── delete ──
-async function deleteFile(fileId, name) {
-  if (!confirm('Delete "' + name + '"?\n\nThis cannot be undone.')) return;
-  const res = await fetch('/api/files/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ file_id: fileId }) });
-  const data = await res.json();
-  if (data.ok) { showToast('🗑 Deleted', true); document.getElementById('gcard-' + fileId)?.remove(); }
-  else showToast('❌ ' + (data.error || 'Failed'), false);
+/* ─── Delete ─── */
+async function deleteFile(fileId,name){
+  if(!confirm('Delete "'+name+'"?\n\nThis cannot be undone.'))return;
+  const res=await fetch('/api/files/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:fileId})});
+  const d=await res.json();d.ok?(showToast('Deleted',true),document.getElementById('gcard-'+fileId)?.remove()):showToast(d.error||'Failed',false);
 }
 
-// ── move ──
-function startMove(fileId, oldParent) {
-  movingFile = { id: fileId, oldParent };
-  moveStack = [{ id: 'root', name: 'My Drive' }];
-  document.getElementById('moveOverlay').classList.add('open');
-  loadMoveFolder('root');
+/* ─── Move ─── */
+function startMove(fileId,oldParent){movingFile={id:fileId,oldParent};moveStack=[{id:'root',name:'My Drive'}];document.getElementById('moveOverlay').classList.add('open');loadMoveFolder('root')}
+function closeMoveModal(){document.getElementById('moveOverlay').classList.remove('open');movingFile=null}
+function updateMoveBc(){
+  document.getElementById('moveBc').innerHTML=moveStack.map((f,i)=>`<span onclick="moveNavTo(${i})">${escH(f.name)}</span>`).join(' › ');
+  document.getElementById('moveCur').textContent=moveStack.map(f=>f.name).join(' › ');
 }
-
-function closeMoveModal() { document.getElementById('moveOverlay').classList.remove('open'); movingFile = null; }
-
-async function loadMoveFolder(parentId) {
-  document.getElementById('moveBody').innerHTML = '<div style="color:#475569;padding:20px;text-align:center;">Loading…</div>';
-  updateMoveBreadcrumb();
-  const res = await fetch('/api/browser?parent=' + parentId);
-  const data = await res.json();
-  const body = document.getElementById('moveBody');
-  if (!data.ok || !data.folders.length) { body.innerHTML = '<div style="color:#475569;padding:20px;text-align:center;">No subfolders here</div>'; return; }
-  body.innerHTML = data.folders.map(f =>
-    `<div class="move-folder-item" onclick="enterMoveFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
-       <span>📁 ${escH(f.name)}</span><span style="color:#475569;font-size:0.75rem;">▶</span>
-     </div>`
+function moveNavTo(i){moveStack=moveStack.slice(0,i+1);loadMoveFolder(moveStack[moveStack.length-1].id)}
+async function loadMoveFolder(parentId){
+  document.getElementById('moveBody').innerHTML='<div class="move-empty">Loading…</div>';
+  updateMoveBc();
+  const res=await fetch('/api/browser?parent='+parentId);
+  const d=await res.json();
+  const body=document.getElementById('moveBody');
+  if(!d.ok||!d.folders.length){body.innerHTML='<div class="move-empty">No subfolders here</div>';return}
+  body.innerHTML=d.folders.map(f=>
+    `<div class="move-item" onclick="enterMoveFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
+      <span class="move-item-name">📁 ${escH(f.name)}</span>
+      <span class="move-item-arr">›</span>
+    </div>`
   ).join('');
 }
-
-function enterMoveFolder(id, name) { moveStack.push({ id, name }); loadMoveFolder(id); }
-
-function updateMoveBreadcrumb() {
-  document.getElementById('moveBreadcrumb').innerHTML = '📂 ' + moveStack.map((f, i) => `<span onclick="moveNavTo(${i})">${escH(f.name)}</span>`).join(' › ');
-  document.getElementById('moveCurrentLabel').textContent = '📂 ' + moveStack.map(f => f.name).join(' › ');
+function enterMoveFolder(id,name){moveStack.push({id,name});loadMoveFolder(id)}
+async function confirmMove(){
+  if(!movingFile)return;
+  const newParent=moveStack[moveStack.length-1].id;
+  if(newParent===movingFile.oldParent){showToast('Already in this folder',false);return}
+  const res=await fetch('/api/browser/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:movingFile.id,new_parent:newParent,old_parent:movingFile.oldParent})});
+  const d=await res.json();closeMoveModal();
+  d.ok?(showToast('Moved!',true),document.getElementById('gcard-'+movingFile.id)?.remove()):showToast(d.error||'Failed',false);
 }
 
-function moveNavTo(i) { moveStack = moveStack.slice(0, i + 1); loadMoveFolder(moveStack[moveStack.length - 1].id); }
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePreview();closeMoveModal()}});
 
-async function confirmMove() {
-  if (!movingFile) return;
-  const newParent = moveStack[moveStack.length - 1].id;
-  if (newParent === movingFile.oldParent) { showToast('Already in this folder', false); return; }
-  const res = await fetch('/api/browser/move', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ file_id: movingFile.id, new_parent: newParent, old_parent: movingFile.oldParent }) });
-  const data = await res.json();
-  closeMoveModal();
-  if (data.ok) { showToast('✅ Moved!', true); document.getElementById('gcard-' + movingFile.id)?.remove(); }
-  else showToast('❌ ' + (data.error || 'Failed'), false);
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePreview(); closeMoveModal(); } });
-
+/* ─── Boot ─── */
 load('root');
 </script>
 </body>

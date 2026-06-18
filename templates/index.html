@@ -729,7 +729,7 @@ input[type=checkbox].row-check{accent-color:var(--charcoal);width:14px;height:14
 const cur=document.getElementById('cur');
 let mx=0,my=0,cx=0,cy=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
-(function tick(){cx+=(mx-cx)*.11;cy+=(my-cy)*.11;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
+(function tick(){cx+=(mx-cx)*.18;cy+=(my-cy)*.18;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
 document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.folder-frame,.fp-card,.drop-zone,.folder-item,.fp-subfolder,.pl-row'))cur.classList.add('big')});
 document.addEventListener('mouseout', e=>{if(e.target.closest('a,button,.folder-frame,.fp-card,.drop-zone,.folder-item,.fp-subfolder,.pl-row'))cur.classList.remove('big')});
 
