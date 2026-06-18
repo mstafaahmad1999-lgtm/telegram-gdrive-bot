@@ -189,25 +189,50 @@ body{
 /* ── Upload zone ── */
 .upload-section{margin-top:6px}
 .drop-zone{
-  border:2px dashed var(--line);border-radius:15px;padding:44px 28px;text-align:center;
+  border:2px dashed var(--line);border-radius:15px;padding:34px 28px;text-align:center;
   cursor:none;transition:all .15s;background:var(--surface);margin-bottom:14px
 }
-.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(10,186,181,.04)}
-.drop-icon{font-size:1.9rem;color:var(--accent);margin-bottom:8px;font-weight:600}
-.drop-main{font-size:.95rem;color:var(--ink);font-weight:600}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(10,186,181,.05)}
+.drop-icon{display:flex;justify-content:center;margin-bottom:10px}
+.drop-icon svg{width:34px;height:34px;color:var(--accent)}
+.drop-main{font-size:.98rem;color:var(--ink);font-weight:600}
 .drop-sub{font-size:.76rem;color:var(--ink-dim);margin-top:6px}
-.upload-controls{display:flex;gap:8px;align-items:center}
+.drop-link{color:var(--accent-ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+
+/* selected-files card */
+.queue-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:6px 16px 10px;margin-bottom:14px}
+.queue-hd{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);margin-bottom:4px}
+.queue-count{font-size:.78rem;font-weight:600;color:var(--ink)}
+.queue-clear{background:none;border:none;font-size:.7rem;color:var(--ink-dim);cursor:none;font-family:'Inter',sans-serif}
+.queue-clear:hover{color:var(--danger)}
+
+/* destination + upload bar */
+.upload-bar{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.dest{flex:1;min-width:220px;display:flex;flex-direction:column;gap:5px}
+.dest-lbl{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-dim);font-weight:600}
 .folder-pick-btn{
-  flex:1;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:9px;
-  font-size:.78rem;color:var(--ink-dim);cursor:none;text-align:left;transition:all .15s;font-family:'Inter',sans-serif
+  width:100%;display:flex;align-items:center;gap:8px;padding:11px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  font-size:.8rem;color:var(--ink);cursor:none;text-align:left;transition:all .15s;font-family:'Inter',sans-serif
 }
-.folder-pick-btn:hover{border-color:var(--accent);color:var(--ink)}
+.folder-pick-btn:hover{border-color:var(--accent)}
+.folder-pick-btn>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upload-btn{
-  padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:9px;
-  font-size:.8rem;font-weight:600;cursor:none;transition:all .15s;font-family:'Inter',sans-serif
+  padding:11px 28px;background:var(--accent);color:#fff;border:none;border-radius:9px;
+  font-size:.82rem;font-weight:600;cursor:none;transition:all .15s;font-family:'Inter',sans-serif;flex-shrink:0
 }
 .upload-btn:disabled{opacity:.4;cursor:not-allowed}
 .upload-btn:not(:disabled):hover{background:var(--accent-ink)}
+
+/* sidebar upload button */
+.side-upload{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  margin:4px 0 6px;padding:11px;border:none;border-radius:10px;
+  background:var(--accent);color:#fff;font-size:.84rem;font-weight:600;cursor:none;
+  transition:background .15s;font-family:'Inter',sans-serif
+}
+.side-upload svg{width:17px;height:17px}
+.side-upload:hover{background:var(--accent-ink)}
 
 /* file queue */
 .file-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.82rem}
@@ -429,10 +454,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   <aside class="rail">
     <div class="rail-logo">S</div>
     <button class="rail-btn active" data-view="files" onclick="showView('files')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Home</span>
-    </button>
-    <button class="rail-btn" data-view="files" onclick="showView('files')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Folders</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Files</span>
     </button>
     <button class="rail-btn" data-view="recents" onclick="showView('recents')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Recents</span>
@@ -452,23 +474,9 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   <!-- ── Secondary sidebar ── -->
   <aside class="side">
     <div class="side-title">Drive Archive</div>
-    <nav class="side-nav">
-      <button class="side-link active" data-view="files" onclick="showView('files')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>All files
-      </button>
-      <button class="side-link" data-view="files" onclick="showView('files');scrollToUpload()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload
-      </button>
-      <button class="side-link" data-view="recents" onclick="showView('recents')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Recent uploads
-      </button>
-      <button class="side-link" data-view="members" onclick="showView('members')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg>Members
-      </button>
-      <a class="side-link" href="/browser">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Full browser
-      </a>
-    </nav>
+    <button class="side-upload" onclick="showView('files');document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload files
+    </button>
 
     <div class="side-sec">Quick access</div>
     <div class="quick" id="quickAccess"><div class="quick-empty">Folders appear here</div></div>
@@ -496,8 +504,6 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="searchBar" type="text" placeholder="Search files…" oninput="onSearch(this.value)">
       </div>
-      <button class="btn-upgrade">{{ stats.total_size }} stored</button>
-      <a href="/logout">Sign out</a>
       <div class="avatar">MA</div>
     </div>
 
@@ -514,9 +520,6 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
             <button class="hbtn" onclick="openFolderModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Choose folder
             </button>
-            <a class="hbtn" href="/browser">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Browser
-            </a>
           </div>
         </div>
 
@@ -552,24 +555,31 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         <div class="sub-head" id="upload">Upload to Drive</div>
         <div class="upload-section">
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            <div class="drop-icon">↑</div>
-            <div class="drop-main">Drop anything here to upload</div>
-            <div class="drop-sub">or click to choose · up to 50 files · 2 GB each</div>
+            <div class="drop-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>
+            </div>
+            <div class="drop-main">Drop files here to upload</div>
+            <div class="drop-sub">or <span class="drop-link">browse your device</span> &middot; up to 50 files &middot; 2 GB each</div>
           </div>
           <input type="file" id="fileInput" style="display:none" multiple onchange="onFilesChosen(this)">
 
-          <div id="fileQueue" style="display:none;margin-bottom:14px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <span id="queueCount" style="font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim)"></span>
-              <button onclick="clearQueue()" class="act-btn" style="margin:0">Clear ✕</button>
+          <div id="fileQueue" class="queue-card" style="display:none">
+            <div class="queue-hd">
+              <span id="queueCount" class="queue-count"></span>
+              <button onclick="clearQueue()" class="queue-clear" type="button">Clear all ✕</button>
             </div>
             <div id="fileList"></div>
           </div>
 
-          <div class="upload-controls">
-            <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
-              📂 <span id="folderPickLabel">My Drive (root)</span>
-            </button>
+          <div class="upload-bar">
+            <div class="dest">
+              <span class="dest-lbl">Destination</span>
+              <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;color:var(--accent)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <span id="folderPickLabel">My Drive (root)</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-left:auto;opacity:.6"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </div>
             <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload all</button>
           </div>
           <div class="flux-loader" id="progressWrap">
