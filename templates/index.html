@@ -6,7 +6,7 @@
 <title>Drive Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Reset ── */
@@ -16,386 +16,405 @@ button{font-family:inherit}
 
 /* ── Tokens ── */
 :root{
-  --bg:       #F4EFE8;
-  --fg:       #1C1917;
-  --dim:      #8A8580;
-  --line:     #D0C9C0;
-  --hover:    #EBE5DC;
-  --danger:   #c0392b;
-  --dang-txt: #e57373;
-  --ease:     cubic-bezier(0.25,0.46,0.45,0.94);
-  --eout:     cubic-bezier(0.16,1,0.3,1);
-  /* legacy aliases so existing code still works */
-  --bone:     var(--bg);
-  --charcoal: var(--fg);
-  --wgrey:    var(--dim);
-  --mid:      var(--line);
-  --deep:     var(--hover);
-  --film:     #E6E0D8;
-  --gold:     var(--fg);
+  --bg:#F5F7F7;
+  --surface:#FFFFFF;
+  --rail:#2B2F33;
+  --rail-2:#23262A;
+  --rail-fg:#C9CDD2;
+  --rail-fg-dim:#7E848C;
+  --accent:#0ABAB5;
+  --accent-soft:#81D8D0;
+  --accent-ink:#06756f;
+  --ink:#1F2328;
+  --ink-dim:#6B7177;
+  --line:#E3E7E8;
+  --danger:#c0392b;
+  --dang-txt:#e57373;
+  --ease:cubic-bezier(0.25,0.46,0.45,0.94);
+  --eout:cubic-bezier(0.16,1,0.3,1);
+  /* legacy aliases so existing JS/markup keeps working */
+  --bone:var(--surface); --charcoal:var(--ink); --wgrey:var(--ink-dim);
+  --mid:var(--line); --deep:var(--bg); --film:var(--bg);
+  --fg:var(--ink); --dim:var(--ink-dim); --gold:var(--accent); --hover:var(--bg);
 }
 
 html{scroll-behavior:smooth}
 body{
-  font-family:'DM Mono',monospace;
+  font-family:'Inter',sans-serif;
   background:var(--bg);
-  color:var(--fg);
+  color:var(--ink);
   min-height:100vh;
   cursor:none;
   overflow-x:hidden;
-  font-size:13px;
-  line-height:1.5;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
 }
 @media(pointer:coarse){body{cursor:auto}#cur{display:none!important}}
 
 /* ── Cursor ── */
 #cur{
   position:fixed;top:0;left:0;width:8px;height:8px;
-  background:var(--fg);border-radius:50%;
+  background:var(--accent);border-radius:50%;
   pointer-events:none;z-index:9999;will-change:transform;
-  transition:width .2s,height .2s,opacity .2s;
+  transition:width .18s,height .18s,background .18s;
 }
-#cur.big{width:28px;height:28px;background:transparent;border:1px solid var(--fg)}
+#cur.big{width:30px;height:30px;background:rgba(10,186,181,.16);border:1px solid var(--accent)}
 
-/* ── Nav ── */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:800;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;border-bottom:1px solid transparent;
-  transition:border-color .2s,background .2s;
-}
-nav.scroll{background:rgba(8,8,8,.96);border-color:var(--line)}
-.nav-logo{font-size:.72rem;letter-spacing:.04em;color:var(--fg);line-height:1.3}
-.nav-logo small{display:block;color:var(--dim);font-size:.6rem;letter-spacing:.02em}
-.nav-r{display:flex;align-items:center;gap:20px}
-.nav-r a{font-size:.7rem;color:var(--dim);text-decoration:underline;text-underline-offset:3px;transition:color .15s}
-.nav-r a:hover{color:var(--fg)}
-.nav-out{
-  font-size:.7rem;color:var(--dim);background:none;border:none;
-  cursor:none;text-decoration:underline;text-underline-offset:3px;transition:color .15s
-}
-.nav-out:hover{color:var(--fg)}
+/* ── App grid ── */
+.app{display:grid;grid-template-columns:72px 248px 1fr;min-height:100vh}
 
-/* ── Hero ── */
-.hero{
-  min-height:50vh;display:flex;flex-direction:column;
-  justify-content:flex-end;padding:80px 24px 32px;
-  border-bottom:1px solid var(--line);
+/* ── Icon rail ── */
+.rail{
+  background:var(--rail-2);display:flex;flex-direction:column;align-items:center;
+  padding:14px 0 18px;gap:4px;position:sticky;top:0;height:100vh
 }
-.hero-title{
-  font-family:'DM Mono',monospace;font-weight:400;
-  font-size:clamp(2rem,6vw,5rem);
-  letter-spacing:-.02em;line-height:1;color:var(--fg);
+.rail-logo{
+  width:38px;height:38px;border-radius:11px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-size:1rem;margin-bottom:12px;letter-spacing:.02em
 }
-.char{display:inline-block;opacity:0;transform:translateY(4px);transition:opacity .4s var(--ease),transform .4s var(--ease)}
-.spc{display:inline-block;width:.28em}
-.hero-sub{
-  font-size:.72rem;color:var(--dim);margin-top:10px;
-  opacity:0;transition:opacity .6s .4s var(--ease)
+.rail-btn{
+  width:56px;padding:8px 0;border-radius:11px;border:none;background:none;
+  color:var(--rail-fg-dim);display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:none;transition:background .15s,color .15s;font-family:'Inter',sans-serif;
+  font-size:.56rem;font-weight:500;letter-spacing:.01em
 }
-.hero-sub.on{opacity:1}
-.hero-rule{display:none}
-.scroll-cue{display:none}
-@keyframes fdin{to{opacity:1}}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+.rail-btn svg{width:22px;height:22px}
+.rail-btn:hover{background:rgba(255,255,255,.06);color:var(--rail-fg)}
+.rail-btn.active{background:rgba(10,186,181,.16);color:var(--accent-soft)}
+.side-spacer{flex:1}
 
-/* ── Reveal ── */
-.rv {opacity:0;transition:opacity .4s var(--ease)}
-.rvf{opacity:0;transition:opacity .4s var(--ease)}
-.rv.on,.rvf.on{opacity:1}
+/* ── Secondary sidebar ── */
+.side{
+  background:var(--rail);color:var(--rail-fg);display:flex;flex-direction:column;
+  padding:18px 14px;height:100vh;position:sticky;top:0;overflow-y:auto
+}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+.side-title{font-size:1.18rem;font-weight:700;color:#fff;padding:4px 8px 16px}
+.side-nav{display:flex;flex-direction:column;gap:2px}
+.side-link{
+  display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;
+  color:var(--rail-fg);font-size:.84rem;font-weight:500;cursor:none;
+  transition:background .15s,color .15s;border:none;background:none;text-align:left;
+  width:100%;font-family:'Inter',sans-serif
+}
+.side-link svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+.side-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.side-link.active{background:var(--accent);color:#fff}
+.side-link.active svg{opacity:1}
+.side-sec{
+  font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--rail-fg-dim);
+  padding:18px 11px 7px;font-weight:600
+}
+.quick{display:flex;flex-direction:column;gap:1px}
+.quick-item{
+  display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:8px;
+  color:var(--rail-fg);font-size:.78rem;cursor:none;border:none;background:none;
+  width:100%;text-align:left;font-family:'Inter',sans-serif;transition:background .15s
+}
+.quick-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7;color:var(--accent-soft)}
+.quick-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.quick-empty{font-size:.72rem;color:var(--rail-fg-dim);padding:6px 11px}
 
-/* ── Section base ── */
-.section{padding:48px 0 32px}
-.eyebrow{font-size:.65rem;color:var(--dim);padding:0 24px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
-.sec-hd{display:flex;align-items:baseline;justify-content:space-between;padding:8px 24px 12px;border-bottom:1px solid var(--line);margin-bottom:24px}
-.sec-title{font-size:1rem;font-weight:400;letter-spacing:.02em}
-.sec-meta{font-size:.65rem;color:var(--dim)}
+.storage-widget{background:var(--rail-2);border-radius:13px;padding:14px;margin-top:14px}
+.sw-top{display:flex;align-items:center;gap:12px}
+.storage-chart-wrap{width:50px;height:50px;flex-shrink:0}
+.sw-used{font-size:.86rem;font-weight:700;color:#fff}
+.sw-total{font-size:.66rem;color:var(--rail-fg-dim);margin-top:2px}
+
+/* ── Main ── */
+.main{display:flex;flex-direction:column;min-height:100vh;background:var(--bg)}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:12px 28px;
+  background:var(--surface);border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:50
+}
+.btn-new{
+  background:var(--ink);color:#fff;border:none;border-radius:22px;padding:9px 18px;
+  font-weight:600;font-size:.82rem;display:flex;align-items:center;gap:6px;cursor:none;
+  transition:background .15s
+}
+.btn-new svg{width:16px;height:16px}
+.btn-new:hover{background:#000}
+.topbar-search{flex:1;max-width:720px;position:relative}
+.topbar-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-dim)}
+.topbar-search input{
+  width:100%;padding:9px 14px 9px 36px;border-radius:9px;border:1px solid var(--line);
+  background:var(--bg);font-size:.84rem;font-family:'Inter',sans-serif;color:var(--ink);outline:none;
+  transition:border-color .15s,background .15s
+}
+.topbar-search input:focus{border-color:var(--accent);background:#fff}
+.topbar-search input::placeholder{color:var(--ink-dim)}
+.btn-upgrade{
+  background:var(--accent);color:#fff;border:none;border-radius:22px;padding:9px 16px;
+  font-weight:600;font-size:.8rem;cursor:none;transition:background .15s
+}
+.btn-upgrade:hover{background:var(--accent-ink)}
+.topbar a{color:var(--ink-dim);font-size:.8rem;transition:color .15s}
+.topbar a:hover{color:var(--ink)}
+.avatar{
+  width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.76rem;flex-shrink:0
+}
+
+/* ── Content / views ── */
+.content{padding:24px 28px 64px;max-width:1500px;width:100%}
+.view{display:none}
+.view.active{display:block;animation:viewIn .25s var(--ease)}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.view-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.view-title{font-size:1.5rem;font-weight:700;color:var(--ink)}
+.view-meta{font-size:.8rem;color:var(--ink-dim)}
+.view-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hbtn{
+  display:flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line);
+  border-radius:9px;background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:500;
+  cursor:none;transition:all .15s;font-family:'Inter',sans-serif
+}
+.hbtn svg{width:16px;height:16px}
+.hbtn:hover{border-color:var(--ink-dim);background:var(--bg)}
+.hbtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hbtn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+.sub-head{font-size:1rem;font-weight:700;color:var(--ink);margin:26px 0 14px}
 
 /* ── Stats ── */
-.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));background:var(--bg);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 0 32px}
-.stat-card{background:var(--bg);padding:20px 24px;border-right:1px solid var(--line)}
-.stat-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:6px}
-.stat-val{font-size:1.9rem;font-weight:400;line-height:1;color:var(--fg)}
-.stat-sub{font-size:.6rem;color:var(--dim);margin-top:4px}
-.storage-card{display:flex;align-items:center;gap:14px}
-.storage-chart-wrap{width:48px;height:48px;flex-shrink:0}
-
-/* ── Folders Grid ── */
-.fs-outer{padding:0 24px 32px}
-.fs-track{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-  gap:1px;background:var(--line);
-  border:1px solid var(--line);
-}
-.fs-track::-webkit-scrollbar{display:none}
-
-.folder-frame{
-  background:var(--bg);
-  display:flex;flex-direction:column;
-  cursor:none;transition:background .15s;
-  border:none;
-}
-.folder-frame:hover{background:var(--hover)}
-.sprocket{display:none}
-.frame-img{position:relative;overflow:hidden;aspect-ratio:4/5;background:#111;flex-shrink:0}
-.frame-img img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(.2);transition:transform .6s var(--ease)}
-.frame-icon{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:2rem;color:var(--line)}
-.folder-frame:hover .frame-img img{transform:scale(1.03)}
-.frame-meta{padding:10px 12px 8px;flex:1}
-.frame-lbl{font-size:.58rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
-.frame-name{font-size:.82rem;color:var(--fg);line-height:1.3}
-.frame-act{font-size:.58rem;color:var(--dim);margin-top:5px;opacity:0;transition:opacity .2s}
-.folder-frame:hover .frame-act{opacity:1}
-.frame-num{font-size:.58rem;color:var(--dim);text-align:right;padding:4px 12px 8px}
-
-.fs-hint{font-size:.62rem;color:var(--dim);text-align:center;padding:12px 0}
-.fs-loading{display:flex;align-items:center;justify-content:center;height:200px}
-.fs-loading span{font-size:.62rem;color:var(--dim);animation:pulse 1.8s infinite}
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:8px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 18px}
+.stat-lbl{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-dim);margin-bottom:7px;font-weight:600}
+.stat-val{font-size:1.7rem;font-weight:700;color:var(--ink);line-height:1}
+.stat-sub{font-size:.64rem;color:var(--ink-dim);margin-top:5px}
 
 /* ── Upload zone ── */
-.upload-section{padding:0 24px 48px}
+.upload-section{margin-top:6px}
 .drop-zone{
-  border:1px solid var(--line);padding:32px;text-align:center;
-  cursor:none;transition:border-color .15s,background .15s;margin-bottom:12px
+  border:2px dashed var(--line);border-radius:15px;padding:44px 28px;text-align:center;
+  cursor:none;transition:all .15s;background:var(--surface);margin-bottom:14px
 }
-.drop-zone:hover,.drop-zone.drag{border-color:var(--fg);background:var(--hover)}
-.drop-icon{font-size:1.6rem;color:var(--dim);margin-bottom:6px}
-.drop-main{font-size:.72rem;color:var(--fg)}
-.drop-sub{font-size:.62rem;color:var(--dim);margin-top:4px}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(10,186,181,.04)}
+.drop-icon{font-size:1.9rem;color:var(--accent);margin-bottom:8px;font-weight:600}
+.drop-main{font-size:.95rem;color:var(--ink);font-weight:600}
+.drop-sub{font-size:.76rem;color:var(--ink-dim);margin-top:6px}
 .upload-controls{display:flex;gap:8px;align-items:center}
 .folder-pick-btn{
-  flex:1;padding:8px 12px;background:transparent;border:1px solid var(--line);
-  font-size:.65rem;color:var(--dim);cursor:none;text-align:left;transition:all .15s
+  flex:1;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  font-size:.78rem;color:var(--ink-dim);cursor:none;text-align:left;transition:all .15s;font-family:'Inter',sans-serif
 }
-.folder-pick-btn:hover{border-color:var(--fg);color:var(--fg)}
+.folder-pick-btn:hover{border-color:var(--accent);color:var(--ink)}
 .upload-btn{
-  padding:8px 20px;background:var(--fg);color:var(--bg);border:none;
-  font-size:.65rem;cursor:none;transition:opacity .15s
+  padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:9px;
+  font-size:.8rem;font-weight:600;cursor:none;transition:all .15s;font-family:'Inter',sans-serif
 }
-.upload-btn:disabled{opacity:.25;cursor:not-allowed}
-.upload-btn:not(:disabled):hover{opacity:.8}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed}
+.upload-btn:not(:disabled):hover{background:var(--accent-ink)}
+
+/* file queue */
+.file-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.82rem}
+.file-item-name{flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item-size{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);white-space:nowrap}
+.file-item-status{font-family:'DM Mono',monospace;font-size:.66rem;white-space:nowrap;min-width:72px;text-align:right}
+.status-pending{color:var(--ink-dim)}
+.status-uploading{color:var(--accent-ink)}
+.status-done{color:#2e9e5b}
+.status-error{color:var(--danger)}
 
 /* ── Cascade text effect on buttons ── */
 .cascade-inner{display:inline-flex;overflow:hidden;height:1em;line-height:1;vertical-align:middle;pointer-events:none}
-.cascade-char{
-  display:inline-block;white-space:pre;
-  text-shadow:0 1em currentColor;
-  transition:transform 250ms ease-in-out;
-  will-change:transform
-}
+.cascade-char{display:inline-block;white-space:pre;text-shadow:0 1em currentColor;transition:transform 140ms var(--ease);will-change:transform}
 button:not(:disabled):hover .cascade-char,
 .select-btn:hover .cascade-char,
-.add-btn:hover .cascade-char{
-  transform:translateY(-1em)
-}
-/* ── Flux Progress Loader ── */
+.add-btn:hover .cascade-char{transform:translateY(-1em)}
+
+/* ── Flux progress loader ── */
 .flux-loader{display:none;margin-top:18px;width:100%}
-.flux-label-wrap{position:relative;height:36px;margin-bottom:10px;perspective:900px}
+.flux-label-wrap{position:relative;height:34px;margin-bottom:10px;perspective:900px}
 .flux-label{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:600;
-  letter-spacing:.06em;color:var(--wgrey);
-  transform-style:preserve-3d;
-  animation:fluxLabelIn .9s cubic-bezier(.22,1,.36,1) forwards
+  font-family:'Inter',sans-serif;font-size:1.05rem;font-weight:600;letter-spacing:.02em;color:var(--accent-ink);
+  transform-style:preserve-3d;animation:fluxLabelIn .7s var(--eout) forwards
 }
 @keyframes fluxLabelIn{
-  from{opacity:0;transform:translateZ(-380px) scale(.65);filter:blur(14px)}
-  40%{opacity:1;transform:translateZ(60px) scale(1.08);filter:blur(0)}
-  70%{transform:translateZ(-8px) scale(.985)}
+  from{opacity:0;transform:translateZ(-300px) scale(.7);filter:blur(10px)}
+  40%{opacity:1;transform:translateZ(50px) scale(1.06);filter:blur(0)}
+  70%{transform:translateZ(-6px) scale(.99)}
   to{opacity:1;transform:translateZ(0) scale(1);filter:blur(0)}
 }
-.flux-label span{
-  display:inline-block;opacity:0;
-  animation:fluxLetterIn .45s cubic-bezier(.22,1,.36,1) forwards
-}
-@keyframes fluxLetterIn{
-  from{opacity:0;transform:translateY(12px);filter:blur(8px)}
-  to{opacity:1;transform:translateY(0);filter:blur(0)}
-}
-.flux-track{
-  position:relative;height:10px;width:100%;border-radius:99px;overflow:hidden;
-  background:var(--deep);
-  box-shadow:inset 0 2px 3px rgba(0,0,0,.09),inset 0 -1px 2px rgba(255,255,255,.6)
-}
+.flux-label span{display:inline-block;opacity:0;animation:fluxLetterIn .35s var(--eout) forwards}
+@keyframes fluxLetterIn{from{opacity:0;transform:translateY(10px);filter:blur(6px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+.flux-track{position:relative;height:10px;width:100%;border-radius:99px;overflow:hidden;background:var(--line)}
 .flux-fill{
   position:relative;height:100%;border-radius:99px;width:0%;
-  background:linear-gradient(90deg,#1d6ffb 0%,#4baeff 35%,#74e1ff 55%,#4baeff 78%,#1d6ffb 100%);
-  box-shadow:0 0 18px rgba(29,111,251,.55),0 0 32px rgba(116,225,255,.4),inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -2px 3px rgba(0,40,120,.35);
-  transition:width .55s cubic-bezier(.22,1,.36,1)
+  background:linear-gradient(90deg,#0ABAB5 0%,#3fcfc8 35%,#81D8D0 55%,#3fcfc8 78%,#0ABAB5 100%);
+  box-shadow:0 0 14px rgba(10,186,181,.5),0 0 26px rgba(129,216,208,.4),inset 0 1.5px 0 rgba(255,255,255,.5);
+  transition:width .55s var(--eout)
 }
 .flux-sheen{
   position:absolute;inset-y:0;left:0;width:50%;border-radius:99px;
-  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.55) 50%,transparent 100%);
-  mix-blend-mode:screen;
-  animation:sheenSweep 1.6s linear infinite
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.6) 50%,transparent 100%);
+  mix-blend-mode:screen;animation:sheenSweep 1.6s linear infinite
 }
-@keyframes sheenSweep{from{transform:translateX(-110%)} to{transform:translateX(420%)}}
+@keyframes sheenSweep{from{transform:translateX(-110%)}to{transform:translateX(420%)}}
 
-/* File queue */
-.file-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--deep);font-size:.8rem}
-.file-item-name{flex:1;font-family:'DM Sans',sans-serif;color:var(--charcoal);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-item-size{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--wgrey);white-space:nowrap}
-.file-item-status{font-family:'DM Mono',monospace;font-size:.6rem;white-space:nowrap;min-width:70px;text-align:right}
-.status-pending  {color:var(--wgrey)}
-.status-uploading{color:var(--charcoal)}
-.status-done     {color:#3a7a52}
-.status-error    {color:#9b2020}
-
-/* ── Recent uploads table ── */
-.table-section{padding:0 24px 48px}
-.search-wrap{margin-bottom:10px}
-.search-inp{
-  width:100%;padding:8px 12px;background:transparent;border:1px solid var(--line);
-  font-size:.7rem;color:var(--fg);outline:none;transition:border-color .15s
+/* ── Folders grid ── */
+.fs-outer{margin-top:4px}
+.fs-track{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.folder-frame{
+  background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px;
+  cursor:none;transition:all .15s;display:flex;flex-direction:column;gap:11px
 }
-.search-inp:focus{border-color:var(--fg)}
-.search-inp::placeholder{color:var(--dim)}
+.folder-frame:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(10,186,181,.10);transform:translateY(-2px)}
+.folder-ic{color:var(--accent)}
+.folder-ic svg{width:34px;height:34px}
+.frame-name{font-size:.9rem;font-weight:600;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frame-act{font-size:.64rem;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em}
+.fs-loading{display:flex;align-items:center;justify-content:center;height:160px;grid-column:1/-1}
+.fs-loading span{font-size:.78rem;color:var(--ink-dim)}
 
+/* ── Folder detail panel ── */
+#folderPanel{display:none;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:22px;margin-top:20px}
+.fp-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.fp-name{font-size:1.2rem;font-weight:700;color:var(--ink)}
+.fp-close{font-size:.74rem;color:var(--ink-dim);background:none;border:none;cursor:none}
+.fp-close:hover{color:var(--ink)}
+.fp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.fp-card{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--surface);cursor:none;transition:all .15s}
+.fp-card:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(10,186,181,.08)}
+.fp-thumb{aspect-ratio:1/1;overflow:hidden;background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center}
+.fp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.fp-thumb-icon{font-size:1.7rem;color:var(--ink-dim)}
+.fp-info{padding:9px 11px}
+.fp-fname{font-size:.76rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.fp-fmeta{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim);margin-top:3px}
+.fp-actions{display:flex;gap:4px;padding:0 11px 9px;opacity:0;transition:opacity .15s}
+.fp-card:hover .fp-actions{opacity:1}
+.fp-empty,.fp-loading{font-size:.76rem;color:var(--ink-dim);padding:36px;text-align:center}
+.fp-subfolders{margin-bottom:18px;display:flex;flex-wrap:wrap;gap:8px}
+.fp-subfolder{font-size:.72rem;color:var(--ink-dim);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:none;background:var(--surface);transition:all .15s}
+.fp-subfolder:hover{color:var(--ink);border-color:var(--accent)}
+
+/* ── Table ── */
+.table-section{background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:18px;overflow:hidden}
+.search-wrap{margin-bottom:14px}
+.search-inp{width:100%;padding:9px 14px;background:var(--bg);border:1px solid var(--line);border-radius:9px;font-size:.8rem;color:var(--ink);outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.search-inp:focus{border-color:var(--accent);background:#fff}
+.search-inp::placeholder{color:var(--ink-dim)}
 table{width:100%;border-collapse:collapse}
-thead th{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+thead th{font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-weight:600}
 tbody tr{border-bottom:1px solid var(--line);transition:background .1s}
-tbody tr:hover{background:var(--hover)}
-td{padding:10px;font-size:.78rem;color:var(--fg);vertical-align:middle}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--bg)}
+td{padding:11px 12px;font-size:.8rem;color:var(--ink);vertical-align:middle}
 td.fname{max-width:240px}
-td.fname a{color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
-td.fname a:hover{text-decoration-color:var(--fg)}
-.badge{font-size:.58rem;padding:1px 7px;border:1px solid var(--line);color:var(--dim)}
-.empty{font-size:.65rem;color:var(--dim);padding:40px;text-align:center}
+td.fname a{color:var(--accent-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;font-weight:500}
+td.fname a:hover{text-decoration:underline}
+.badge{font-family:'DM Mono',monospace;font-size:.6rem;padding:2px 9px;border-radius:6px;border:1px solid var(--line);color:var(--ink-dim)}
+.badge-owner{color:var(--accent-ink);border-color:var(--accent-soft);background:rgba(10,186,181,.07)}
+.empty{font-size:.78rem;color:var(--ink-dim);padding:44px;text-align:center}
 
 /* action btns */
-.act-btn{
-  background:transparent;border:1px solid var(--line);font-size:.58rem;
-  color:var(--dim);padding:3px 8px;cursor:none;transition:all .15s;margin:0 2px
-}
-.act-btn:hover{border-color:var(--fg);color:var(--fg)}
+.act-btn{background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:.62rem;color:var(--ink-dim);padding:4px 10px;cursor:none;transition:all .15s;margin:0 2px;font-family:'Inter',sans-serif}
+.act-btn:hover{border-color:var(--accent);color:var(--ink)}
 .act-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
-.act-btn:disabled{opacity:.25;cursor:not-allowed}
+.act-btn:disabled{opacity:.3;cursor:not-allowed}
 
 /* Pagination */
-.pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:0 24px 48px}
-.page-link{font-size:.65rem;color:var(--dim);border:1px solid var(--line);padding:6px 12px;transition:all .15s}
-.page-link:hover{color:var(--fg);border-color:var(--fg)}
-.page-info{font-size:.65rem;color:var(--dim)}
+.pagination{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px}
+.page-link{font-size:.74rem;color:var(--ink-dim);border:1px solid var(--line);border-radius:8px;padding:7px 14px;transition:all .15s;background:var(--surface)}
+.page-link:hover{color:var(--ink);border-color:var(--accent)}
+.page-info{font-size:.74rem;color:var(--ink-dim)}
 
-/* ── User management ── */
-.users-section{padding:0 24px 64px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-@media(max-width:680px){.users-section{grid-template-columns:1fr}}
-.user-table-wrap{border:1px solid var(--line)}
-.user-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line)}
+/* ── Users ── */
+.users-section{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+@media(max-width:760px){.users-section{grid-template-columns:1fr}}
+.user-table-wrap{border:1px solid var(--line);border-radius:13px;background:var(--surface);overflow:hidden}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line)}
 .user-row:last-child{border-bottom:none}
-.uid{font-size:.78rem;color:var(--fg)}
-.owner-tag{font-size:.58rem;color:var(--dim);margin-left:8px}
-.user-form{border:1px solid var(--line);padding:20px}
-.form-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin-bottom:4px;display:block}
-.form-hint{font-size:.6rem;color:var(--dim);margin-bottom:12px;line-height:1.6}
+.uid{font-family:'DM Mono',monospace;font-size:.82rem;color:var(--ink)}
+.owner-tag{font-size:.62rem;color:var(--accent-ink);margin-left:8px}
+.user-form{border:1px solid var(--line);border-radius:13px;padding:22px;background:var(--surface)}
+.form-lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-dim);margin-bottom:6px;display:block;font-weight:600}
+.form-hint{font-size:.72rem;color:var(--ink-dim);margin-bottom:14px;line-height:1.6}
 .input-row{display:flex;gap:8px}
-.uid-input{flex:1;padding:8px 10px;background:transparent;border:1px solid var(--line);font-size:.72rem;color:var(--fg);outline:none;transition:border-color .15s}
-.uid-input:focus{border-color:var(--fg)}
-.uid-input::placeholder{color:var(--dim)}
-.add-btn{padding:8px 16px;background:var(--fg);color:var(--bg);border:none;font-size:.65rem;cursor:none;transition:opacity .15s}
-.add-btn:hover{opacity:.8}
-
-/* ── Footer ── */
-footer{border-top:1px solid var(--line);padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
-.f-brand{font-size:.7rem;letter-spacing:.04em;color:var(--fg)}
-.f-meta{font-size:.62rem;color:var(--dim)}
+.uid-input{flex:1;padding:10px 12px;background:var(--bg);border:1px solid var(--line);border-radius:9px;font-size:.78rem;color:var(--ink);outline:none;transition:border-color .15s;font-family:'Inter',sans-serif}
+.uid-input:focus{border-color:var(--accent);background:#fff}
+.uid-input::placeholder{color:var(--ink-dim)}
+.add-btn{padding:10px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:.78rem;font-weight:600;cursor:none;transition:background .15s;font-family:'Inter',sans-serif}
+.add-btn:hover{background:var(--accent-ink)}
 
 /* ── Toast ── */
-#toast{
-  position:fixed;bottom:20px;right:20px;font-size:.68rem;
-  padding:10px 16px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9000;border:1px solid
-}
+#toast{position:fixed;bottom:24px;right:24px;font-size:.8rem;font-weight:500;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.14)}
 #toast.show{opacity:1;pointer-events:auto}
-#toast.ok{background:var(--bg);border-color:#3a7a52;color:#3a7a52}
-#toast.err{background:var(--bg);border-color:var(--danger);color:var(--danger)}
+#toast.ok{background:#fff;color:#2e9e5b;border:1px solid #b6e3c6}
+#toast.err{background:#fff;color:var(--danger);border:1px solid #f0c2bd}
 
 /* ── Batch bar ── */
-#actionBar{
-  display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:var(--fg);color:var(--bg);padding:10px 20px;
-  z-index:700;align-items:center;gap:16px;white-space:nowrap
-}
+#actionBar{display:none;position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:12px;padding:12px 22px;z-index:700;align-items:center;gap:18px;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,.22)}
 #actionBar.visible{display:flex}
-.batch-lbl{font-size:.65rem}
-.batch-del{font-size:.63rem;background:none;border:1px solid var(--bg);color:var(--bg);padding:4px 12px;cursor:none}
-.batch-del:hover{background:var(--bg);color:var(--fg)}
-.batch-cancel{background:none;border:none;color:rgba(8,8,8,.5);font-size:.63rem;cursor:none}
-input[type=checkbox].row-check{accent-color:var(--fg);width:13px;height:13px;cursor:pointer}
+.batch-lbl{font-size:.78rem}
+.batch-del{font-size:.74rem;background:var(--danger);border:none;color:#fff;border-radius:7px;padding:6px 14px;cursor:none}
+.batch-del:hover{opacity:.88}
+.batch-cancel{background:none;border:none;color:rgba(255,255,255,.6);font-size:.74rem;cursor:none}
+.batch-cancel:hover{color:#fff}
+input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 
-/* ── Folder Browser Modal ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;align-items:center;justify-content:center}
+/* ── Folder picker modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(31,35,40,.45);z-index:2000;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
 .modal-overlay.open{display:flex}
-.modal{background:var(--bg);border:1px solid var(--line);width:420px;max-width:95vw;max-height:70vh;display:flex;flex-direction:column;overflow:hidden}
-.modal-hd{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
-.modal-title{font-size:.82rem}
-.modal-x{background:none;border:none;font-size:.65rem;color:var(--dim);cursor:none;text-decoration:underline;text-underline-offset:3px}
-.modal-x:hover{color:var(--fg)}
-.modal-bc{padding:8px 18px;background:var(--hover);font-size:.62rem;color:var(--dim);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal{background:var(--surface);border-radius:15px;width:440px;max-width:95vw;max-height:72vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.28)}
+.modal-hd{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:.98rem;font-weight:700}
+.modal-x{background:none;border:none;font-size:.74rem;color:var(--ink-dim);cursor:none}
+.modal-x:hover{color:var(--ink)}
+.modal-bc{padding:9px 20px;background:var(--bg);font-size:.7rem;color:var(--ink-dim);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .modal-bc span{cursor:pointer;transition:color .1s}
-.modal-bc span:hover{color:var(--fg)}
-.modal-body{overflow-y:auto;flex:1;padding:4px}
-.folder-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:none;transition:background .1s}
-.folder-item:hover{background:var(--hover)}
-.fi-name{font-size:.82rem;display:flex;align-items:center;gap:8px;color:var(--fg)}
-.fi-arr{font-size:.6rem;color:var(--dim)}
-.folder-empty,.folder-loading{font-size:.62rem;color:var(--dim);padding:20px;text-align:center}
-.modal-ft{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
-.modal-cur{font-size:.62rem;color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.select-btn{padding:7px 16px;background:var(--fg);color:var(--bg);border:none;font-size:.63rem;cursor:none}
-.select-btn:hover{opacity:.8}
+.modal-bc span:hover{color:var(--accent-ink)}
+.modal-body{overflow-y:auto;flex:1;padding:6px}
+.folder-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:9px;cursor:none;transition:background .1s}
+.folder-item:hover{background:var(--bg)}
+.fi-name{font-size:.84rem;display:flex;align-items:center;gap:8px;color:var(--ink)}
+.fi-arr{font-size:.68rem;color:var(--ink-dim)}
+.folder-empty,.folder-loading{font-size:.74rem;color:var(--ink-dim);padding:22px;text-align:center}
+.modal-ft{padding:13px 20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal-cur{font-size:.7rem;color:var(--ink-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.select-btn{padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:.76rem;font-weight:600;cursor:none}
+.select-btn:hover{background:var(--accent-ink)}
 
-/* ── Preview Modal ── */
-#previewOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:3000;align-items:center;justify-content:center}
+/* ── Preview modal ── */
+#previewOverlay{display:none;position:fixed;inset:0;background:rgba(31,35,40,.82);z-index:3000;align-items:center;justify-content:center}
 #previewOverlay.open{display:flex}
-.preview-box{background:var(--bg);border:1px solid var(--line);max-width:92vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
-.preview-hd{padding:10px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
-.preview-title{font-size:.68rem;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px}
-.preview-x{background:none;border:none;font-size:.65rem;color:var(--dim);cursor:none;text-decoration:underline;text-underline-offset:3px}
-.preview-x:hover{color:var(--fg)}
+.preview-box{background:var(--surface);border-radius:15px;max-width:92vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.4)}
+.preview-hd{padding:12px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.preview-title{font-size:.8rem;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px}
+.preview-x{background:none;border:none;font-size:.74rem;color:var(--ink-dim);cursor:none}
+.preview-x:hover{color:var(--ink)}
 .preview-body{display:flex;align-items:center;justify-content:center;overflow:auto;flex:1;padding:16px;min-width:280px;min-height:180px}
 .preview-body img{max-width:80vw;max-height:76vh;display:block}
 .preview-body iframe{border:none;width:70vw;height:54vh}
-.preview-unsupported{font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--wgrey);text-align:center}
-
-/* ── Folder detail panel ── */
-#folderPanel{display:none;padding:32px 24px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--hover)}
-.fp-hd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
-.fp-name{font-size:1rem}
-.fp-close{font-size:.62rem;color:var(--dim);background:none;border:none;cursor:none;text-decoration:underline;text-underline-offset:3px}
-.fp-close:hover{color:var(--fg)}
-.fp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:1px;background:var(--line)}
-.fp-card{cursor:none;background:var(--bg);transition:background .1s}
-.fp-card:hover{background:var(--hover)}
-.fp-thumb{aspect-ratio:4/5;overflow:hidden;background:var(--hover);position:relative;display:flex;align-items:center;justify-content:center}
-.fp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.fp-thumb-icon{font-size:1.5rem;color:var(--line)}
-.fp-info{padding:6px 8px}
-.fp-fname{font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
-.fp-fmeta{font-size:.58rem;color:var(--dim);margin-top:2px}
-.fp-actions{display:flex;gap:4px;padding:0 8px 7px;opacity:0;transition:opacity .15s}
-.fp-card:hover .fp-actions{opacity:1}
-.fp-empty{font-size:.62rem;color:var(--dim);padding:32px;text-align:center}
-.fp-subfolders{margin-bottom:16px;display:flex;flex-wrap:wrap;gap:6px}
-.fp-subfolder{font-size:.6rem;color:var(--dim);border:1px solid var(--line);padding:4px 10px;cursor:none;transition:all .15s}
-.fp-subfolder:hover{color:var(--fg);border-color:var(--fg)}
-.fp-loading{font-size:.62rem;color:var(--dim);padding:32px;text-align:center}
+.preview-unsupported{font-size:.78rem;color:var(--ink-dim);text-align:center}
 
 /* ── Browser link ── */
-.browse-link{display:inline-block;font-size:.65rem;color:var(--dim);text-decoration:underline;text-underline-offset:3px;transition:color .15s}
-.browse-link:hover{color:var(--fg)}
+.browse-link{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;color:var(--accent-ink);transition:opacity .15s}
+.browse-link:hover{opacity:.7}
 
 /* ── Responsive ── */
-@media(max-width:767px){
-  nav,nav.scroll{padding:12px 16px}
-  .eyebrow,.sec-hd,.upload-section,.table-section,.users-section,.pagination,.fs-outer{padding-left:16px;padding-right:16px}
-  .stats-strip{margin:0}
-  footer{padding:16px}
-  #folderPanel{padding:24px 16px}
+@media(max-width:1024px){
+  .app{grid-template-columns:72px 1fr}
+  .side{display:none}
+}
+@media(max-width:600px){
+  .app{grid-template-columns:1fr}
+  .rail{flex-direction:row;height:auto;width:100%;position:sticky;top:0;justify-content:space-around;padding:6px 4px;gap:0;z-index:60}
+  .rail-logo{display:none}
+  .rail .side-spacer{display:none}
+  .rail-btn{width:auto;padding:6px 10px}
+  .content{padding:16px}
+  .topbar{padding:10px 14px;gap:8px}
+  .btn-upgrade,.topbar>a{display:none}
+  .view-title{font-size:1.25rem}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
-  .rv{clip-path:none!important}.rvf{opacity:1!important;transform:none!important}
   #cur{display:none!important}body{cursor:auto!important}
 }
 </style>
@@ -404,253 +423,295 @@ input[type=checkbox].row-check{accent-color:var(--fg);width:13px;height:13px;cur
 
 <div id="cur"></div>
 
-<!-- ── Nav ── -->
-<nav id="nav">
-  <span class="nav-logo">SOVAN<small>Drive Archive</small></span>
-  <div class="nav-r">
-    <a href="/browser">Browser</a>
-    <a href="#upload">Upload</a>
-    <a href="#recent">Recent</a>
-    <a href="/logout" class="nav-out">Sign out</a>
-  </div>
-</nav>
+<div class="app">
 
-<!-- ── Hero ── -->
-<section class="hero">
-  <h1 class="hero-title" id="htitle"></h1>
-  <p class="hero-sub" id="hsub">{{ stats.total_files }} files &mdash; {{ stats.total_size }}</p>
-</section>
+  <!-- ── Icon rail ── -->
+  <aside class="rail">
+    <div class="rail-logo">S</div>
+    <button class="rail-btn active" data-view="files" onclick="showView('files')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Home</span>
+    </button>
+    <button class="rail-btn" data-view="files" onclick="showView('files')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Folders</span>
+    </button>
+    <button class="rail-btn" data-view="recents" onclick="showView('recents')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Recents</span>
+    </button>
+    <button class="rail-btn" data-view="members" onclick="showView('members')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg><span>Members</span>
+    </button>
+    <div class="side-spacer"></div>
+    <a class="rail-btn" href="/browser">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Browser</span>
+    </a>
+    <a class="rail-btn" href="/logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Out</span>
+    </a>
+  </aside>
 
-<!-- ── Stats ── -->
-<section class="section">
-  <div class="rvf">
-    <p class="eyebrow">Overview</p>
-    <div class="sec-hd">
-      <h2 class="sec-title">Storage & Activity</h2>
-      <span class="sec-meta">Live</span>
-    </div>
-  </div>
-  <div class="stats-strip rvf">
-    <div class="stat-card">
-      <div class="stat-lbl">Total uploads</div>
-      <div class="stat-val">{{ stats.total_files }}</div>
-      <div class="stat-sub">files ever uploaded</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-lbl">Total size</div>
-      <div class="stat-val" style="font-size:2rem">{{ stats.total_size }}</div>
-      <div class="stat-sub">uploaded to Drive</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-lbl">Users</div>
-      <div class="stat-val">{{ users | length }}</div>
-      <div class="stat-sub">authorized uploaders</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-lbl">Top uploader</div>
-      {% if stats.top_uploader %}
-      <div class="stat-val" style="font-size:1.3rem;padding-top:6px">{{ stats.top_uploader }}</div>
-      <div class="stat-sub">{{ stats.top_count }} files</div>
-      {% else %}
-      <div class="stat-val" style="color:var(--mid)">—</div>
-      {% endif %}
-    </div>
-    <div class="stat-card storage-card">
-      <div class="storage-chart-wrap"><canvas id="storageChart"></canvas></div>
-      <div>
-        <div class="stat-lbl">Drive storage</div>
-        <div class="stat-val" id="storageUsed" style="font-size:1.4rem">—</div>
-        <div class="stat-sub" id="storageTotal">Loading…</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Folders Film Strip ── -->
-<section class="section" style="padding-top:0">
-  <div class="rvf">
-    <p class="eyebrow">Google Drive</p>
-    <div class="sec-hd">
-      <h2 class="sec-title">Folders</h2>
-      <a href="/browser" class="browse-link">Full browser →</a>
-    </div>
-  </div>
-
-  <div class="fs-outer rv">
-    <div class="fs-track" id="fsTrack">
-      <div class="fs-loading"><span>Loading folders…</span></div>
-    </div>
-    <p class="fs-hint">Click a folder to preview · Drag to scroll</p>
-  </div>
-
-  <!-- Inline folder detail -->
-  <div id="folderPanel">
-    <div class="fp-hd">
-      <div>
-        <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.16em;color:var(--wgrey);margin-bottom:4px" id="fpLabel">FOLDER</div>
-        <div class="fp-name" id="fpName">—</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;flex-shrink:0">
-        <a id="fpBrowseLink" href="/browser" class="browse-link">Open in browser →</a>
-        <button class="fp-close" id="fpClose">Close ✕</button>
-      </div>
-    </div>
-    <div id="fpSubfolders" class="fp-subfolders"></div>
-    <div id="fpContent" class="fp-grid"></div>
-  </div>
-</section>
-
-<!-- ── Upload ── -->
-<section class="section" id="upload" style="padding-top:16px">
-  <div class="rvf">
-    <p class="eyebrow">Upload</p>
-    <div class="sec-hd"><h2 class="sec-title">Add to Drive</h2><span class="sec-meta">Up to 2 GB each</span></div>
-  </div>
-  <div class="upload-section rvf">
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="drop-icon">↑</div>
-      <div class="drop-main">Click to choose files</div>
-      <div class="drop-sub">or drag and drop · up to 50 files · 2 GB each</div>
-    </div>
-    <input type="file" id="fileInput" style="display:none" multiple onchange="onFilesChosen(this)">
-
-    <div id="fileQueue" style="display:none;margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span id="queueCount" style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--wgrey)"></span>
-        <button onclick="clearQueue()" class="act-btn" style="margin:0">Clear ✕</button>
-      </div>
-      <div id="fileList"></div>
-    </div>
-
-    <div class="upload-controls">
-      <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
-        📂 <span id="folderPickLabel">My Drive (root)</span>
+  <!-- ── Secondary sidebar ── -->
+  <aside class="side">
+    <div class="side-title">Drive Archive</div>
+    <nav class="side-nav">
+      <button class="side-link active" data-view="files" onclick="showView('files')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>All files
       </button>
-      <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload all</button>
-    </div>
-    <div class="flux-loader" id="progressWrap">
-      <div class="flux-label-wrap" id="fluxLabelWrap">
-        <div class="flux-label" id="fluxLabel"></div>
-      </div>
-      <div class="flux-track">
-        <div class="flux-fill" id="progressBar">
-          <span class="flux-sheen"></span>
+      <button class="side-link" data-view="files" onclick="showView('files');scrollToUpload()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload
+      </button>
+      <button class="side-link" data-view="recents" onclick="showView('recents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Recent uploads
+      </button>
+      <button class="side-link" data-view="members" onclick="showView('members')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg>Members
+      </button>
+      <a class="side-link" href="/browser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Full browser
+      </a>
+    </nav>
+
+    <div class="side-sec">Quick access</div>
+    <div class="quick" id="quickAccess"><div class="quick-empty">Folders appear here</div></div>
+
+    <div class="side-spacer"></div>
+
+    <div class="storage-widget">
+      <div class="sw-top">
+        <div class="storage-chart-wrap"><canvas id="storageChart"></canvas></div>
+        <div>
+          <div class="sw-used" id="storageUsed">—</div>
+          <div class="sw-total" id="storageTotal">Loading…</div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </aside>
 
-<!-- ── Recent Uploads ── -->
-<section class="section" id="recent" style="padding-top:16px">
-  <div class="rvf" style="padding:0 44px">
-    <p class="eyebrow" style="padding:0">Recent activity</p>
-    <div class="sec-hd" style="padding:0 0 16px">
-      <h2 class="sec-title">Uploads</h2>
-      <span class="sec-meta">{{ total }} total</span>
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="topbar">
+      <button class="btn-new" onclick="showView('files');scrollToUpload()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New
+      </button>
+      <div class="topbar-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="searchBar" type="text" placeholder="Search files…" oninput="onSearch(this.value)">
+      </div>
+      <button class="btn-upgrade">{{ stats.total_size }} stored</button>
+      <a href="/logout">Sign out</a>
+      <div class="avatar">MA</div>
     </div>
-  </div>
-  <div class="table-section rvf">
-    <div class="search-wrap">
-      <input type="text" class="search-inp" id="searchBar" placeholder="Search by filename…" oninput="filterTable(this.value)">
-    </div>
-    {% if recent %}
-    <table id="uploadsTable">
-      <thead>
-        <tr>
-          <th style="width:32px"><input type="checkbox" class="row-check" id="selectAll" onchange="toggleSelectAll(this)"></th>
-          <th>File</th>
-          <th>Folder</th>
-          <th>Size</th>
-          <th>Uploader</th>
-          <th>Date</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for e in recent %}
-        <tr>
-          <td><input type="checkbox" class="row-check file-check" data-id="{{ e.file_id or '' }}" data-name="{{ e.file_name }}" onchange="onRowCheck()" {% if not e.file_id %}disabled{% endif %}></td>
-          <td class="fname">
-            {% if e.web_link %}<a href="{{ e.web_link }}" target="_blank" rel="noopener">{{ e.file_name }}</a>
-            {% else %}{{ e.file_name }}{% endif %}
-          </td>
-          <td style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--wgrey)">{{ e.folder_name or '—' }}</td>
-          <td style="font-family:'DM Mono',monospace;font-size:.7rem">{{ e._size }}</td>
-          <td>
-            {% if e._owner %}<span class="badge badge-owner">Owner</span>
-            {% else %}<span class="badge badge-friend">{{ e.user_id }}</span>{% endif %}
-          </td>
-          <td style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--wgrey)">{{ e._dt }}</td>
-          <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
-            {% if e.file_id %}
-            {% if e._previewable %}
-            <button class="act-btn" onclick="openPreview('{{ e.file_id }}','{{ e.file_name|replace("'","\\'") }}')">Preview</button>
-            {% endif %}
-            <a href="/api/browser/download/{{ e.file_id }}" class="act-btn" style="display:inline-block">↓</a>
-            <button class="act-btn danger" onclick="deleteFile('{{ e.file_id }}','{{ e.file_name }}',this)">✕</button>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="empty">No uploads yet — send a file to the bot to get started.</div>
-    {% endif %}
-  </div>
 
-  {% if total_pages > 1 %}
-  <div class="pagination rvf">
-    {% if page > 1 %}<a href="/?page={{ page - 1 }}" class="page-link">← Prev</a>{% endif %}
-    <span class="page-info">{{ page }} / {{ total_pages }}</span>
-    {% if page < total_pages %}<a href="/?page={{ page + 1 }}" class="page-link">Next →</a>{% endif %}
-  </div>
-  {% endif %}
-</section>
+    <div class="content">
 
-<!-- ── User Management ── -->
-<section class="section" style="padding-top:16px">
-  <div class="rvf" style="padding:0 44px">
-    <p class="eyebrow" style="padding:0">Access control</p>
-    <div class="sec-hd" style="padding:0 0 16px">
-      <h2 class="sec-title">Users</h2>
-      <span class="sec-meta">{{ users | length }} authorized</span>
-    </div>
-  </div>
-  <div class="users-section rvf">
-    <div class="user-table-wrap">
-      {% if users %}
-        {% for uid in users | sort %}
-        <div class="user-row" id="user-{{ uid }}">
-          <div>
-            <span class="uid">{{ uid }}</span>
-            {% if uid == owner_id %}<span class="owner-tag">★ owner</span>{% endif %}
+      <!-- ── FILES VIEW ── -->
+      <section class="view active" id="view-files">
+        <div class="view-head">
+          <h1 class="view-title">All files</h1>
+          <div class="view-actions">
+            <button class="hbtn primary" onclick="document.getElementById('fileInput').click()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload
+            </button>
+            <button class="hbtn" onclick="openFolderModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Choose folder
+            </button>
+            <a class="hbtn" href="/browser">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Browser
+            </a>
           </div>
-          {% if uid != owner_id %}
-          <button class="act-btn danger" onclick="removeUser({{ uid }})">Remove</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-strip">
+          <div class="stat-card">
+            <div class="stat-lbl">Total uploads</div>
+            <div class="stat-val">{{ stats.total_files }}</div>
+            <div class="stat-sub">files ever uploaded</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-lbl">Total size</div>
+            <div class="stat-val" style="font-size:1.4rem;padding-top:5px">{{ stats.total_size }}</div>
+            <div class="stat-sub">uploaded to Drive</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-lbl">Users</div>
+            <div class="stat-val">{{ users | length }}</div>
+            <div class="stat-sub">authorized uploaders</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-lbl">Top uploader</div>
+            {% if stats.top_uploader %}
+            <div class="stat-val" style="font-size:1.05rem;padding-top:6px">{{ stats.top_uploader }}</div>
+            <div class="stat-sub">{{ stats.top_count }} files</div>
+            {% else %}
+            <div class="stat-val" style="color:var(--ink-dim)">—</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Upload zone -->
+        <div class="sub-head" id="upload">Upload to Drive</div>
+        <div class="upload-section">
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="drop-icon">↑</div>
+            <div class="drop-main">Drop anything here to upload</div>
+            <div class="drop-sub">or click to choose · up to 50 files · 2 GB each</div>
+          </div>
+          <input type="file" id="fileInput" style="display:none" multiple onchange="onFilesChosen(this)">
+
+          <div id="fileQueue" style="display:none;margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span id="queueCount" style="font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim)"></span>
+              <button onclick="clearQueue()" class="act-btn" style="margin:0">Clear ✕</button>
+            </div>
+            <div id="fileList"></div>
+          </div>
+
+          <div class="upload-controls">
+            <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
+              📂 <span id="folderPickLabel">My Drive (root)</span>
+            </button>
+            <button class="upload-btn" id="uploadBtn" onclick="doUpload()" disabled>Upload all</button>
+          </div>
+          <div class="flux-loader" id="progressWrap">
+            <div class="flux-label-wrap" id="fluxLabelWrap">
+              <div class="flux-label" id="fluxLabel"></div>
+            </div>
+            <div class="flux-track">
+              <div class="flux-fill" id="progressBar">
+                <span class="flux-sheen"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Folders -->
+        <div class="sub-head">Folders</div>
+        <div class="fs-outer">
+          <div class="fs-track" id="fsTrack">
+            <div class="fs-loading"><span>Loading folders…</span></div>
+          </div>
+        </div>
+
+        <!-- Inline folder detail -->
+        <div id="folderPanel">
+          <div class="fp-hd">
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--ink-dim);margin-bottom:4px" id="fpLabel">FOLDER</div>
+              <div class="fp-name" id="fpName">—</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:center;flex-shrink:0">
+              <a id="fpBrowseLink" href="/browser" class="browse-link">Open in browser →</a>
+              <button class="fp-close" id="fpClose">Close ✕</button>
+            </div>
+          </div>
+          <div id="fpSubfolders" class="fp-subfolders"></div>
+          <div id="fpContent" class="fp-grid"></div>
+        </div>
+      </section>
+
+      <!-- ── RECENTS VIEW ── -->
+      <section class="view" id="view-recents">
+        <div class="view-head">
+          <h1 class="view-title">Recent uploads</h1>
+          <span class="view-meta">{{ total }} total</span>
+        </div>
+        <div class="table-section">
+          <div class="search-wrap">
+            <input type="text" class="search-inp" placeholder="Search by filename…" oninput="filterTable(this.value)">
+          </div>
+          {% if recent %}
+          <table id="uploadsTable">
+            <thead>
+              <tr>
+                <th style="width:32px"><input type="checkbox" class="row-check" id="selectAll" onchange="toggleSelectAll(this)"></th>
+                <th>File</th>
+                <th>Folder</th>
+                <th>Size</th>
+                <th>Uploader</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in recent %}
+              <tr>
+                <td><input type="checkbox" class="row-check file-check" data-id="{{ e.file_id or '' }}" data-name="{{ e.file_name }}" onchange="onRowCheck()" {% if not e.file_id %}disabled{% endif %}></td>
+                <td class="fname">
+                  {% if e.web_link %}<a href="{{ e.web_link }}" target="_blank" rel="noopener">{{ e.file_name }}</a>
+                  {% else %}{{ e.file_name }}{% endif %}
+                </td>
+                <td style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--ink-dim)">{{ e.folder_name or '—' }}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:.72rem">{{ e._size }}</td>
+                <td>
+                  {% if e._owner %}<span class="badge badge-owner">Owner</span>
+                  {% else %}<span class="badge badge-friend">{{ e.user_id }}</span>{% endif %}
+                </td>
+                <td style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim)">{{ e._dt }}</td>
+                <td style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+                  {% if e.file_id %}
+                  {% if e._previewable %}
+                  <button class="act-btn" onclick="openPreview('{{ e.file_id }}','{{ e.file_name|replace("'","\\'") }}')">Preview</button>
+                  {% endif %}
+                  <a href="/api/browser/download/{{ e.file_id }}" class="act-btn" style="display:inline-block">↓</a>
+                  <button class="act-btn danger" onclick="deleteFile('{{ e.file_id }}','{{ e.file_name }}',this)">✕</button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No uploads yet — send a file to the bot to get started.</div>
           {% endif %}
         </div>
-        {% endfor %}
-      {% else %}
-      <div class="empty">No users yet.</div>
-      {% endif %}
-    </div>
-    <div class="user-form">
-      <label class="form-lbl">Add new user</label>
-      <p class="form-hint">Ask your friend to send <strong>/whoami</strong> to the bot — they'll receive their Telegram ID.</p>
-      <div class="input-row">
-        <input type="number" id="newUserId" class="uid-input" placeholder="Telegram user ID" min="1">
-        <button class="add-btn" onclick="addUser()">Add</button>
-      </div>
-    </div>
-  </div>
-</section>
 
-<footer>
-  <span class="f-brand">DRIVE ARCHIVE</span>
-  <span class="f-meta">Powered by Google Drive</span>
-</footer>
+        {% if total_pages > 1 %}
+        <div class="pagination">
+          {% if page > 1 %}<a href="/?page={{ page - 1 }}" class="page-link">← Prev</a>{% endif %}
+          <span class="page-info">{{ page }} / {{ total_pages }}</span>
+          {% if page < total_pages %}<a href="/?page={{ page + 1 }}" class="page-link">Next →</a>{% endif %}
+        </div>
+        {% endif %}
+      </section>
+
+      <!-- ── MEMBERS VIEW ── -->
+      <section class="view" id="view-members">
+        <div class="view-head">
+          <h1 class="view-title">Members</h1>
+          <span class="view-meta">{{ users | length }} authorized</span>
+        </div>
+        <div class="users-section">
+          <div class="user-table-wrap">
+            {% if users %}
+              {% for uid in users | sort %}
+              <div class="user-row" id="user-{{ uid }}">
+                <div>
+                  <span class="uid">{{ uid }}</span>
+                  {% if uid == owner_id %}<span class="owner-tag">★ owner</span>{% endif %}
+                </div>
+                {% if uid != owner_id %}
+                <button class="act-btn danger" onclick="removeUser({{ uid }})">Remove</button>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+            <div class="empty">No users yet.</div>
+            {% endif %}
+          </div>
+          <div class="user-form">
+            <label class="form-lbl">Add new user</label>
+            <p class="form-hint">Ask your friend to send <strong>/whoami</strong> to the bot — they'll receive their Telegram ID.</p>
+            <div class="input-row">
+              <input type="number" id="newUserId" class="uid-input" placeholder="Telegram user ID" min="1">
+              <button class="add-btn" onclick="addUser()">Add</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
 
 <!-- ── Batch bar ── -->
 <div id="actionBar">
@@ -694,31 +755,21 @@ input[type=checkbox].row-check{accent-color:var(--fg);width:13px;height:13px;cur
 const cur=document.getElementById('cur');
 let mx=0,my=0,cx=0,cy=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
-(function tick(){cx+=(mx-cx)*.18;cy+=(my-cy)*.18;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
-document.addEventListener('mouseover',e=>{if(e.target.closest('a,button,.folder-frame,.fp-card,.drop-zone,.folder-item,.fp-subfolder,.pl-row'))cur.classList.add('big')});
-document.addEventListener('mouseout', e=>{if(e.target.closest('a,button,.folder-frame,.fp-card,.drop-zone,.folder-item,.fp-subfolder,.pl-row'))cur.classList.remove('big')});
+(function tick(){cx+=(mx-cx)*.35;cy+=(my-cy)*.35;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
+const HOVER_SEL='a,button,input,.folder-frame,.fp-card,.drop-zone,.folder-item,.fp-subfolder,.rail-btn,.side-link,.hbtn,.chip,.quick-item';
+document.addEventListener('mouseover',e=>{if(e.target.closest(HOVER_SEL))cur.classList.add('big')});
+document.addEventListener('mouseout', e=>{if(e.target.closest(HOVER_SEL))cur.classList.remove('big')});
 
-/* ─── Nav scroll ─── */
-window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('scroll',window.scrollY>50));
-
-/* ─── Hero animate ─── */
-(function(){
-  const el=document.getElementById('htitle');
-  el.innerHTML='SOVAN'.split('').map((c,i)=>
-    c===' '?'<span class="spc"></span>'
-           :`<span class="char" style="transition-delay:${i*55}ms">${c}</span>`
-  ).join('');
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    el.querySelectorAll('.char').forEach(c=>{c.style.opacity='1';c.style.transform='translateY(0)'});
-    setTimeout(()=>document.getElementById('hsub').classList.add('on'),420);
-  }));
-})();
-
-/* ─── Scroll reveal ─── */
-const io=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}});
-},{threshold:.07});
-document.querySelectorAll('.rv,.rvf').forEach(el=>io.observe(el));
+/* ─── View switching ─── */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
+  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+  if(location.hash.slice(1)!==name)history.replaceState(null,'','#'+name);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function scrollToUpload(){const u=document.getElementById('upload');if(u)setTimeout(()=>u.scrollIntoView({behavior:'smooth',block:'start'}),80)}
+function onSearch(v){filterTable(v);if(v&&!document.getElementById('view-recents').classList.contains('active'))showView('recents')}
+(function(){const h=location.hash.slice(1);if(['files','recents','members'].includes(h))showView(h)})();
 
 /* ─── Toast ─── */
 function showToast(msg,ok){
@@ -739,68 +790,48 @@ function showToast(msg,ok){
     document.getElementById('storageTotal').textContent='of '+fmt(total);
     new Chart(document.getElementById('storageChart'),{
       type:'doughnut',
-      data:{datasets:[{data:[used,free],backgroundColor:['#1C1917','#E6E0D8'],borderColor:['#1C1917','#C8C2BB'],borderWidth:2}]},
+      data:{datasets:[{data:[used,free],backgroundColor:['#0ABAB5','#3a3f44'],borderColor:['#0ABAB5','#3a3f44'],borderWidth:0}]},
       options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}},animation:{duration:900}}
     });
   }catch(e){document.getElementById('storageTotal').textContent='Unavailable'}
 })();
 
-/* ─── Film strip: Load Drive folders ─── */
+/* ─── Load Drive folders ─── */
 let activeFolderId=null;
 
 async function loadFolders(){
   const track=document.getElementById('fsTrack');
+  const quick=document.getElementById('quickAccess');
   try{
     const res=await fetch('/api/folders?parent=root');
     const d=await res.json();
     if(!d.ok||!d.folders.length){
       track.innerHTML='<div class="fs-loading"><span>No folders in My Drive</span></div>';
+      quick.innerHTML='<div class="quick-empty">No folders yet</div>';
       return;
     }
-    const FOLDER_THUMBS=[
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&q=70',
-      'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400&q=70',
-      'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=70',
-      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&q=70',
-      'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=70',
-      'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=70',
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=70',
-      'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=400&q=70',
-    ];
-    track.innerHTML=d.folders.map((f,i)=>`
+    const FOLDER_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+    track.innerHTML=d.folders.map(f=>`
       <div class="folder-frame" onclick="openFolderPanel('${f.id}','${f.name.replace(/'/g,"\\'")}',this)" data-fid="${f.id}">
-        <div class="sprocket"></div>
-        <div class="frame-img">
-          <img src="${FOLDER_THUMBS[i%FOLDER_THUMBS.length]}" alt="" loading="lazy" draggable="false">
-        </div>
-        <div class="frame-meta">
-          <div class="frame-lbl">Folder</div>
-          <div class="frame-name">${f.name}</div>
-          <div class="frame-act">Preview ↓</div>
-        </div>
-        <div class="frame-num">${String(i+1).padStart(2,'0')} / ${String(d.folders.length).padStart(2,'0')}</div>
-        <div class="sprocket"></div>
+        <div class="folder-ic">${FOLDER_SVG}</div>
+        <div class="frame-name" title="${f.name}">${f.name}</div>
+        <div class="frame-act">Folder</div>
       </div>`).join('');
-    initFilmDrag();
+    const QSVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+    quick.innerHTML=d.folders.slice(0,6).map(f=>
+      `<button class="quick-item" onclick="gotoFolder('${f.id}','${f.name.replace(/'/g,"\\'")}')">${QSVG}<span>${f.name}</span></button>`
+    ).join('');
   }catch(e){
     track.innerHTML='<div class="fs-loading"><span>Could not load folders</span></div>';
+    quick.innerHTML='<div class="quick-empty">Could not load</div>';
   }
 }
 loadFolders();
 
-function initFilmDrag(){
-  const t=document.getElementById('fsTrack');
-  let down=false,sx=0,sl=0,dragged=false;
-  t.addEventListener('mousedown',e=>{down=true;sx=e.pageX-t.offsetLeft;sl=t.scrollLeft;dragged=false});
-  t.addEventListener('mouseleave',()=>down=false);
-  t.addEventListener('mouseup',()=>down=false);
-  t.addEventListener('mousemove',e=>{
-    if(!down)return;e.preventDefault();
-    const dx=e.pageX-t.offsetLeft-sx;if(Math.abs(dx)>4)dragged=true;
-    t.scrollLeft=sl-dx*1.3;
-  });
-  t.addEventListener('click',e=>{if(dragged)e.stopImmediatePropagation()},{capture:true});
-  t.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY))return;e.preventDefault();t.scrollLeft+=e.deltaY*1.6},{passive:false});
+function gotoFolder(id,name){
+  showView('files');
+  const el=document.querySelector('[data-fid="'+id+'"]');
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});openFolderPanel(id,name,el);}
 }
 
 /* ─── Folder panel ─── */
@@ -809,9 +840,8 @@ async function openFolderPanel(folderId,folderName,frameEl){
   const content=document.getElementById('fpContent');
   const subs=document.getElementById('fpSubfolders');
 
-  // highlight active frame
   document.querySelectorAll('.folder-frame').forEach(f=>f.style.outline='none');
-  frameEl.style.outline='1px solid var(--mid)';
+  if(frameEl)frameEl.style.outline='2px solid var(--accent)';
 
   if(activeFolderId===folderId&&panel.style.display==='block'){
     closePanel();return;
@@ -831,14 +861,12 @@ async function openFolderPanel(folderId,folderName,frameEl){
     const d=await res.json();
     if(!d.ok){content.innerHTML='<div class="fp-empty">Failed to load folder.</div>';return}
 
-    // subfolders
     if(d.folders&&d.folders.length){
       subs.innerHTML=d.folders.map(f=>
         `<button class="fp-subfolder" onclick="openFolderPanel('${f.id}','${f.name.replace(/'/g,"\\'")}',document.querySelector('[data-fid=\\'${f.id}\\']')||document.querySelector('.folder-frame'))">📁 ${f.name}</button>`
       ).join('');
     }
 
-    // files grid
     if(!d.files||!d.files.length){
       content.innerHTML='<div class="fp-empty">No files in this folder.</div>';return;
     }
@@ -853,7 +881,7 @@ async function openFolderPanel(folderId,folderName,frameEl){
       return `<div class="fp-card">
         <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${f.name.replace(/'/g,"\\'")}')`:''}" style="${previewable?'cursor:none':''}">
           ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
-          ${isVid?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,18,16,.28);font-size:1.8rem;opacity:0;transition:opacity .2s" class="play-ov">▶</div>':''}
+          ${isVid?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(31,35,40,.28);font-size:1.8rem;opacity:0;transition:opacity .2s" class="play-ov">▶</div>':''}
         </div>
         <div class="fp-info">
           <div class="fp-fname" title="${f.name}">${f.name}</div>
@@ -867,7 +895,6 @@ async function openFolderPanel(folderId,folderName,frameEl){
       </div>`;
     }).join('');
 
-    // hover play overlay
     document.querySelectorAll('.fp-card').forEach(c=>{
       const ov=c.querySelector('.play-ov');
       if(ov){c.addEventListener('mouseenter',()=>ov.style.opacity='1');c.addEventListener('mouseleave',()=>ov.style.opacity='0')}
@@ -962,7 +989,7 @@ function setFluxProgress(pct,phase){
   const lbl=document.getElementById('fluxLabel');
   const next=document.createElement('div');
   next.className='flux-label';
-  next.innerHTML=phase.split('').map((c,i)=>`<span style="animation-delay:${.18+i*.035}s">${c===' '?'&nbsp;':c}</span>`).join('');
+  next.innerHTML=phase.split('').map((c,i)=>`<span style="animation-delay:${.12+i*.03}s">${c===' '?'&nbsp;':c}</span>`).join('');
   lbl.replaceWith(next);
   next.id='fluxLabel';
 }
@@ -1104,11 +1131,10 @@ async function removeUser(uid){
 function cascadeify(el){
   if(el.dataset.cascaded)return;
   el.dataset.cascaded='1';
-  // collect child nodes, replace text nodes with cascade spans
   const nodes=[...el.childNodes];
   el.innerHTML='';
   nodes.forEach(node=>{
-    if(node.nodeType===3){// text node
+    if(node.nodeType===3){
       const text=node.textContent;
       const wrap=document.createElement('span');
       wrap.className='cascade-inner';
@@ -1120,7 +1146,7 @@ function cascadeify(el){
       chars.forEach((ch,i)=>{
         const s=document.createElement('span');
         s.className='cascade-char';
-        s.style.transitionDelay=(i*22)+'ms';
+        s.style.transitionDelay=(i*8)+'ms';
         s.textContent=ch;
         wrap.appendChild(s);
       });
@@ -1139,7 +1165,6 @@ function initCascade(){
   document.querySelectorAll(sel).forEach(cascadeify);
 }
 document.addEventListener('DOMContentLoaded',initCascade);
-// also re-run when dynamic content adds buttons (folder panel, file grid)
 const _cascadeObs=new MutationObserver(()=>initCascade());
 _cascadeObs.observe(document.body,{childList:true,subtree:true});
 
