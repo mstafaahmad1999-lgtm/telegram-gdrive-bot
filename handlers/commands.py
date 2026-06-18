@@ -50,6 +50,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(
         "👋 *Google Drive Uploader Bot*\n\n"
         "Send me any file, photo, video, or audio and I'll help you upload it to Google Drive.\n\n"
+        "🔗 *Or paste a link* — Instagram reels, TikTok, Facebook, X/Twitter, YouTube — "
+        "and I'll download the video and upload it for you.\n\n"
         "*Commands:*\n"
         "• /start — show this message\n"
         "• /cancel — cancel the current pending upload\n"

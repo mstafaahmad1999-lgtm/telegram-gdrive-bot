@@ -1,0 +1,76 @@
+"""Download media from a social-media URL (Instagram, TikTok, Facebook, X, YouTube…)
+using yt-dlp, returning a local temp file ready for the Drive upload pipeline.
+
+Uses a single-file mp4 format so no ffmpeg merge step is required (reels / TikToks
+are already progressive mp4). Blocking — call from a thread executor.
+"""
+import glob
+import logging
+import mimetypes
+import os
+import re
+
+import yt_dlp
+
+logger = logging.getLogger(__name__)
+
+# Domains this is meant for (yt-dlp supports many more; this is just for messaging)
+SUPPORTED_HINTS = (
+    "instagram.com", "tiktok.com", "facebook.com", "fb.watch",
+    "twitter.com", "x.com", "youtube.com", "youtu.be",
+)
+
+
+def _safe_name(name: str) -> str:
+    name = re.sub(r'[\\/:*?"<>|\n\r\t]+', " ", name).strip()
+    name = re.sub(r"\s+", " ", name)
+    return (name[:80].strip() or "download")
+
+
+def download_from_url(url: str, dest_dir: str) -> tuple[str, str, str, int]:
+    """Download the first media item at `url` into `dest_dir`.
+
+    Returns (file_path, file_name, mime_type, size_bytes).
+    Raises on failure.
+    """
+    os.makedirs(dest_dir, exist_ok=True)
+    outtmpl = os.path.join(dest_dir, "%(id)s.%(ext)s")
+
+    ydl_opts = {
+        "outtmpl": outtmpl,
+        # prefer a single progressive mp4 → no ffmpeg merge needed
+        "format": "best[ext=mp4]/mp4/best",
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "ignoreerrors": False,
+        "retries": 3,
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+
+        # carousels / playlists → take the first real entry
+        if info.get("entries"):
+            entries = [e for e in info["entries"] if e]
+            if not entries:
+                raise RuntimeError("No downloadable media found at that link.")
+            info = entries[0]
+
+        path = ydl.prepare_filename(info)
+        if not os.path.exists(path):
+            base = os.path.splitext(path)[0]
+            candidates = glob.glob(base + ".*")
+            if not candidates:
+                raise RuntimeError("Download produced no file.")
+            path = candidates[0]
+
+    title = info.get("title") or info.get("description") or info.get("id") or "video"
+    ext = os.path.splitext(path)[1] or ".mp4"
+    file_name = _safe_name(title) + ext
+    mime_type = mimetypes.guess_type(path)[0] or (
+        "video/mp4" if ext.lower() in (".mp4", ".mov", ".webm", ".m4v") else "application/octet-stream"
+    )
+    size = os.path.getsize(path)
+    logger.info("Downloaded %s (%d bytes) from %s", file_name, size, url)
+    return path, file_name, mime_type, size

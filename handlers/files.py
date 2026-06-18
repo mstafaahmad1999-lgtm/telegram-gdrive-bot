@@ -68,6 +68,36 @@ async def _flush_album(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
     await show_folder_picker(update, context, parent_id="root", status_message=status_msg)
 
 
+async def enqueue_pending(update: Update, context: ContextTypes.DEFAULT_TYPE, pending: state.PendingUpload) -> None:
+    """Buffer a ready PendingUpload into the user's album and (re)arm the flush timer.
+
+    Shared by file uploads and link downloads so both flow into the same
+    folder-picker → upload pipeline.
+    """
+    user_id = update.effective_user.id
+
+    album = state.get_album(user_id)
+    if album is None:
+        album = state.AlbumBuffer()
+        state.set_album(user_id, album)
+
+    if album.timer_task and not album.timer_task.done():
+        album.timer_task.cancel()
+
+    album.files.append(pending)
+    logger.info("Buffered %s for user %s (album size: %d)", pending.file_name, user_id, len(album.files))
+
+    async def _timer():
+        await asyncio.sleep(ALBUM_WAIT_SECONDS)
+        await _flush_album(update, context, user_id)
+
+    album.timer_task = asyncio.create_task(_timer())
+    state.set_album(user_id, album)
+
+    # Keep single-pending in sync for backward compat (duplicate check, etc.)
+    state.set_pending(user_id, pending.file_path, pending.file_name, pending.mime_type, pending.file_size)
+
+
 async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not _is_authorized(update):
         await update.message.reply_text("Not authorized.")
@@ -114,30 +144,7 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     pending = state.PendingUpload(tmp_path, file_name, mime_type, actual_size)
-
-    # Check if this is part of an album (multiple files sent quickly)
-    album = state.get_album(user_id)
-    if album is None:
-        album = state.AlbumBuffer()
-        state.set_album(user_id, album)
-
-    # Cancel existing timer
-    if album.timer_task and not album.timer_task.done():
-        album.timer_task.cancel()
-
-    album.files.append(pending)
-    logger.info("Buffered file %s for user %s (album size: %d)", file_name, user_id, len(album.files))
-
-    # Set timer to flush album after wait period
-    async def _timer():
-        await asyncio.sleep(ALBUM_WAIT_SECONDS)
-        await _flush_album(update, context, user_id)
-
-    album.timer_task = asyncio.create_task(_timer())
-    state.set_album(user_id, album)
-
-    # Also update single pending for backward compat
-    state.set_pending(user_id, tmp_path, file_name, mime_type, actual_size)
+    await enqueue_pending(update, context, pending)
 
 
 async def new_folder_name_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

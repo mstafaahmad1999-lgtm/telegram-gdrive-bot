@@ -24,6 +24,7 @@ from handlers.commands import (
     whoami_handler,
 )
 from handlers.files import file_handler, new_folder_name_handler
+from handlers.links import link_handler
 from handlers.navigation import callback_handler
 import history
 import user_manager
@@ -86,6 +87,12 @@ def main() -> None:
         | filters.AUDIO
     )
     app.add_handler(MessageHandler(file_filter, file_handler))
+
+    # Media link → download → upload (caught before the generic text handler)
+    app.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND & filters.Regex(r"https?://"),
+        link_handler,
+    ))
 
     # New folder name input (text while awaiting folder name)
     app.add_handler(MessageHandler(
