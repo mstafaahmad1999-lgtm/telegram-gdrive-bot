@@ -39,8 +39,8 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     loop = asyncio.get_event_loop()
     try:
         path, file_name, mime_type, size = await asyncio.wait_for(
-            loop.run_in_executor(None, lambda: downloader.download_from_url(url, tmp_dir)),
-            timeout=90,
+            loop.run_in_executor(None, lambda: downloader.fetch_media(url, tmp_dir)),
+            timeout=150,
         )
     except asyncio.TimeoutError:
         logger.warning("Download timed out for %s", url)

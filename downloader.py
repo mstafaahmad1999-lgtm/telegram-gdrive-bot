@@ -5,10 +5,13 @@ Uses a single-file mp4 format so no ffmpeg merge step is required (reels / TikTo
 are already progressive mp4). Blocking — call from a thread executor.
 """
 import glob
+import json
 import logging
 import mimetypes
 import os
 import re
+import shutil
+import urllib.request
 
 import yt_dlp
 
@@ -86,3 +89,92 @@ def download_from_url(url: str, dest_dir: str) -> tuple[str, str, str, int]:
     size = os.path.getsize(path)
     logger.info("Downloaded %s (%d bytes) from %s", file_name, size, url)
     return path, file_name, mime_type, size
+
+
+# ── Third-party API fallback (Cobalt-compatible) ─────────────────────────────
+
+_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+
+
+def _http_json(api_url: str, payload: dict, api_key: str, timeout: int = 30) -> dict:
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": _UA,
+    }
+    if api_key:
+        headers["Authorization"] = f"Api-Key {api_key}"
+    req = urllib.request.Request(
+        api_url, data=json.dumps(payload).encode(), headers=headers, method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode())
+
+
+def _download_url_to(media_url: str, path: str, timeout: int = 120) -> None:
+    req = urllib.request.Request(media_url, headers={"User-Agent": _UA})
+    with urllib.request.urlopen(req, timeout=timeout) as resp, open(path, "wb") as f:
+        shutil.copyfileobj(resp, f)
+
+
+def cobalt_download(url: str, dest_dir: str) -> tuple[str, str, str, int]:
+    """Fallback downloader using a Cobalt-compatible API.
+
+    Configure with env vars:
+      COBALT_API_URL  — e.g. https://your-instance/  (required for fallback)
+      COBALT_API_KEY  — optional Api-Key for instances that require it
+    """
+    api_url = os.getenv("COBALT_API_URL", "").strip()
+    if not api_url:
+        raise RuntimeError("No fallback API configured (set COBALT_API_URL).")
+    api_url = api_url.rstrip("/") + "/"
+    api_key = os.getenv("COBALT_API_KEY", "").strip()
+
+    data = _http_json(api_url, {
+        "url": url,
+        "videoQuality": "1080",
+        "filenameStyle": "basic",
+    }, api_key)
+
+    status = data.get("status")
+    filename = data.get("filename")
+    if status in ("redirect", "tunnel", "stream"):
+        media_url = data.get("url")
+    elif status == "picker":
+        items = data.get("picker") or []
+        vids = [i for i in items if i.get("type") == "video"] or items
+        if not vids:
+            raise RuntimeError("API returned no downloadable media.")
+        media_url = vids[0].get("url")
+        filename = filename or vids[0].get("filename")
+    else:
+        err = data.get("error", {})
+        raise RuntimeError(err.get("code") if isinstance(err, dict) else f"API status: {status}")
+
+    if not media_url:
+        raise RuntimeError("API returned no media URL.")
+
+    os.makedirs(dest_dir, exist_ok=True)
+    filename = filename or "download.mp4"
+    base, ext = os.path.splitext(filename)
+    file_name = _safe_name(base) + (ext or ".mp4")
+    path = os.path.join(dest_dir, file_name)
+
+    _download_url_to(media_url, path)
+    size = os.path.getsize(path)
+    mime_type = mimetypes.guess_type(path)[0] or "video/mp4"
+    logger.info("Downloaded %s (%d bytes) via API from %s", file_name, size, url)
+    return path, file_name, mime_type, size
+
+
+def fetch_media(url: str, dest_dir: str) -> tuple[str, str, str, int]:
+    """Try yt-dlp first; on failure fall back to the configured API."""
+    try:
+        return download_from_url(url, dest_dir)
+    except Exception as primary_exc:
+        logger.info("yt-dlp failed (%s) — trying API fallback", primary_exc)
+        try:
+            return cobalt_download(url, dest_dir)
+        except Exception as fallback_exc:
+            raise RuntimeError(f"{primary_exc} | fallback: {fallback_exc}") from fallback_exc
