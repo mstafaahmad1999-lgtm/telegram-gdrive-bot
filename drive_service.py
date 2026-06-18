@@ -201,13 +201,33 @@ def upload_file(
     progress_callback: Callable[[int], None] | None = None,
 ) -> dict:
     service = get_drive_service()
+    body = {"name": file_name, "parents": [folder_id]}
+
+    file_size = os.path.getsize(file_path)
+    SIMPLE_UPLOAD_MAX = 12 * 1024 * 1024  # files at/under this → single fast upload
+
+    # Small files: one-shot upload (much faster — no resumable session handshake)
+    if file_size <= SIMPLE_UPLOAD_MAX:
+        media = MediaFileUpload(file_path, mimetype=mime_type, resumable=False)
+        response = service.files().create(
+            body=body,
+            media_body=media,
+            fields="id, name, size, webViewLink",
+        ).execute()
+        if progress_callback:
+            try:
+                progress_callback(100)
+            except Exception:
+                pass
+        return response
+
+    # Large files: resumable with bigger chunks (fewer round-trips)
     media = MediaFileUpload(
         file_path,
         mimetype=mime_type,
         resumable=True,
-        chunksize=5 * 1024 * 1024,
+        chunksize=16 * 1024 * 1024,
     )
-    body = {"name": file_name, "parents": [folder_id]}
     request = service.files().create(
         body=body,
         media_body=media,

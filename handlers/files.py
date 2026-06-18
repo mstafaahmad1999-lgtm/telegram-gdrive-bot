@@ -68,11 +68,12 @@ async def _flush_album(update: Update, context: ContextTypes.DEFAULT_TYPE, user_
     await show_folder_picker(update, context, parent_id="root", status_message=status_msg)
 
 
-async def enqueue_pending(update: Update, context: ContextTypes.DEFAULT_TYPE, pending: state.PendingUpload) -> None:
+async def enqueue_pending(update: Update, context: ContextTypes.DEFAULT_TYPE, pending: state.PendingUpload, wait: float = ALBUM_WAIT_SECONDS) -> None:
     """Buffer a ready PendingUpload into the user's album and (re)arm the flush timer.
 
     Shared by file uploads and link downloads so both flow into the same
-    folder-picker → upload pipeline.
+    folder-picker → upload pipeline. `wait` controls the batch window before
+    the folder picker appears (links pass a short value for snappiness).
     """
     user_id = update.effective_user.id
 
@@ -88,7 +89,7 @@ async def enqueue_pending(update: Update, context: ContextTypes.DEFAULT_TYPE, pe
     logger.info("Buffered %s for user %s (album size: %d)", pending.file_name, user_id, len(album.files))
 
     async def _timer():
-        await asyncio.sleep(ALBUM_WAIT_SECONDS)
+        await asyncio.sleep(wait)
         await _flush_album(update, context, user_id)
 
     album.timer_task = asyncio.create_task(_timer())

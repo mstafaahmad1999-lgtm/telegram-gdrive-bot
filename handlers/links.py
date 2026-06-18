@@ -67,4 +67,5 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
     pending = state.PendingUpload(path, file_name, mime_type, size)
-    await enqueue_pending(update, context, pending)
+    # short batch window: a single link shouldn't wait the full album timer
+    await enqueue_pending(update, context, pending, wait=0.8)
