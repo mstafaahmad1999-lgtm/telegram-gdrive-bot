@@ -62,9 +62,21 @@ async def link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     await status.edit_text(
-        f"✅ Downloaded *{file_name}* ({_format_size(size)})\n\nChoose a destination folder below 👇",
+        f"✅ Downloaded *{file_name}* ({_format_size(size)})",
         parse_mode="Markdown",
     )
+
+    # Send a preview of the media so the user can check it before uploading
+    caption = "Choose a folder below to upload 👇"
+    try:
+        if mime_type.startswith("video/"):
+            with open(path, "rb") as fh:
+                await update.message.reply_video(video=fh, caption=caption)
+        elif mime_type.startswith("image/"):
+            with open(path, "rb") as fh:
+                await update.message.reply_photo(photo=fh, caption=caption)
+    except Exception as exc:
+        logger.warning("Could not send preview for %s: %s", file_name, exc)
 
     pending = state.PendingUpload(path, file_name, mime_type, size)
     # short batch window: a single link shouldn't wait the full album timer
