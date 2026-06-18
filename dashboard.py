@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for, Response
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for, Response, send_file
 
 load_dotenv()
 
@@ -448,23 +448,82 @@ def api_upload_file():
             pass
 
 
-@app.route("/api/files/download-link", methods=["POST"])
+def _link_tmp_dir() -> str:
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _cleanup_link_tmp(max_age_sec: int = 1800) -> None:
+    """Delete stale downloaded temp files (older than 30 min) to avoid disk fill."""
+    import time
+    d = _link_tmp_dir()
+    now = time.time()
+    for name in os.listdir(d):
+        p = os.path.join(d, name)
+        try:
+            if os.path.isfile(p) and now - os.path.getmtime(p) > max_age_sec:
+                os.unlink(p)
+        except OSError:
+            pass
+
+
+@app.route("/api/link/fetch", methods=["POST"])
 @login_required
-def api_download_link():
-    """Download media from a URL (reel/TikTok/etc) and upload it to Drive."""
+def api_link_fetch():
+    """Download media from a URL to a temp file (no upload yet). Returns a handle."""
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or "").strip()
-    folder_id = data.get("folder_id", "root")
     if not url:
         return jsonify({"ok": False, "error": "No URL provided"}), 400
 
-    tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp")
-    path = None
+    _cleanup_link_tmp()
+    tmp_dir = _link_tmp_dir()
     try:
         import downloader
-        import drive_service
         path, file_name, mime_type, size = downloader.fetch_media(url, tmp_dir)
-        resource = drive_service.upload_file(path, file_name, mime_type, folder_id)
+        return jsonify({
+            "ok": True,
+            "tmp": os.path.basename(path),
+            "file_name": file_name,
+            "mime": mime_type,
+            "size": size,
+            "is_video": mime_type.startswith("video/"),
+            "is_image": mime_type.startswith("image/"),
+        })
+    except Exception as exc:
+        reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "download failed"
+        return jsonify({"ok": False, "error": reason}), 500
+
+
+@app.route("/api/link/preview/<path:tmp>")
+@login_required
+def api_link_preview(tmp):
+    """Serve a downloaded temp file for in-browser preview."""
+    safe = os.path.basename(tmp)
+    p = os.path.join(_link_tmp_dir(), safe)
+    if not os.path.isfile(p):
+        return jsonify({"ok": False, "error": "Preview expired"}), 404
+    return send_file(p)
+
+
+@app.route("/api/link/upload", methods=["POST"])
+@login_required
+def api_link_upload():
+    """Upload an already-fetched temp file (by handle) to Drive."""
+    data = request.get_json(silent=True) or {}
+    safe = os.path.basename(data.get("tmp") or "")
+    file_name = data.get("file_name") or safe
+    mime_type = data.get("mime") or "application/octet-stream"
+    folder_id = data.get("folder_id", "root")
+    p = os.path.join(_link_tmp_dir(), safe)
+    if not safe or not os.path.isfile(p):
+        return jsonify({"ok": False, "error": "File expired — fetch again."}), 404
+
+    try:
+        import drive_service
+        size = os.path.getsize(p)
+        resource = drive_service.upload_file(p, file_name, mime_type, folder_id)
         folder_name = drive_service.get_folder_name(folder_id)
 
         entry = {
@@ -483,14 +542,13 @@ def api_download_link():
 
         return jsonify({"ok": True, "entry": entry})
     except Exception as exc:
-        reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "download failed"
+        reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "upload failed"
         return jsonify({"ok": False, "error": reason}), 500
     finally:
-        if path:
-            try:
-                os.unlink(path)
-            except OSError:
-                pass
+        try:
+            os.unlink(p)
+        except OSError:
+            pass
 
 
 # ── internal push (called by Android bot) ────────────────────────────────────
