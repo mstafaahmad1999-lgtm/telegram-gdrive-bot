@@ -200,6 +200,20 @@ nav.scroll{background:var(--bone);padding:13px 44px;border-color:var(--mid)}
 }
 .upload-btn:disabled{opacity:.3;cursor:not-allowed}
 .upload-btn:not(:disabled):hover{opacity:.8}
+
+/* ── Cascade text effect on buttons ── */
+.cascade-inner{display:inline-flex;overflow:hidden;height:1em;line-height:1;vertical-align:middle;pointer-events:none}
+.cascade-char{
+  display:inline-block;white-space:pre;
+  text-shadow:0 1em currentColor;
+  transition:transform 250ms ease-in-out;
+  will-change:transform
+}
+button:not(:disabled):hover .cascade-char,
+.select-btn:hover .cascade-char,
+.add-btn:hover .cascade-char{
+  transform:translateY(-1em)
+}
 /* ── Flux Progress Loader ── */
 .flux-loader{display:none;margin-top:18px;width:100%}
 .flux-label-wrap{position:relative;height:36px;margin-bottom:10px;perspective:900px}
@@ -1181,6 +1195,49 @@ async function removeUser(uid){
   if(d.ok){showToast('User '+uid+' removed',true);document.getElementById('user-'+uid)?.remove()}
   else showToast(d.error||'Failed',false);
 }
+
+/* ─── Cascade button text effect ─── */
+function cascadeify(el){
+  if(el.dataset.cascaded)return;
+  el.dataset.cascaded='1';
+  // collect child nodes, replace text nodes with cascade spans
+  const nodes=[...el.childNodes];
+  el.innerHTML='';
+  nodes.forEach(node=>{
+    if(node.nodeType===3){// text node
+      const text=node.textContent;
+      const wrap=document.createElement('span');
+      wrap.className='cascade-inner';
+      const segmenter=typeof Intl!=='undefined'&&Intl.Segmenter
+        ?new Intl.Segmenter('en',{granularity:'grapheme'}):null;
+      const chars=segmenter
+        ?Array.from(segmenter.segment(text),s=>s.segment)
+        :[...text];
+      chars.forEach((ch,i)=>{
+        const s=document.createElement('span');
+        s.className='cascade-char';
+        s.style.transitionDelay=(i*22)+'ms';
+        s.textContent=ch;
+        wrap.appendChild(s);
+      });
+      el.appendChild(wrap);
+    } else {
+      el.appendChild(node.cloneNode(true));
+    }
+  });
+}
+function initCascade(){
+  const sel=[
+    '.upload-btn','.folder-pick-btn','.act-btn',
+    '.add-btn','.select-btn','.batch-del','.batch-cancel',
+    '.modal-x','.preview-x','.fp-close'
+  ].join(',');
+  document.querySelectorAll(sel).forEach(cascadeify);
+}
+document.addEventListener('DOMContentLoaded',initCascade);
+// also re-run when dynamic content adds buttons (folder panel, file grid)
+const _cascadeObs=new MutationObserver(()=>initCascade());
+_cascadeObs.observe(document.body,{childList:true,subtree:true});
 
 /* ─── Helpers ─── */
 function formatBytes(b){
