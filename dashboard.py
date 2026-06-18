@@ -313,6 +313,22 @@ def api_browser_move():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/browser/thumbnail/<file_id>")
+@login_required
+def api_thumbnail(file_id):
+    import drive_service
+    try:
+        info = drive_service.get_drive_service().files().get(
+            fileId=file_id, fields="thumbnailLink"
+        ).execute()
+        thumb = info.get("thumbnailLink", "")
+        if thumb:
+            return redirect(thumb.replace("=s220", "=s400"))
+        return ("", 404)
+    except Exception:
+        return ("", 404)
+
+
 @app.route("/api/browser/download/<file_id>")
 @login_required
 def api_browser_download(file_id):

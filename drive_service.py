@@ -166,7 +166,7 @@ def list_folder_contents(parent_id: str = "root") -> dict:
     fq2 = f"mimeType!='application/vnd.google-apps.folder' and trashed=false and '{parent_id}' in parents"
     files = service.files().list(
         q=fq2,
-        fields="files(id,name,size,mimeType,webViewLink,webContentLink,modifiedTime)",
+        fields="files(id,name,size,mimeType,webViewLink,webContentLink,thumbnailLink,modifiedTime)",
         orderBy="name", pageSize=100,
     ).execute().get("files", [])
     return {"folders": folders, "files": files}
