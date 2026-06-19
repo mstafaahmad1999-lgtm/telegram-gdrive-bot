@@ -501,6 +501,35 @@ def api_admin_reject():
     return jsonify({"ok": True})
 
 
+@app.route("/api/profile/avatar", methods=["POST"])
+@login_required
+def api_profile_avatar():
+    if "avatar" not in request.files:
+        return jsonify({"ok": False, "error": "No file"}), 400
+    f = request.files["avatar"]
+    if not f.content_type.startswith("image/"):
+        return jsonify({"ok": False, "error": "Must be an image"}), 400
+    user_id = session.get("user_id", "unknown")
+    avatars_dir = os.path.join("static", "avatars")
+    os.makedirs(avatars_dir, exist_ok=True)
+    ext = os.path.splitext(f.filename)[1].lower() or ".jpg"
+    filename = f"{user_id}{ext}"
+    f.save(os.path.join(avatars_dir, filename))
+    return jsonify({"ok": True, "url": f"/static/avatars/{filename}"})
+
+
+@app.route("/api/profile/avatar-url")
+@login_required
+def api_profile_avatar_url():
+    user_id = session.get("user_id", "unknown")
+    avatars_dir = os.path.join("static", "avatars")
+    for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+        path = os.path.join(avatars_dir, f"{user_id}{ext}")
+        if os.path.exists(path):
+            return jsonify({"ok": True, "url": f"/static/avatars/{user_id}{ext}"})
+    return jsonify({"ok": True, "url": None})
+
+
 @app.route("/api/profile/update", methods=["POST"])
 @login_required
 def api_profile_update():

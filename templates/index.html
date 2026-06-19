@@ -712,39 +712,90 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
 /* ── Profile panel ── */
 .profile-wrap{position:relative}
+@keyframes ppIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
 .profile-panel{
-  position:absolute;top:calc(100% + 8px);right:0;
-  width:260px;background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.13);
-  z-index:500;overflow:hidden
+  position:absolute;top:calc(100% + 10px);right:0;
+  width:300px;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.98);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.14),0 4px 16px rgba(10,186,181,.08),inset 0 1px 0 rgba(255,255,255,1);
+  z-index:500;overflow:hidden;
+  animation:ppIn .22s cubic-bezier(0.16,1,0.3,1)
 }
-.pp-header{display:flex;align-items:center;gap:12px;padding:16px}
-.pp-avatar{
-  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+/* hero section */
+.pp-hero{
+  position:relative;
+  background:linear-gradient(135deg,#0D0F13 0%,#1a2535 100%);
+  padding:24px 20px 20px;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  overflow:hidden
+}
+.pp-hero::before{
+  content:"";position:absolute;top:-40px;right:-40px;
+  width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle,rgba(10,186,181,.25),transparent 70%);
+  pointer-events:none
+}
+/* avatar with photo */
+.pp-av-wrap{position:relative;cursor:none}
+.pp-av-img{
+  width:72px;height:72px;border-radius:50%;
   background:linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%);
   color:#000;display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:1rem;
-  box-shadow:0 2px 10px rgba(10,186,181,.3)
+  font-weight:800;font-size:1.4rem;
+  box-shadow:0 0 0 3px rgba(10,186,181,.4),0 8px 24px rgba(0,0,0,.3);
+  overflow:hidden;flex-shrink:0;
+  transition:box-shadow .2s
 }
-.pp-name{font-size:.9rem;font-weight:700;color:var(--ink)}
-.pp-role{font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
-.pp-divider{height:1px;background:var(--line);margin:0}
-.pp-stats{display:flex;gap:0;border-bottom:1px solid var(--line)}
-.pp-stat{flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:2px}
-.pp-stat:first-child{border-right:1px solid var(--line)}
-.pp-stat-val{font-size:1rem;font-weight:700;color:var(--ink)}
-.pp-stat-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
+.pp-av-img img{width:100%;height:100%;object-fit:cover;display:block}
+.pp-av-edit{
+  position:absolute;bottom:0;right:0;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);
+  border:2px solid #0D0F13;
+  transition:transform .15s
+}
+.pp-av-wrap:hover .pp-av-edit{transform:scale(1.12)}
+.pp-av-wrap:hover .pp-av-img{box-shadow:0 0 0 3px var(--accent),0 8px 24px rgba(0,0,0,.3)}
+.pp-av-edit svg{width:11px;height:11px;color:#fff}
+.pp-hero-name{font-size:1rem;font-weight:700;color:#fff;letter-spacing:.01em}
+.pp-hero-role{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--accent);
+  background:rgba(10,186,181,.15);border:1px solid rgba(10,186,181,.3);
+  border-radius:99px;padding:3px 10px
+}
+.pp-online-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px #22c55e}
+/* stats row */
+.pp-stats{display:flex;border-bottom:1px solid var(--line)}
+.pp-stat{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:14px 8px;gap:2px
+}
+.pp-stat+.pp-stat{border-left:1px solid var(--line)}
+.pp-stat-val{font-size:1.05rem;font-weight:700;color:var(--ink)}
+.pp-stat-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
+/* menu items */
+.pp-menu{padding:6px}
 .pp-item{
-  display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:10px 12px;border-radius:10px;
   font-size:.82rem;color:var(--ink);background:none;border:none;
-  cursor:none;transition:background .12s;text-align:left;
-  font-family:'Inter',sans-serif;text-decoration:none
+  cursor:none;transition:background .12s,color .12s;text-align:left;
+  font-family:'Inter',sans-serif;text-decoration:none;font-weight:500
 }
 .pp-item:hover{background:var(--bg)}
 .pp-item svg{flex-shrink:0;color:var(--ink-dim)}
+.pp-item:hover svg{color:var(--accent)}
 .pp-signout{color:var(--danger)}
 .pp-signout svg{color:var(--danger)}
-.pp-signout:hover{background:rgba(224,85,85,.06)}
+.pp-signout:hover{background:rgba(224,85,85,.07);color:var(--danger)}
+.pp-signout:hover svg{color:var(--danger)}
 
 /* ── Admin panel ── */
 .admin-card{
@@ -842,29 +893,53 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         </div>
       </div>
       <div class="profile-wrap" id="profileWrap">
-        <button class="avatar" id="profileBtn" onclick="toggleProfilePanel()">{{ current_user[:2].upper() if current_user else 'MA' }}</button>
+        <button class="avatar" id="profileBtn" onclick="toggleProfilePanel()" style="cursor:none">
+          <span id="profileBtnInner">{{ current_user[:2].upper() if current_user else 'MA' }}</span>
+        </button>
         <div class="profile-panel" id="profilePanel" style="display:none">
-          <div class="pp-header">
-            <div class="pp-avatar">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
-            <div>
-              <div class="pp-name" id="ppName">{{ current_user }}</div>
-              <div class="pp-role">{{ current_role }}</div>
+          <!-- Hero -->
+          <div class="pp-hero">
+            <div class="pp-av-wrap" onclick="document.getElementById('avatarInput').click()" title="Change photo">
+              <div class="pp-av-img" id="ppAvatar">
+                <span id="ppAvatarInitials">{{ current_user[:2].upper() if current_user else 'MA' }}</span>
+              </div>
+              <div class="pp-av-edit">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+            </div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+            <div class="pp-hero-name" id="ppName">{{ current_user }}</div>
+            <div class="pp-hero-role">
+              <span class="pp-online-dot"></span>
+              {{ current_role }}
             </div>
           </div>
-          <div class="pp-divider"></div>
+          <!-- Stats -->
           <div class="pp-stats">
-            <div class="pp-stat"><span class="pp-stat-val">{{ stats.total_files }}</span><span class="pp-stat-lbl">Uploads</span></div>
-            <div class="pp-stat"><span class="pp-stat-val">{{ stats.total_size }}</span><span class="pp-stat-lbl">Total size</span></div>
+            <div class="pp-stat">
+              <span class="pp-stat-val">{{ stats.total_files }}</span>
+              <span class="pp-stat-lbl">Uploads</span>
+            </div>
+            <div class="pp-stat">
+              <span class="pp-stat-val">{{ stats.total_size }}</span>
+              <span class="pp-stat-lbl">Total size</span>
+            </div>
+            <div class="pp-stat">
+              <span class="pp-stat-val">{{ users|length }}</span>
+              <span class="pp-stat-lbl">Members</span>
+            </div>
           </div>
-          <div class="pp-divider"></div>
-          <button class="pp-item" onclick="openEditProfile()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit Profile
-          </button>
-          <a class="pp-item pp-signout" href="/logout">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-            Sign Out
-          </a>
+          <!-- Menu -->
+          <div class="pp-menu">
+            <button class="pp-item" onclick="openEditProfile()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Edit Profile
+            </button>
+            <a class="pp-item pp-signout" href="/logout">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              Sign Out
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -1905,14 +1980,60 @@ async function saveProfile(){
     const res=await fetch('/api/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name})});
     const d=await res.json();
     if(d.ok){
+      const initials=name.slice(0,2).toUpperCase();
       document.getElementById('ppName').textContent=name;
-      document.querySelector('.profile-panel .pp-avatar').textContent=name.slice(0,2).toUpperCase();
-      document.getElementById('profileBtn').textContent=name.slice(0,2).toUpperCase();
+      document.getElementById('ppAvatarInitials').textContent=initials;
+      document.getElementById('profileBtnInner').textContent=initials;
       showToast('Profile updated!',true);
       closeEditProfile();
     }else showToast(d.error||'Failed',false);
   }catch(e){showToast('Network error',false)}
 }
+
+async function uploadAvatar(input){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){showToast('Image must be under 5 MB',false);return}
+  const form=new FormData();form.append('avatar',file);
+  try{
+    showToast('Uploading photo…',true);
+    const res=await fetch('/api/profile/avatar',{method:'POST',body:form});
+    const d=await res.json();
+    if(d.ok){
+      // Show image in avatar
+      const img=document.createElement('img');
+      img.src=d.url+'?t='+Date.now();
+      const av=document.getElementById('ppAvatar');
+      document.getElementById('ppAvatarInitials').style.display='none';
+      av.appendChild(img);
+      // Update topbar avatar
+      const btn=document.getElementById('profileBtn');
+      btn.style.backgroundImage=`url(${d.url}?t=${Date.now()})`;
+      btn.style.backgroundSize='cover';
+      btn.style.backgroundPosition='center';
+      document.getElementById('profileBtnInner').style.display='none';
+      showToast('Photo updated!',true);
+    }else showToast(d.error||'Upload failed',false);
+  }catch(e){showToast('Network error',false)}
+  input.value='';
+}
+
+// Load saved avatar on page load
+(function(){
+  fetch('/api/profile/avatar-url').then(r=>r.json()).then(d=>{
+    if(!d.url)return;
+    const av=document.getElementById('ppAvatar');
+    const img=document.createElement('img');
+    img.src=d.url+'?t='+Date.now();
+    document.getElementById('ppAvatarInitials').style.display='none';
+    av.appendChild(img);
+    const btn=document.getElementById('profileBtn');
+    btn.style.backgroundImage=`url(${d.url}?t=${Date.now()})`;
+    btn.style.backgroundSize='cover';
+    btn.style.backgroundPosition='center';
+    document.getElementById('profileBtnInner').style.display='none';
+  }).catch(()=>{});
+})();
 
 // Poll every 30s
 fetchNotifications();
