@@ -204,7 +204,7 @@ def upload_file(
     body = {"name": file_name, "parents": [folder_id]}
 
     file_size = os.path.getsize(file_path)
-    SIMPLE_UPLOAD_MAX = 12 * 1024 * 1024  # files at/under this → single fast upload
+    SIMPLE_UPLOAD_MAX = 50 * 1024 * 1024  # files at/under this → single fast upload
 
     # Small files: one-shot upload (much faster — no resumable session handshake)
     if file_size <= SIMPLE_UPLOAD_MAX:

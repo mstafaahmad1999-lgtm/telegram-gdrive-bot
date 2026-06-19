@@ -49,7 +49,12 @@ def download_from_url(url: str, dest_dir: str) -> tuple[str, str, str, int]:
         "no_warnings": True,
         "ignoreerrors": False,
         "retries": 2,
-        "socket_timeout": 20,
+        "socket_timeout": 30,
+        # ── speed-ups ──────────────────────────────
+        "concurrent_fragment_downloads": 8,  # parallel HLS/DASH fragments
+        "http_chunk_size": 10 * 1024 * 1024,  # 10 MB ranged GETs (faster TCP)
+        "buffersize": 1024 * 1024,            # 1 MB read buffer
+        "noprogress": True,
         "http_headers": {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
@@ -130,9 +135,10 @@ def _http_json(api_url: str, payload: dict, api_key: str, timeout: int = 30) -> 
 
 
 def _download_url_to(media_url: str, path: str, timeout: int = 120) -> None:
-    req = urllib.request.Request(media_url, headers={"User-Agent": _UA})
+    # Big buffer (1 MB) → many fewer syscalls, much faster on fast links.
+    req = urllib.request.Request(media_url, headers={"User-Agent": _UA, "Accept-Encoding": "identity"})
     with urllib.request.urlopen(req, timeout=timeout) as resp, open(path, "wb") as f:
-        shutil.copyfileobj(resp, f)
+        shutil.copyfileobj(resp, f, length=1024 * 1024)
 
 
 def _http_get_json(url: str, timeout: int = 30) -> dict:
