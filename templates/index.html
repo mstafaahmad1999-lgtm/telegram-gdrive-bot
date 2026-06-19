@@ -647,6 +647,87 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
   #cur{display:none!important}body{cursor:auto!important}
 }
+
+/* ── Rail badge ── */
+.rail-badge{
+  position:absolute;top:4px;right:8px;
+  background:#e05555;color:#fff;
+  font-size:.5rem;font-weight:700;
+  min-width:16px;height:16px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;border:2px solid var(--rail)
+}
+
+/* ── Notification bell ── */
+.notif-wrap{position:relative}
+.notif-btn{
+  position:relative;width:36px;height:36px;border-radius:9px;border:1px solid var(--line);
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  cursor:none;color:var(--ink-dim);transition:all .15s
+}
+.notif-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--glow)}
+.notif-badge{
+  position:absolute;top:-5px;right:-5px;
+  background:#e05555;color:#fff;
+  font-size:.5rem;font-weight:700;
+  min-width:16px;height:16px;border-radius:99px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;border:2px solid var(--bg)
+}
+.notif-panel{
+  position:absolute;top:calc(100% + 8px);right:0;
+  width:320px;max-height:420px;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.13);z-index:500;
+  overflow:hidden;display:flex;flex-direction:column
+}
+.notif-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--line)
+}
+.notif-title{font-size:.8rem;font-weight:600;color:var(--ink)}
+.notif-mark-all{font-size:.7rem;color:var(--accent);background:none;border:none;cursor:none;font-family:'Inter',sans-serif}
+.notif-mark-all:hover{opacity:.7}
+.notif-list{overflow-y:auto;flex:1}
+.notif-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:11px 16px;border-bottom:1px solid var(--line);
+  transition:background .12s;cursor:default
+}
+.notif-item:last-child{border-bottom:none}
+.notif-item.unread{background:rgba(10,186,181,.05)}
+.notif-item:hover{background:var(--bg2)}
+.notif-icon{
+  width:30px;height:30px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:.85rem
+}
+.notif-icon.upload{background:rgba(10,186,181,.12);color:var(--accent)}
+.notif-icon.login{background:rgba(37,99,235,.1);color:#2563eb}
+.notif-icon.signup{background:rgba(245,158,11,.1);color:#d97706}
+.notif-icon.approved{background:rgba(34,197,94,.1);color:#16a34a}
+.notif-body{flex:1;min-width:0}
+.notif-msg{font-size:.76rem;color:var(--ink);line-height:1.4}
+.notif-time{font-size:.65rem;color:var(--ink-dim);margin-top:3px;font-family:'DM Mono',monospace}
+.notif-empty{padding:32px;text-align:center;font-size:.78rem;color:var(--ink-dim)}
+
+/* ── Admin panel ── */
+.admin-card{
+  background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.95);border-radius:15px;
+  padding:18px;overflow-x:auto;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 2px 16px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,1)
+}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table thead th{font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-dim);padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-weight:600}
+.admin-table tbody tr{border-bottom:1px solid var(--line);transition:background .12s}
+.admin-table tbody tr:last-child{border-bottom:none}
+.admin-table tbody tr:hover{background:var(--bg2)}
+.admin-table td{padding:11px 12px;font-size:.8rem;color:var(--ink);vertical-align:middle}
+.admin-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#e05555;color:#fff;font-size:.58rem;font-weight:700;
+  min-width:18px;height:18px;border-radius:99px;padding:0 5px;
+  margin-left:8px;vertical-align:middle
+}
 </style>
 </head>
 <body>
@@ -667,6 +748,13 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
     <button class="rail-btn" data-view="members" onclick="showView('members')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg><span>Members</span>
     </button>
+    {% if is_admin %}
+    <button class="rail-btn" data-view="admin" onclick="showView('admin')" style="position:relative">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      <span>Admin</span>
+      {% if pending_count > 0 %}<span class="rail-badge">{{ pending_count }}</span>{% endif %}
+    </button>
+    {% endif %}
     <div class="side-spacer"></div>
     <a class="rail-btn" href="/browser">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Browser</span>
@@ -706,7 +794,21 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="searchBar" type="text" placeholder="Search files…" oninput="onSearch(this.value)">
       </div>
-      <div class="avatar">MA</div>
+      <!-- Notification Bell -->
+      <div class="notif-wrap" id="notifWrap">
+        <button class="notif-btn" id="notifBtn" onclick="toggleNotifPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" id="notifBadge" style="display:none">{{ unread_count }}</span>
+        </button>
+        <div class="notif-panel" id="notifPanel" style="display:none">
+          <div class="notif-hd">
+            <span class="notif-title">Notifications</span>
+            <button class="notif-mark-all" onclick="markAllRead()">Mark all read</button>
+          </div>
+          <div class="notif-list" id="notifList"><div class="notif-empty">No notifications yet</div></div>
+        </div>
+      </div>
+      <div class="avatar">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
     </div>
 
     <div class="content">
@@ -958,6 +1060,78 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         </div>
       </section>
 
+      {% if is_admin %}
+      <!-- ── ADMIN VIEW ── -->
+      <section class="view" id="view-admin">
+        <div class="view-head">
+          <h1 class="view-title">Admin Panel</h1>
+          <span class="view-meta">Exclusive access</span>
+        </div>
+
+        <!-- Pending approvals -->
+        <div class="sub-head">Pending Approvals {% if pending_count > 0 %}<span class="admin-badge">{{ pending_count }}</span>{% endif %}</div>
+        <div class="admin-card" id="pendingSection">
+          {% set pending_accounts = accounts | selectattr('approved', 'equalto', false) | list %}
+          {% if pending_accounts %}
+          <table class="admin-table">
+            <thead><tr><th>Username</th><th>Email</th><th>Requested</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for a in pending_accounts %}
+              <tr id="pending-row-{{ a.id }}">
+                <td><strong>{{ a.username }}</strong></td>
+                <td style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--ink-dim)">{{ a.email }}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim)">{{ a.created_at[:10] }}</td>
+                <td style="display:flex;gap:6px">
+                  <button class="act-btn" style="background:var(--accent);color:#fff;border-color:var(--accent)" onclick="approveUser('{{ a.id }}')">Approve</button>
+                  <button class="act-btn danger" onclick="rejectUser('{{ a.id }}')">Reject</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No pending approvals.</div>
+          {% endif %}
+        </div>
+
+        <!-- All accounts -->
+        <div class="sub-head" style="margin-top:28px">All Accounts</div>
+        <div class="admin-card">
+          {% set approved_accounts = accounts | selectattr('approved', 'equalto', true) | list %}
+          {% if approved_accounts %}
+          <table class="admin-table">
+            <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for a in approved_accounts %}
+              <tr id="account-row-{{ a.id }}">
+                <td><strong>{{ a.username }}</strong></td>
+                <td style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--ink-dim)">{{ a.email }}</td>
+                <td>
+                  {% if a.role == 'admin' %}
+                  <span class="badge badge-owner">admin</span>
+                  {% else %}
+                  <span class="badge badge-friend">user</span>
+                  {% endif %}
+                </td>
+                <td style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim)">{{ a.created_at[:10] }}</td>
+                <td>
+                  {% if a.role != 'admin' %}
+                  <button class="act-btn danger" onclick="deleteAccount('{{ a.id }}','{{ a.username }}')">Delete</button>
+                  {% else %}
+                  <span style="font-size:.7rem;color:var(--ink-dim)">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="empty">No accounts yet.</div>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
+
     </div>
   </main>
 </div>
@@ -1018,7 +1192,7 @@ function showView(name){
 }
 function scrollToUpload(){const u=document.getElementById('upload');if(u)setTimeout(()=>u.scrollIntoView({behavior:'smooth',block:'start'}),80)}
 function onSearch(v){filterTable(v);if(v&&!document.getElementById('view-recents').classList.contains('active'))showView('recents')}
-(function(){const h=location.hash.slice(1);if(['files','recents','members'].includes(h))showView(h)})();
+(function(){const h=location.hash.slice(1);if(['files','recents','members','admin'].includes(h))showView(h)})();
 
 /* ─── Toast ─── */
 function showToast(msg,ok){
@@ -1557,6 +1731,130 @@ function initCascade(){
 document.addEventListener('DOMContentLoaded',initCascade);
 const _cascadeObs=new MutationObserver(()=>initCascade());
 _cascadeObs.observe(document.body,{childList:true,subtree:true});
+
+/* ─── Notifications ─── */
+let notifOpen=false;
+
+function toggleNotifPanel(){
+  notifOpen=!notifOpen;
+  const panel=document.getElementById('notifPanel');
+  panel.style.display=notifOpen?'flex':'none';
+  if(notifOpen)fetchNotifications();
+}
+
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('notifWrap');
+  if(notifOpen&&wrap&&!wrap.contains(e.target)){
+    notifOpen=false;
+    document.getElementById('notifPanel').style.display='none';
+  }
+});
+
+async function fetchNotifications(){
+  try{
+    const res=await fetch('/api/notifications');
+    const d=await res.json();
+    if(!d.ok)return;
+    renderNotifications(d.notifications);
+    const unread=d.notifications.filter(n=>!n.read).length;
+    const badge=document.getElementById('notifBadge');
+    if(unread>0){badge.textContent=unread>99?'99+':unread;badge.style.display='flex'}
+    else{badge.style.display='none'}
+  }catch(e){}
+}
+
+function renderNotifications(list){
+  const el=document.getElementById('notifList');
+  if(!list||!list.length){el.innerHTML='<div class="notif-empty">No notifications yet</div>';return}
+  const icons={upload:'📤',login:'🔑',signup:'👤',approved:'✅'};
+  el.innerHTML=list.slice(0,20).map(n=>{
+    const icon=icons[n.type]||'🔔';
+    const cls='notif-icon '+(n.type||'');
+    const ago=timeAgo(n.timestamp);
+    return `<div class="notif-item${n.read?'':' unread'}">
+      <div class="${cls}">${icon}</div>
+      <div class="notif-body">
+        <div class="notif-msg">${n.message}</div>
+        <div class="notif-time">${ago}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markAllRead(){
+  try{
+    await fetch('/api/notifications/read-all',{method:'POST'});
+    document.querySelectorAll('.notif-item.unread').forEach(el=>el.classList.remove('unread'));
+    document.getElementById('notifBadge').style.display='none';
+  }catch(e){}
+}
+
+function timeAgo(ts){
+  if(!ts)return'';
+  const diff=Math.floor((Date.now()-new Date(ts).getTime())/1000);
+  if(diff<60)return diff+'s ago';
+  if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
+
+// Poll every 30s
+fetchNotifications();
+setInterval(fetchNotifications,30000);
+
+/* ─── Admin actions ─── */
+async function approveUser(accountId){
+  const row=document.getElementById('pending-row-'+accountId);
+  const btn=row?row.querySelector('button'):null;
+  if(btn){btn.disabled=true;btn.textContent='…'}
+  try{
+    const res=await fetch('/api/admin/users/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_id:accountId})});
+    const d=await res.json();
+    if(d.ok){
+      showToast('User approved!',true);
+      if(row)row.remove();
+      // update pending badge counts
+      const remaining=document.querySelectorAll('#pendingSection tbody tr').length;
+      document.querySelectorAll('.rail-badge,.admin-badge').forEach(b=>{
+        if(remaining===0)b.style.display='none';
+        else b.textContent=remaining;
+      });
+    }else{showToast(d.error||'Failed',false);if(btn){btn.disabled=false;btn.textContent='Approve'}}
+  }catch(e){showToast('Network error',false);if(btn){btn.disabled=false;btn.textContent='Approve'}}
+}
+
+async function rejectUser(accountId){
+  if(!confirm('Reject and delete this signup request?'))return;
+  const row=document.getElementById('pending-row-'+accountId);
+  const btn=row?row.querySelectorAll('button')[1]:null;
+  if(btn){btn.disabled=true;btn.textContent='…'}
+  try{
+    const res=await fetch('/api/admin/users/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_id:accountId})});
+    const d=await res.json();
+    if(d.ok){
+      showToast('Request rejected',true);
+      if(row)row.remove();
+      const remaining=document.querySelectorAll('#pendingSection tbody tr').length;
+      document.querySelectorAll('.rail-badge,.admin-badge').forEach(b=>{
+        if(remaining===0)b.style.display='none';
+        else b.textContent=remaining;
+      });
+    }else{showToast(d.error||'Failed',false);if(btn){btn.disabled=false;btn.textContent='Reject'}}
+  }catch(e){showToast('Network error',false)}
+}
+
+async function deleteAccount(accountId,username){
+  if(!confirm('Permanently delete account "'+username+'"?\n\nThis cannot be undone.'))return;
+  const row=document.getElementById('account-row-'+accountId);
+  const btn=row?row.querySelector('button'):null;
+  if(btn){btn.disabled=true;btn.textContent='…'}
+  try{
+    const res=await fetch('/api/admin/users/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_id:accountId})});
+    const d=await res.json();
+    if(d.ok){showToast('Account deleted',true);if(row)row.remove()}
+    else{showToast(d.error||'Failed',false);if(btn){btn.disabled=false;btn.textContent='Delete'}}
+  }catch(e){showToast('Network error',false)}
+}
 
 /* ─── Helpers ─── */
 function formatBytes(b){

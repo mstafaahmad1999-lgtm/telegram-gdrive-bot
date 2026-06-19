@@ -9,11 +9,13 @@ protected by the shared DASHBOARD_SYNC_TOKEN.
 import json
 import os
 import tempfile
+import uuid
 from datetime import datetime, timedelta
 from functools import wraps
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for, Response, send_file
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -25,14 +27,119 @@ DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin")
 DASHBOARD_SYNC_TOKEN = os.getenv("DASHBOARD_SYNC_TOKEN", "")
 HISTORY_FILE = "history.json"
 USERS_FILE = os.getenv("USERS_FILE", "users.json")
+ACCOUNTS_FILE = os.getenv("ACCOUNTS_FILE", "accounts.json")
+NOTIFICATIONS_FILE = "notifications.json"
 MAX_HISTORY = 500
+MAX_NOTIFICATIONS = 200
 PER_PAGE = 20
 
 AUTHORIZED_USER_IDS_STR = os.getenv("AUTHORIZED_USER_IDS", os.getenv("AUTHORIZED_USER_ID", ""))
 OWNER_ID = int(AUTHORIZED_USER_IDS_STR.split(",")[0].strip()) if AUTHORIZED_USER_IDS_STR else 0
 
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", os.getenv("BOT_TOKEN", ""))
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sovan2026")
+ADMIN_USERNAME = "mstafa"
+ADMIN_EMAIL = "mstafa.ahmad.1999@gmail.com"
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+
+# ── accounts helpers ──────────────────────────────────────────────────────────
+
+def _load_accounts() -> list[dict]:
+    if os.path.exists(ACCOUNTS_FILE):
+        try:
+            with open(ACCOUNTS_FILE) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def _save_accounts(accounts: list[dict]) -> None:
+    with open(ACCOUNTS_FILE, "w") as f:
+        json.dump(accounts, f, indent=2)
+
+
+def _get_account_by_username(username: str) -> dict | None:
+    for a in _load_accounts():
+        if a.get("username", "").lower() == username.lower():
+            return a
+    return None
+
+
+def _get_account_by_id(account_id: str) -> dict | None:
+    for a in _load_accounts():
+        if a.get("id") == account_id:
+            return a
+    return None
+
+
+def _ensure_admin_exists() -> None:
+    """Seed the admin account on first boot if accounts.json is missing or empty."""
+    accounts = _load_accounts()
+    if any(a.get("role") == "admin" for a in accounts):
+        return
+    accounts.append({
+        "id": str(uuid.uuid4()),
+        "username": ADMIN_USERNAME,
+        "email": ADMIN_EMAIL,
+        "password_hash": generate_password_hash(ADMIN_PASSWORD),
+        "role": "admin",
+        "approved": True,
+        "created_at": datetime.utcnow().isoformat(),
+    })
+    _save_accounts(accounts)
+
+
+# ── notifications helpers ─────────────────────────────────────────────────────
+
+def _load_notifications() -> list[dict]:
+    if os.path.exists(NOTIFICATIONS_FILE):
+        try:
+            with open(NOTIFICATIONS_FILE) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def _save_notifications(notifications: list[dict]) -> None:
+    with open(NOTIFICATIONS_FILE, "w") as f:
+        json.dump(notifications[-MAX_NOTIFICATIONS:], f, indent=2)
+
+
+def _notify(type_: str, message: str, data: dict | None = None) -> None:
+    """Save a notification and optionally push to Telegram for important events."""
+    notifications = _load_notifications()
+    notifications.append({
+        "id": str(uuid.uuid4()),
+        "type": type_,
+        "message": message,
+        "data": data or {},
+        "read": False,
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+    _save_notifications(notifications)
+
+    # Telegram push for high-priority events
+    if type_ in ("signup", "upload") and BOT_TOKEN and OWNER_ID:
+        try:
+            import urllib.request
+            payload = json.dumps({
+                "chat_id": OWNER_ID,
+                "text": f"🔔 <b>SOVAN Dashboard</b>\n{message}",
+                "parse_mode": "HTML",
+            }).encode()
+            req = urllib.request.Request(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+
+
+# ── history/users helpers ────────────────────────────────────────────────────
 
 def _load_history() -> list[dict]:
     if os.path.exists(HISTORY_FILE):
@@ -85,7 +192,6 @@ def _compute_stats(history: list[dict]) -> dict:
     top_uploader = max(uploaders, key=uploaders.get) if uploaders else None
     top_count = uploaders[top_uploader] if top_uploader else 0
 
-    # uploads per day (last 7 days)
     daily: dict[str, int] = {}
     for e in history:
         ts = e.get("timestamp", "")
@@ -105,28 +211,141 @@ def _compute_stats(history: list[dict]) -> dict:
     }
 
 
-# ── auth ──────────────────────────────────────────────────────────────────────
+# ── auth decorators ───────────────────────────────────────────────────────────
 
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get("logged_in"):
+        if not session.get("user_id"):
+            # Legacy support: old sessions used "logged_in"
+            if session.get("logged_in"):
+                return f(*args, **kwargs)
             return redirect(url_for("login"))
+        # Check if approved
+        account = _get_account_by_id(session["user_id"])
+        if account and not account.get("approved"):
+            return redirect(url_for("pending"))
         return f(*args, **kwargs)
     return decorated
 
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get("role") != "admin":
+            return jsonify({"ok": False, "error": "Forbidden"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.context_processor
+def inject_session_info():
+    """Make session role/username available in all templates."""
+    return {
+        "current_user": session.get("username", ""),
+        "current_role": session.get("role", "user"),
+        "is_admin": session.get("role") == "admin",
+    }
+
+
+# ── auth routes ───────────────────────────────────────────────────────────────
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
     if request.method == "POST":
-        if request.form.get("password") == DASHBOARD_PASSWORD:
-            if request.form.get("remember"):
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        remember = request.form.get("remember")
+
+        # Try new account-based auth first
+        account = _get_account_by_username(username)
+        if account and check_password_hash(account["password_hash"], password):
+            if not account.get("approved"):
+                session["user_id"] = account["id"]
+                session["username"] = account["username"]
+                session["role"] = account.get("role", "user")
+                return redirect(url_for("pending"))
+            if remember:
+                session.permanent = True
+            session["user_id"] = account["id"]
+            session["username"] = account["username"]
+            session["role"] = account.get("role", "user")
+            session["logged_in"] = True  # legacy compat
+            _notify("login", f"<b>{account['username']}</b> logged in")
+            return redirect(url_for("index"))
+
+        # Legacy fallback: single password
+        elif not username and password == DASHBOARD_PASSWORD:
+            if remember:
                 session.permanent = True
             session["logged_in"] = True
             return redirect(url_for("index"))
-        error = "Wrong password."
+        elif username and password == DASHBOARD_PASSWORD:
+            # old-style single-password login with username field filled
+            if remember:
+                session.permanent = True
+            session["logged_in"] = True
+            session["username"] = username
+            return redirect(url_for("index"))
+
+        error = "Invalid username or password."
+
     return render_template("login.html", error=error)
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm", "")
+
+        if not username or not email or not password:
+            error = "All fields are required."
+        elif password != confirm:
+            error = "Passwords do not match."
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters."
+        elif _get_account_by_username(username):
+            error = "Username already taken."
+        else:
+            accounts = _load_accounts()
+            # Check email uniqueness
+            if any(a.get("email", "").lower() == email.lower() for a in accounts):
+                error = "An account with this email already exists."
+            else:
+                new_account = {
+                    "id": str(uuid.uuid4()),
+                    "username": username,
+                    "email": email,
+                    "password_hash": generate_password_hash(password),
+                    "role": "user",
+                    "approved": False,
+                    "created_at": datetime.utcnow().isoformat(),
+                }
+                accounts.append(new_account)
+                _save_accounts(accounts)
+                _notify("signup", f"New signup request: <b>{username}</b> ({email})")
+                session["user_id"] = new_account["id"]
+                session["username"] = username
+                session["role"] = "user"
+                return redirect(url_for("pending"))
+
+    return render_template("signup.html", error=error)
+
+
+@app.route("/pending")
+def pending():
+    user_id = session.get("user_id")
+    if not user_id:
+        return redirect(url_for("login"))
+    account = _get_account_by_id(user_id)
+    if account and account.get("approved"):
+        return redirect(url_for("index"))
+    return render_template("pending.html", username=session.get("username", ""))
 
 
 @app.route("/logout")
@@ -142,6 +361,7 @@ def logout():
 def index():
     history = _load_history()
     users = _load_users()
+    accounts = _load_accounts()
     stats = _compute_stats(history)
 
     page = max(1, int(request.args.get("page", 1)))
@@ -162,15 +382,23 @@ def index():
         ext = os.path.splitext(e.get("file_name", ""))[1].lower()
         e["_previewable"] = ext in {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".webm", ".mov", ".m4v"}
 
+    # Pending approvals count for admin badge
+    pending_count = sum(1 for a in accounts if not a.get("approved"))
+    # Unread notifications count
+    unread_count = sum(1 for n in _load_notifications() if not n.get("read"))
+
     return render_template(
         "index.html",
         stats=stats,
         recent=recent,
         users=users,
+        accounts=accounts,
         owner_id=OWNER_ID,
         page=page,
         total_pages=total_pages,
         total=total,
+        pending_count=pending_count,
+        unread_count=unread_count,
     )
 
 
@@ -180,7 +408,115 @@ def browser():
     return render_template("browser.html")
 
 
-# ── API ───────────────────────────────────────────────────────────────────────
+# ── notifications API ─────────────────────────────────────────────────────────
+
+@app.route("/api/notifications")
+@login_required
+def api_notifications():
+    notifications = list(reversed(_load_notifications()))
+    unread = sum(1 for n in notifications if not n.get("read"))
+    return jsonify({"ok": True, "notifications": notifications[:50], "unread": unread})
+
+
+@app.route("/api/notifications/read", methods=["POST"])
+@login_required
+def api_notifications_read():
+    nid = request.get_json(force=True).get("id")
+    notifications = _load_notifications()
+    for n in notifications:
+        if n.get("id") == nid:
+            n["read"] = True
+    _save_notifications(notifications)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/notifications/read-all", methods=["POST"])
+@login_required
+def api_notifications_read_all():
+    notifications = _load_notifications()
+    for n in notifications:
+        n["read"] = True
+    _save_notifications(notifications)
+    return jsonify({"ok": True})
+
+
+# ── admin API ─────────────────────────────────────────────────────────────────
+
+@app.route("/api/admin/pending")
+@login_required
+@admin_required
+def api_admin_pending():
+    accounts = _load_accounts()
+    pending = [a for a in accounts if not a.get("approved")]
+    # Strip password hashes before sending to client
+    safe = [{k: v for k, v in a.items() if k != "password_hash"} for a in pending]
+    return jsonify({"ok": True, "pending": safe})
+
+
+@app.route("/api/admin/users/approve", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_approve():
+    account_id = request.get_json(force=True).get("account_id")
+    accounts = _load_accounts()
+    for a in accounts:
+        if a.get("id") == account_id:
+            a["approved"] = True
+            _save_accounts(accounts)
+            _notify("approved", f"Account approved: <b>{a['username']}</b>")
+            # Telegram push for approval
+            if BOT_TOKEN and OWNER_ID:
+                try:
+                    import urllib.request
+                    payload = json.dumps({
+                        "chat_id": OWNER_ID,
+                        "text": f"✅ <b>SOVAN Dashboard</b>\nAccount approved: {a['username']}",
+                        "parse_mode": "HTML",
+                    }).encode()
+                    req = urllib.request.Request(
+                        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                        data=payload,
+                        headers={"Content-Type": "application/json"},
+                    )
+                    urllib.request.urlopen(req, timeout=5)
+                except Exception:
+                    pass
+            return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Account not found"}), 404
+
+
+@app.route("/api/admin/users/reject", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_reject():
+    account_id = request.get_json(force=True).get("account_id")
+    accounts = _load_accounts()
+    before = len(accounts)
+    accounts = [a for a in accounts if a.get("id") != account_id]
+    if len(accounts) == before:
+        return jsonify({"ok": False, "error": "Account not found"}), 404
+    _save_accounts(accounts)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/users/delete", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_delete_user():
+    account_id = request.get_json(force=True).get("account_id")
+    # Cannot delete yourself
+    if account_id == session.get("user_id"):
+        return jsonify({"ok": False, "error": "Cannot delete your own account"}), 400
+    accounts = _load_accounts()
+    before = len(accounts)
+    accounts = [a for a in accounts if a.get("id") != account_id]
+    if len(accounts) == before:
+        return jsonify({"ok": False, "error": "Account not found"}), 404
+    _save_accounts(accounts)
+    return jsonify({"ok": True})
+
+
+# ── existing user API (Telegram IDs) ─────────────────────────────────────────
 
 @app.route("/api/users/add", methods=["POST"])
 @login_required
@@ -236,14 +572,12 @@ def api_delete_file():
     if not file_id:
         return jsonify({"ok": False, "error": "Missing file_id"}), 400
 
-    # Delete from Google Drive
     try:
         import drive_service
         drive_service.delete_file(file_id)
     except Exception as exc:
         return jsonify({"ok": False, "error": f"Drive error: {exc}"}), 500
 
-    # Remove from local history.json
     history = _load_history()
     history = [e for e in history if e.get("file_id") != file_id]
     with open(HISTORY_FILE, "w") as f:
@@ -388,7 +722,6 @@ def api_delete_files_batch():
 @app.route("/api/folders")
 @login_required
 def api_folders():
-    """Return Drive folders for a given parent (default: root)."""
     parent = request.args.get("parent", "root")
     try:
         import drive_service
@@ -401,7 +734,6 @@ def api_folders():
 @app.route("/api/files/upload", methods=["POST"])
 @login_required
 def api_upload_file():
-    """Upload a file from the browser directly to Google Drive."""
     if "file" not in request.files:
         return jsonify({"ok": False, "error": "No file provided"}), 400
 
@@ -438,6 +770,8 @@ def api_upload_file():
         with open(HISTORY_FILE, "w") as fh:
             json.dump(history[-MAX_HISTORY:], fh)
 
+        _notify("upload", f"📁 <b>{entry['file_name']}</b> uploaded by {session.get('username', 'user')} ({_format_size(entry['file_size'])})")
+
         return jsonify({"ok": True, "entry": entry})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
@@ -455,7 +789,6 @@ def _link_tmp_dir() -> str:
 
 
 def _cleanup_link_tmp(max_age_sec: int = 1800) -> None:
-    """Delete stale downloaded temp files (older than 30 min) to avoid disk fill."""
     import time
     d = _link_tmp_dir()
     now = time.time()
@@ -471,7 +804,6 @@ def _cleanup_link_tmp(max_age_sec: int = 1800) -> None:
 @app.route("/api/link/fetch", methods=["POST"])
 @login_required
 def api_link_fetch():
-    """Download media from a URL to a temp file (no upload yet). Returns a handle."""
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or "").strip()
     if not url:
@@ -500,7 +832,6 @@ def api_link_fetch():
 @app.route("/api/link/preview/<path:tmp>")
 @login_required
 def api_link_preview(tmp):
-    """Serve a downloaded temp file for in-browser preview or device download."""
     safe = os.path.basename(tmp)
     p = os.path.join(_link_tmp_dir(), safe)
     if not os.path.isfile(p):
@@ -514,7 +845,6 @@ def api_link_preview(tmp):
 @app.route("/api/link/cancel", methods=["POST"])
 @login_required
 def api_link_cancel():
-    """Discard a fetched temp file without uploading."""
     data = request.get_json(silent=True) or {}
     safe = os.path.basename(data.get("tmp") or "")
     p = os.path.join(_link_tmp_dir(), safe)
@@ -529,7 +859,6 @@ def api_link_cancel():
 @app.route("/api/link/upload", methods=["POST"])
 @login_required
 def api_link_upload():
-    """Upload an already-fetched temp file (by handle) to Drive."""
     data = request.get_json(silent=True) or {}
     safe = os.path.basename(data.get("tmp") or "")
     file_name = data.get("file_name") or safe
@@ -559,6 +888,8 @@ def api_link_upload():
         with open(HISTORY_FILE, "w") as fh:
             json.dump(history[-MAX_HISTORY:], fh)
 
+        _notify("upload", f"📁 <b>{entry['file_name']}</b> uploaded via link by {session.get('username', 'user')} ({_format_size(entry['file_size'])})")
+
         return jsonify({"ok": True, "entry": entry})
     except Exception as exc:
         reason = (str(exc).splitlines() or [""])[-1].strip()[:300] or "upload failed"
@@ -574,7 +905,6 @@ def api_link_upload():
 
 @app.route("/api/internal/push", methods=["POST"])
 def api_internal_push():
-    """Receive data pushed from the Android bot. Protected by shared token."""
     if not DASHBOARD_SYNC_TOKEN:
         return jsonify({"ok": False, "error": "Sync token not configured"}), 500
 
@@ -593,6 +923,7 @@ def api_internal_push():
         history.append(entry)
         with open(HISTORY_FILE, "w") as f:
             json.dump(history[-MAX_HISTORY:], f)
+        _notify("upload", f"📁 <b>{entry.get('file_name', 'file')}</b> uploaded via bot ({_format_size(entry.get('file_size', 0))})")
         return jsonify({"ok": True})
 
     if kind == "users":
@@ -607,7 +938,8 @@ def api_internal_push():
 
 # ── run ───────────────────────────────────────────────────────────────────────
 
+_ensure_admin_exists()
+
 if __name__ == "__main__":
     port = int(os.getenv("DASHBOARD_PORT", 5000))
-    # host 0.0.0.0 so it's reachable from other devices on the same Wi-Fi
     app.run(host="0.0.0.0", port=port, debug=False)

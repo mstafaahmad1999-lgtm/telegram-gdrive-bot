@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOVAN — Pending Approval</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 100vw; height: 100vh; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+    #gl-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+
+    @keyframes loginReveal {
+      from { opacity: 0; transform: scale(0.96); filter: blur(6px); }
+      to   { opacity: 1; transform: scale(1);    filter: blur(0px); }
+    }
+
+    .overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      animation: loginReveal 1s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+
+    .card {
+      width: 100%; max-width: 400px;
+      padding: 2.5rem 2rem;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 1rem;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+
+    .logo-wrap { position: relative; width: 160px; margin: 0 auto 1.5rem; }
+    .logo-wrap img.wordmark { width: 160px; height: auto; filter: invert(1); mix-blend-mode: screen; display: block; }
+    .star-cover { position: absolute; top: 48%; left: 32%; transform: translate(-50%,-50%); width: 28px; height: 28px; border-radius: 50%; background: rgb(10,10,14); pointer-events: none; }
+    .star-blue  { position: absolute; top: 48%; left: 32%; transform: translate(-50%,-50%); width: 22px; height: 22px; filter: invert(45%) sepia(90%) saturate(600%) hue-rotate(200deg) brightness(1.2); pointer-events: none; }
+
+    .icon-wrap {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(37,99,235,0.15);
+      border: 1px solid rgba(37,99,235,0.4);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+    .icon-wrap svg { color: #60a5fa; }
+
+    h2 {
+      font-size: 1.1rem; font-weight: 600; color: #fff;
+      letter-spacing: 0.05em;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+      margin-bottom: 0.75rem;
+    }
+
+    p.desc {
+      font-size: 0.82rem; color: rgba(255,255,255,0.6);
+      line-height: 1.6; letter-spacing: 0.02em;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.9);
+      margin-bottom: 2rem;
+    }
+
+    p.desc span { color: #93c5fd; font-weight: 600; }
+
+    .divider { width: 40px; height: 1px; background: rgba(255,255,255,0.1); margin: 0 auto 1.5rem; }
+
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.6rem 1.5rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05); cursor: pointer;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+  </style>
+</head>
+<body>
+
+<canvas id="gl-canvas"></canvas>
+
+<div class="overlay">
+  <div class="card">
+    <div class="logo-wrap">
+      <img class="wordmark" src="/static/sovan-logo.png.png" alt="SOVAN" />
+      <div class="star-cover"></div>
+      <img class="star-blue" src="/static/sovan-symbol.svg" alt="" aria-hidden="true" />
+    </div>
+
+    <div class="icon-wrap">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </div>
+
+    <h2>Awaiting Approval</h2>
+    <p class="desc">
+      Hi <span>{{ username }}</span>, your account request has been received.<br/>
+      An admin will review and approve your access shortly.
+    </p>
+
+    <div class="divider"></div>
+
+    <a href="/logout" class="btn-logout">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Sign Out
+    </a>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script>
+const canvas = document.getElementById('gl-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000);
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
+const uniforms = {
+  resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  time: { value: 0.0 }, xScale: { value: 1.0 }, yScale: { value: 0.5 }, distortion: { value: 0.05 },
+};
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1,-1,0,1,-1,0,-1,1,0,1,-1,0,-1,1,0,1,1,0]),3));
+scene.add(new THREE.Mesh(geo, new THREE.RawShaderMaterial({
+  uniforms, side: THREE.DoubleSide,
+  vertexShader: `attribute vec3 position; void main(){gl_Position=vec4(position,1.0);}`,
+  fragmentShader: `precision highp float; uniform vec2 resolution; uniform float time,xScale,yScale,distortion;
+    void main(){vec2 p=(gl_FragCoord.xy*2.0-resolution)/min(resolution.x,resolution.y);
+    float d=length(p)*distortion;
+    float r=0.05/abs(p.y+sin((p.x*(1.0+d)+time)*xScale)*yScale);
+    float g=0.05/abs(p.y+sin((p.x+time)*xScale)*yScale);
+    float b=0.05/abs(p.y+sin((p.x*(1.0-d)+time)*xScale)*yScale);
+    gl_FragColor=vec4(r,g,b,1.0);}`,
+})));
+function onResize(){renderer.setSize(window.innerWidth,window.innerHeight,false);uniforms.resolution.value.set(window.innerWidth,window.innerHeight);}
+onResize(); window.addEventListener('resize',onResize);
+(function tick(){uniforms.time.value+=0.01;renderer.render(scene,camera);requestAnimationFrame(tick);})();
+</script>
+</body>
+</html>

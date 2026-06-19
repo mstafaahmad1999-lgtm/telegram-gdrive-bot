@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOVAN — Create Account</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 100vw; height: 100vh; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+
+    #gl-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+
+    @keyframes loginReveal {
+      from { opacity: 0; transform: scale(0.96); filter: blur(6px); }
+      to   { opacity: 1; transform: scale(1);    filter: blur(0px); }
+    }
+
+    .overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      animation: loginReveal 1s cubic-bezier(0.16,1,0.3,1) forwards;
+      overflow-y: auto; padding: 1rem;
+    }
+
+    .card {
+      width: 100%; max-width: 400px;
+      padding: 2rem 2rem 1.75rem;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 1rem;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
+    }
+
+    .logo-wrap { position: relative; width: 160px; margin: 0 auto 1.25rem; }
+    .logo-wrap img.wordmark { width: 160px; height: auto; filter: invert(1); mix-blend-mode: screen; display: block; }
+    .star-cover { position: absolute; top: 48%; left: 32%; transform: translate(-50%,-50%); width: 28px; height: 28px; border-radius: 50%; background: rgb(10,10,14); pointer-events: none; }
+    .star-blue  { position: absolute; top: 48%; left: 32%; transform: translate(-50%,-50%); width: 22px; height: 22px; filter: invert(45%) sepia(90%) saturate(600%) hue-rotate(200deg) brightness(1.2); pointer-events: none; }
+
+    .subtitle { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.7); letter-spacing: 0.3em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.9); margin-bottom: 1.5rem; }
+
+    .error-banner { background: rgba(127,29,29,0.6); border: 1px solid rgba(252,165,165,0.3); color: #fca5a5; border-radius: 0.5rem; padding: 0.625rem 0.875rem; font-size: 0.8rem; margin-bottom: 1rem; text-align: center; }
+
+    .field { position: relative; margin-bottom: 1.75rem; }
+    .field input { display: block; width: 100%; padding: 0.625rem 0; font-size: 0.95rem; color: #fff; background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.4); outline: none; text-shadow: 0 1px 4px rgba(0,0,0,0.8); caret-color: #60a5fa; transition: border-color 0.3s; }
+    .field input:focus { border-bottom-color: #60a5fa; }
+    .field label { position: absolute; top: 0.7rem; left: 0; font-size: 0.875rem; color: rgba(255,255,255,0.6); text-shadow: 0 1px 6px rgba(0,0,0,0.9); transition: top 0.25s, font-size 0.25s, color 0.25s; pointer-events: none; }
+    .field input:focus ~ label,
+    .field input:not(:placeholder-shown) ~ label { top: -1.1rem; font-size: 0.72rem; color: #93c5fd; }
+
+    .btn-submit {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.75rem 1rem; border-radius: 0.5rem; border: none; cursor: pointer;
+      font-weight: 700; font-size: 0.85rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: #fff;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #1d4ed8 100%);
+      box-shadow: 0 4px 24px rgba(37,99,235,0.35);
+      transition: opacity 0.25s, transform 0.2s, box-shadow 0.2s;
+      margin-top: 0.5rem;
+    }
+    .btn-submit:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 32px rgba(37,99,235,0.5); }
+
+    .card-footer { text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-top: 1.25rem; text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
+    .card-footer a { font-weight: 600; color: #60a5fa; text-decoration: none; transition: color 0.2s; }
+    .card-footer a:hover { color: #93c5fd; }
+  </style>
+</head>
+<body>
+
+<canvas id="gl-canvas"></canvas>
+
+<div class="overlay">
+  <div class="card">
+    <div class="logo-wrap">
+      <img class="wordmark" src="/static/sovan-logo.png.png" alt="SOVAN" />
+      <div class="star-cover"></div>
+      <img class="star-blue" src="/static/sovan-symbol.svg" alt="" aria-hidden="true" />
+    </div>
+
+    <p class="subtitle">Create your account</p>
+
+    {% if error %}
+    <div class="error-banner">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      <div class="field">
+        <input type="text" id="username" name="username" placeholder=" " required autocomplete="username" />
+        <label for="username">Username</label>
+      </div>
+      <div class="field">
+        <input type="email" id="email" name="email" placeholder=" " required autocomplete="email" />
+        <label for="email">Email Address</label>
+      </div>
+      <div class="field">
+        <input type="password" id="password" name="password" placeholder=" " required autocomplete="new-password" />
+        <label for="password">Password</label>
+      </div>
+      <div class="field">
+        <input type="password" id="confirm" name="confirm" placeholder=" " required autocomplete="new-password" />
+        <label for="confirm">Confirm Password</label>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        Request Access
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </button>
+    </form>
+
+    <p class="card-footer">
+      Already have an account? <a href="/login">Sign In</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script>
+const canvas = document.getElementById('gl-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000);
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0,-1);
+const uniforms = {
+  resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  time: { value: 0.0 }, xScale: { value: 1.0 }, yScale: { value: 0.5 }, distortion: { value: 0.05 },
+};
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1,-1,0,1,-1,0,-1,1,0,1,-1,0,-1,1,0,1,1,0]),3));
+scene.add(new THREE.Mesh(geo, new THREE.RawShaderMaterial({
+  uniforms, side: THREE.DoubleSide,
+  vertexShader: `attribute vec3 position; void main(){gl_Position=vec4(position,1.0);}`,
+  fragmentShader: `precision highp float; uniform vec2 resolution; uniform float time,xScale,yScale,distortion;
+    void main(){vec2 p=(gl_FragCoord.xy*2.0-resolution)/min(resolution.x,resolution.y);
+    float d=length(p)*distortion;
+    float r=0.05/abs(p.y+sin((p.x*(1.0+d)+time)*xScale)*yScale);
+    float g=0.05/abs(p.y+sin((p.x+time)*xScale)*yScale);
+    float b=0.05/abs(p.y+sin((p.x*(1.0-d)+time)*xScale)*yScale);
+    gl_FragColor=vec4(r,g,b,1.0);}`,
+})));
+function onResize(){renderer.setSize(window.innerWidth,window.innerHeight,false);uniforms.resolution.value.set(window.innerWidth,window.innerHeight);}
+onResize(); window.addEventListener('resize',onResize);
+(function tick(){uniforms.time.value+=0.01;renderer.render(scene,camera);requestAnimationFrame(tick);})();
+</script>
+</body>
+</html>
