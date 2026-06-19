@@ -163,7 +163,7 @@ body{
   position:sticky;top:0;z-index:50;
   box-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 12px rgba(0,0,0,.06)
 }
-.topbar-search{flex:1;max-width:720px;position:relative}
+.topbar-search{flex:1;position:relative}
 .topbar-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-dim)}
 .topbar-search input{
   width:100%;padding:9px 14px 9px 36px;border-radius:10px;
@@ -712,90 +712,90 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
 /* ── Profile panel ── */
 .profile-wrap{position:relative}
-@keyframes ppIn{from{opacity:0;transform:translateY(6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes ppIn{
+  from{opacity:0;transform:translateY(8px) scale(.95);filter:blur(4px)}
+  to{opacity:1;transform:none;filter:blur(0)}
+}
 .profile-panel{
-  position:absolute;top:calc(100% + 10px);right:0;
-  width:300px;
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
-  border:1px solid rgba(255,255,255,.98);
-  border-radius:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.14),0 4px 16px rgba(10,186,181,.08),inset 0 1px 0 rgba(255,255,255,1);
+  position:absolute;top:calc(100% + 12px);right:0;
+  width:260px;
+  background:#000;
+  border-radius:24px;
+  box-shadow:0 32px 80px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.08);
   z-index:500;overflow:hidden;
-  animation:ppIn .22s cubic-bezier(0.16,1,0.3,1)
+  animation:ppIn .28s cubic-bezier(0.16,1,0.3,1)
 }
-/* hero section */
-.pp-hero{
-  position:relative;
-  background:linear-gradient(135deg,#0D0F13 0%,#1a2535 100%);
-  padding:24px 20px 20px;
-  display:flex;flex-direction:column;align-items:center;gap:10px;
-  overflow:hidden
+/* full-bleed photo hero */
+.pp-photo{
+  position:relative;width:100%;height:280px;overflow:hidden;
+  background:linear-gradient(145deg,#0D0F13,#1C2535)
 }
-.pp-hero::before{
-  content:"";position:absolute;top:-40px;right:-40px;
-  width:160px;height:160px;border-radius:50%;
-  background:radial-gradient(circle,rgba(10,186,181,.25),transparent 70%);
-  pointer-events:none
+.pp-photo-img{
+  width:100%;height:100%;object-fit:cover;object-position:center top;
+  display:block;
 }
-/* avatar with photo */
-.pp-av-wrap{position:relative;cursor:none}
-.pp-av-img{
-  width:72px;height:72px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%);
-  color:#000;display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-size:1.4rem;
-  box-shadow:0 0 0 3px rgba(10,186,181,.4),0 8px 24px rgba(0,0,0,.3);
-  overflow:hidden;flex-shrink:0;
-  transition:box-shadow .2s
+.pp-photo-initials{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:3.5rem;font-weight:800;color:rgba(255,255,255,.15);letter-spacing:-.02em;
 }
-.pp-av-img img{width:100%;height:100%;object-fit:cover;display:block}
-.pp-av-edit{
-  position:absolute;bottom:0;right:0;
-  width:24px;height:24px;border-radius:50%;
-  background:var(--accent);
+/* camera edit overlay */
+.pp-photo-edit{
+  position:absolute;top:12px;right:12px;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.2);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.3);
-  border:2px solid #0D0F13;
-  transition:transform .15s
+  cursor:none;transition:background .15s,transform .15s;
 }
-.pp-av-wrap:hover .pp-av-edit{transform:scale(1.12)}
-.pp-av-wrap:hover .pp-av-img{box-shadow:0 0 0 3px var(--accent),0 8px 24px rgba(0,0,0,.3)}
-.pp-av-edit svg{width:11px;height:11px;color:#fff}
-.pp-hero-name{font-size:1rem;font-weight:700;color:#fff;letter-spacing:.01em}
-.pp-hero-role{
-  display:inline-flex;align-items:center;gap:5px;
+.pp-photo-edit:hover{background:rgba(10,186,181,.6);transform:scale(1.08)}
+.pp-photo-edit svg{width:14px;height:14px;color:#fff}
+/* frosted glass name strip */
+.pp-glass{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:36px 18px 18px;
+  background:linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 100%);
+  backdrop-filter:blur(0px);
+}
+.pp-glass-name{
+  font-size:1.15rem;font-weight:700;color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.5);
+  letter-spacing:-.01em
+}
+.pp-glass-role{
+  display:inline-flex;align-items:center;gap:5px;margin-top:4px;
   font-size:.62rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--accent);
-  background:rgba(10,186,181,.15);border:1px solid rgba(10,186,181,.3);
-  border-radius:99px;padding:3px 10px
+  color:var(--accent-soft)
 }
 .pp-online-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;box-shadow:0 0 6px #22c55e}
 /* stats row */
-.pp-stats{display:flex;border-bottom:1px solid var(--line)}
+.pp-stats{
+  display:flex;
+  border-bottom:1px solid rgba(255,255,255,.07)
+}
 .pp-stat{
   flex:1;display:flex;flex-direction:column;align-items:center;
-  padding:14px 8px;gap:2px
+  padding:13px 8px;gap:2px
 }
-.pp-stat+.pp-stat{border-left:1px solid var(--line)}
-.pp-stat-val{font-size:1.05rem;font-weight:700;color:var(--ink)}
-.pp-stat-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
-/* menu items */
-.pp-menu{padding:6px}
+.pp-stat+.pp-stat{border-left:1px solid rgba(255,255,255,.07)}
+.pp-stat-val{font-size:1rem;font-weight:700;color:#fff}
+.pp-stat-lbl{font-size:.55rem;text-transform:uppercase;letter-spacing:.09em;color:rgba(255,255,255,.35)}
+/* menu */
+.pp-menu{padding:6px 6px 8px}
 .pp-item{
   display:flex;align-items:center;gap:10px;width:100%;
-  padding:10px 12px;border-radius:10px;
-  font-size:.82rem;color:var(--ink);background:none;border:none;
+  padding:10px 12px;border-radius:12px;
+  font-size:.82rem;color:rgba(255,255,255,.75);background:none;border:none;
   cursor:none;transition:background .12s,color .12s;text-align:left;
   font-family:'Inter',sans-serif;text-decoration:none;font-weight:500
 }
-.pp-item:hover{background:var(--bg)}
-.pp-item svg{flex-shrink:0;color:var(--ink-dim)}
+.pp-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.pp-item svg{flex-shrink:0;color:rgba(255,255,255,.35);transition:color .12s}
 .pp-item:hover svg{color:var(--accent)}
-.pp-signout{color:var(--danger)}
-.pp-signout svg{color:var(--danger)}
-.pp-signout:hover{background:rgba(224,85,85,.07);color:var(--danger)}
-.pp-signout:hover svg{color:var(--danger)}
+.pp-signout{color:rgba(224,85,85,.8)}
+.pp-signout svg{color:rgba(224,85,85,.5)}
+.pp-signout:hover{background:rgba(224,85,85,.1);color:#f87171}
+.pp-signout:hover svg{color:#f87171}
 
 /* ── Admin panel ── */
 .admin-card{
@@ -897,23 +897,21 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           <span id="profileBtnInner">{{ current_user[:2].upper() if current_user else 'MA' }}</span>
         </button>
         <div class="profile-panel" id="profilePanel" style="display:none">
-          <!-- Hero -->
-          <div class="pp-hero">
-            <div class="pp-av-wrap" onclick="document.getElementById('avatarInput').click()" title="Change photo">
-              <div class="pp-av-img" id="ppAvatar">
-                <span id="ppAvatarInitials">{{ current_user[:2].upper() if current_user else 'MA' }}</span>
-              </div>
-              <div class="pp-av-edit">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              </div>
-            </div>
-            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
-            <div class="pp-hero-name" id="ppName">{{ current_user }}</div>
-            <div class="pp-hero-role">
-              <span class="pp-online-dot"></span>
-              {{ current_role }}
+          <!-- Full-bleed photo hero -->
+          <div class="pp-photo">
+            <img class="pp-photo-img" id="ppPhotoImg" src="" alt="" style="display:none">
+            <div class="pp-photo-initials" id="ppAvatarInitials">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
+            <button class="pp-photo-edit" onclick="document.getElementById('avatarInput').click()" title="Change photo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <div class="pp-glass">
+              <div class="pp-glass-name" id="ppName">{{ current_user }}</div>
+              <div class="pp-glass-role"><span class="pp-online-dot"></span>{{ current_role }}</div>
             </div>
           </div>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+          <!-- hidden compat element for JS that reads ppAvatar -->
+          <div id="ppAvatar" style="display:none"></div>
           <!-- Stats -->
           <div class="pp-stats">
             <div class="pp-stat">
@@ -2000,38 +1998,31 @@ async function uploadAvatar(input){
     const res=await fetch('/api/profile/avatar',{method:'POST',body:form});
     const d=await res.json();
     if(d.ok){
-      // Show image in avatar
-      const img=document.createElement('img');
-      img.src=d.url+'?t='+Date.now();
-      const av=document.getElementById('ppAvatar');
-      document.getElementById('ppAvatarInitials').style.display='none';
-      av.appendChild(img);
-      // Update topbar avatar
-      const btn=document.getElementById('profileBtn');
-      btn.style.backgroundImage=`url(${d.url}?t=${Date.now()})`;
-      btn.style.backgroundSize='cover';
-      btn.style.backgroundPosition='center';
-      document.getElementById('profileBtnInner').style.display='none';
+      _setAvatar(d.url);
       showToast('Photo updated!',true);
     }else showToast(d.error||'Upload failed',false);
   }catch(e){showToast('Network error',false)}
   input.value='';
 }
 
+function _setAvatar(url){
+  const ts=url+'?t='+Date.now();
+  // hero full-bleed
+  const photoImg=document.getElementById('ppPhotoImg');
+  photoImg.src=ts; photoImg.style.display='block';
+  document.getElementById('ppAvatarInitials').style.display='none';
+  // topbar button
+  const btn=document.getElementById('profileBtn');
+  btn.style.backgroundImage=`url(${ts})`;
+  btn.style.backgroundSize='cover';
+  btn.style.backgroundPosition='center';
+  document.getElementById('profileBtnInner').style.display='none';
+}
+
 // Load saved avatar on page load
 (function(){
   fetch('/api/profile/avatar-url').then(r=>r.json()).then(d=>{
-    if(!d.url)return;
-    const av=document.getElementById('ppAvatar');
-    const img=document.createElement('img');
-    img.src=d.url+'?t='+Date.now();
-    document.getElementById('ppAvatarInitials').style.display='none';
-    av.appendChild(img);
-    const btn=document.getElementById('profileBtn');
-    btn.style.backgroundImage=`url(${d.url}?t=${Date.now()})`;
-    btn.style.backgroundSize='cover';
-    btn.style.backgroundPosition='center';
-    document.getElementById('profileBtnInner').style.display='none';
+    if(d.url)_setAvatar(d.url);
   }).catch(()=>{});
 })();
 
