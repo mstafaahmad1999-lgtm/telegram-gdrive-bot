@@ -501,6 +501,23 @@ def api_admin_reject():
     return jsonify({"ok": True})
 
 
+@app.route("/api/profile/update", methods=["POST"])
+@login_required
+def api_profile_update():
+    data = request.get_json(force=True)
+    display_name = data.get("display_name", "").strip()
+    if not display_name:
+        return jsonify({"ok": False, "error": "Name cannot be empty"}), 400
+    accounts = _load_accounts()
+    for a in accounts:
+        if a.get("id") == session.get("user_id"):
+            a["display_name"] = display_name
+            _save_accounts(accounts)
+            session["username"] = display_name
+            return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "Account not found"}), 404
+
+
 @app.route("/api/admin/users/delete", methods=["POST"])
 @login_required
 @admin_required

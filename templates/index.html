@@ -710,6 +710,42 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .notif-time{font-size:.65rem;color:var(--ink-dim);margin-top:3px;font-family:'DM Mono',monospace}
 .notif-empty{padding:32px;text-align:center;font-size:.78rem;color:var(--ink-dim)}
 
+/* ── Profile panel ── */
+.profile-wrap{position:relative}
+.profile-panel{
+  position:absolute;top:calc(100% + 8px);right:0;
+  width:260px;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.13);
+  z-index:500;overflow:hidden
+}
+.pp-header{display:flex;align-items:center;gap:12px;padding:16px}
+.pp-avatar{
+  width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%);
+  color:#000;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:1rem;
+  box-shadow:0 2px 10px rgba(10,186,181,.3)
+}
+.pp-name{font-size:.9rem;font-weight:700;color:var(--ink)}
+.pp-role{font-size:.68rem;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+.pp-divider{height:1px;background:var(--line);margin:0}
+.pp-stats{display:flex;gap:0;border-bottom:1px solid var(--line)}
+.pp-stat{flex:1;display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:2px}
+.pp-stat:first-child{border-right:1px solid var(--line)}
+.pp-stat-val{font-size:1rem;font-weight:700;color:var(--ink)}
+.pp-stat-lbl{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim)}
+.pp-item{
+  display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;
+  font-size:.82rem;color:var(--ink);background:none;border:none;
+  cursor:none;transition:background .12s;text-align:left;
+  font-family:'Inter',sans-serif;text-decoration:none
+}
+.pp-item:hover{background:var(--bg)}
+.pp-item svg{flex-shrink:0;color:var(--ink-dim)}
+.pp-signout{color:var(--danger)}
+.pp-signout svg{color:var(--danger)}
+.pp-signout:hover{background:rgba(224,85,85,.06)}
+
 /* ── Admin panel ── */
 .admin-card{
   background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.95);border-radius:15px;
@@ -759,9 +795,6 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
     <a class="rail-btn" href="/browser">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Browser</span>
     </a>
-    <a class="rail-btn" href="/logout">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Out</span>
-    </a>
   </aside>
 
   <!-- ── Secondary sidebar ── -->
@@ -808,7 +841,49 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           <div class="notif-list" id="notifList"><div class="notif-empty">No notifications yet</div></div>
         </div>
       </div>
-      <div class="avatar">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
+      <div class="profile-wrap" id="profileWrap">
+        <button class="avatar" id="profileBtn" onclick="toggleProfilePanel()">{{ current_user[:2].upper() if current_user else 'MA' }}</button>
+        <div class="profile-panel" id="profilePanel" style="display:none">
+          <div class="pp-header">
+            <div class="pp-avatar">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
+            <div>
+              <div class="pp-name" id="ppName">{{ current_user }}</div>
+              <div class="pp-role">{{ current_role }}</div>
+            </div>
+          </div>
+          <div class="pp-divider"></div>
+          <div class="pp-stats">
+            <div class="pp-stat"><span class="pp-stat-val">{{ stats.total_files }}</span><span class="pp-stat-lbl">Uploads</span></div>
+            <div class="pp-stat"><span class="pp-stat-val">{{ stats.total_size }}</span><span class="pp-stat-lbl">Total size</span></div>
+          </div>
+          <div class="pp-divider"></div>
+          <button class="pp-item" onclick="openEditProfile()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Profile
+          </button>
+          <a class="pp-item pp-signout" href="/logout">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Sign Out
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal" onclick="if(event.target===this)closeEditProfile()">
+      <div class="modal" style="max-width:360px">
+        <div class="modal-hd">
+          <span class="modal-title">Edit Profile</span>
+          <button class="modal-x" onclick="closeEditProfile()">Close ✕</button>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <label class="form-lbl">Display Name</label>
+            <input type="text" id="editDisplayName" class="uid-input" style="width:100%" placeholder="Your name">
+          </div>
+          <button class="add-btn" style="width:100%;padding:11px" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
     </div>
 
     <div class="content">
@@ -1791,11 +1866,52 @@ async function markAllRead(){
 
 function timeAgo(ts){
   if(!ts)return'';
+  // Force UTC interpretation — server sends utcnow() without Z
+  if(!ts.endsWith('Z')&&!ts.includes('+'))ts+='Z';
   const diff=Math.floor((Date.now()-new Date(ts).getTime())/1000);
   if(diff<60)return diff+'s ago';
   if(diff<3600)return Math.floor(diff/60)+'m ago';
   if(diff<86400)return Math.floor(diff/3600)+'h ago';
   return Math.floor(diff/86400)+'d ago';
+}
+
+/* ─── Profile panel ─── */
+let profileOpen=false;
+function toggleProfilePanel(){
+  profileOpen=!profileOpen;
+  const panel=document.getElementById('profilePanel');
+  panel.style.display=profileOpen?'block':'none';
+}
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('profileWrap');
+  if(profileOpen&&wrap&&!wrap.contains(e.target)){
+    profileOpen=false;
+    document.getElementById('profilePanel').style.display='none';
+  }
+});
+function openEditProfile(){
+  profileOpen=false;
+  document.getElementById('profilePanel').style.display='none';
+  document.getElementById('editDisplayName').value=document.getElementById('ppName').textContent.trim();
+  document.getElementById('editProfileModal').classList.add('open');
+}
+function closeEditProfile(){
+  document.getElementById('editProfileModal').classList.remove('open');
+}
+async function saveProfile(){
+  const name=document.getElementById('editDisplayName').value.trim();
+  if(!name){showToast('Name cannot be empty',false);return}
+  try{
+    const res=await fetch('/api/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name})});
+    const d=await res.json();
+    if(d.ok){
+      document.getElementById('ppName').textContent=name;
+      document.querySelector('.profile-panel .pp-avatar').textContent=name.slice(0,2).toUpperCase();
+      document.getElementById('profileBtn').textContent=name.slice(0,2).toUpperCase();
+      showToast('Profile updated!',true);
+      closeEditProfile();
+    }else showToast(d.error||'Failed',false);
+  }catch(e){showToast('Network error',false)}
 }
 
 // Poll every 30s
