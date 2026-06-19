@@ -399,6 +399,8 @@ def index():
         total=total,
         pending_count=pending_count,
         unread_count=unread_count,
+        is_admin=session.get("role") == "admin",
+        current_user=session.get("username", ""),
     )
 
 
