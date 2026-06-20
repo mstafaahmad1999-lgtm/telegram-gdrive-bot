@@ -905,9 +905,9 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
     </button>
     {% endif %}
     <div class="side-spacer"></div>
-    <a class="rail-btn" href="/browser">
+    <button class="rail-btn" data-view="browser" onclick="showView('browser')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Browser</span>
-    </a>
+    </button>
   </aside>
 
   <!-- ── Secondary sidebar ── -->
@@ -939,7 +939,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       <nav class="topbar-nav">
         <button class="tb-nav-btn active" data-view="files" onclick="showView('files')">Files</button>
         <button class="tb-nav-btn" data-view="recents" onclick="showView('recents')">Recents</button>
-        <button class="tb-nav-btn" onclick="location.href='/browser'">Browser</button>
+        <button class="tb-nav-btn" data-view="browser" onclick="showView('browser')">Browser</button>
         {% if is_admin %}<button class="tb-nav-btn" data-view="members" onclick="showView('members')">Members</button>{% endif %}
         {% if is_admin %}<button class="tb-nav-btn" data-view="admin" onclick="showView('admin')">Admin</button>{% endif %}
       </nav>
@@ -1447,6 +1447,11 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       </section>
       {% endif %}
 
+      <!-- ── BROWSER VIEW ── -->
+      <section class="view" id="view-browser" style="padding:0;margin:-24px -28px -64px;height:calc(100vh - 57px)">
+        <iframe id="browserIframe" src="" style="width:100%;height:100%;border:none;display:block" allowfullscreen></iframe>
+      </section>
+
     </div>
   </main>
 </div>
@@ -1503,6 +1508,11 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
   if(location.hash.slice(1)!==name)history.replaceState(null,'','#'+name);
+  if(name==='browser'){
+    const fr=document.getElementById('browserIframe');
+    if(!fr.src||fr.src===window.location.href)fr.src='/browser';
+    return;
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function scrollToUpload(){const u=document.getElementById('upload');if(u)setTimeout(()=>u.scrollIntoView({behavior:'smooth',block:'start'}),80)}
@@ -1543,9 +1553,10 @@ function fileCardHTML(f){
   const icon=fileIcon(f.mimeType);
   const size=f.size?formatBytes(parseInt(f.size)):'';
   const previewable=isImg||isVid;
-  return `<div class="fp-card">
+  const hoverPre=previewable?`onmouseenter="preloadAsset('${f.id}','${_escq(f.name)}')" ontouchstart="preloadAsset('${f.id}','${_escq(f.name)}')"`:'';
+  return `<div class="fp-card" ${hoverPre}>
     <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${_escq(f.name)}')`:''}" style="${previewable?'cursor:none':''}">
-      ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
+      ${thumb?`<img src="${thumb}" alt="" loading="lazy" decoding="async">`:`<span class="fp-thumb-icon">${icon}</span>`}
       ${isVid?'<div class="play-ov">▶</div>':''}
     </div>
     <div class="fp-info">
@@ -1698,13 +1709,20 @@ function fileIcon(mime){
 /* ─── Preview ─── */
 const IMG_EXT=/\.(jpg|jpeg|png|gif|webp|bmp)$/i;
 const VID_EXT=/\.(mp4|webm|mov|m4v)$/i;
+const _preloadCache={};
+function preloadAsset(fileId,fileName){
+  if(_preloadCache[fileId])return;
+  _preloadCache[fileId]=true;
+  if(IMG_EXT.test(fileName)){const i=new Image();i.src='/api/browser/download/'+fileId;}
+  else if(VID_EXT.test(fileName)){const v=document.createElement('video');v.preload='metadata';v.src='/api/browser/download/'+fileId;}
+}
 function openPreview(fileId,fileName){
   document.getElementById('previewTitle').textContent=fileName;
   const body=document.getElementById('previewBody');
   if(IMG_EXT.test(fileName))
-    body.innerHTML=`<img src="/api/browser/download/${fileId}" alt="${fileName}">`;
+    body.innerHTML=`<img src="/api/browser/download/${fileId}" alt="${fileName}" decoding="async" style="max-width:80vw;max-height:76vh">`;
   else if(VID_EXT.test(fileName))
-    body.innerHTML=`<video src="/api/browser/download/${fileId}" controls autoplay playsinline style="max-width:100%;max-height:80vh"></video>`;
+    body.innerHTML=`<video src="/api/browser/download/${fileId}" controls autoplay playsinline preload="auto" style="max-width:100%;max-height:80vh"></video>`;
   else
     body.innerHTML='<div class="preview-unsupported">Preview not available for this file type.</div>';
   document.getElementById('previewOverlay').classList.add('open');
