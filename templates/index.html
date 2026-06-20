@@ -157,13 +157,13 @@ body{
 /* ── Main ── */
 .main{display:flex;flex-direction:column;min-height:100vh;background:transparent}
 .topbar{
-  display:flex;align-items:center;gap:14px;padding:12px 28px;
+  display:flex;align-items:center;gap:14px;padding:14px 24px;
   min-height:96px;
-  background:rgba(255,255,255,0.82);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  background:transparent;
   position:sticky;top:0;z-index:50;
-  box-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 12px rgba(0,0,0,.06)
+  pointer-events:none;
 }
+.topbar>*{pointer-events:all}
 .topbar-search{flex:1;position:relative}
 .topbar-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--ink-dim)}
 .topbar-search input{
