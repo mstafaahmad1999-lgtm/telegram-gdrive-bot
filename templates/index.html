@@ -1810,8 +1810,11 @@ async function doUpload(){
   setFluxProgress(100,'complete');
   btn.textContent='Upload all';
   setTimeout(()=>{wrap.style.display='none';},1800);
-  if(!failed){showToast('All '+done+' file'+(done>1?'s':'')+' uploaded!',true);setTimeout(()=>location.reload(),2200)}
-  else{showToast(done+' uploaded, '+failed+' failed',false);btn.disabled=false}
+  if(!failed){
+    showToast('All '+done+' file'+(done>1?'s':'')+' uploaded!',true);
+    clearQueue();
+    setTimeout(()=>{wrap.style.display='none';loadFolders();loadRootFiles();},1800);
+  } else {showToast(done+' uploaded, '+failed+' failed',false);btn.disabled=false}
 }
 
 /* Drag & drop */
@@ -1974,7 +1977,8 @@ async function uploadFetched(){
       preview.innerHTML=`<div class="lp-meta">✅ Uploaded <strong>${e.file_name}</strong> → ${e.folder_name} · ${formatBytes(e.file_size)} · <a href="${e.web_link}" target="_blank">Open</a></div>`;
       showToast('Uploaded to archive!',true);
       document.getElementById('linkInput').value='';fetchedTmp=null;
-      setTimeout(()=>location.reload(),2000);
+      document.getElementById('linkPreview').innerHTML='';
+      loadFolders();loadRootFiles();
     }else{
       setLinkFlux(0,'failed');
       preview.innerHTML=`<div class="lp-meta" style="color:var(--danger)">❌ ${d.error||'Upload failed'}</div>`;
@@ -2041,7 +2045,7 @@ async function addUser(){
   if(!uid){showToast('Enter a user ID',false);return}
   const res=await fetch('/api/users/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid})});
   const d=await res.json();
-  if(d.ok){showToast('User '+uid+' added!',true);inp.value='';setTimeout(()=>location.reload(),800)}
+  if(d.ok){showToast('User '+uid+' added!',true);inp.value=''}
   else showToast(d.error||'Failed',false);
 }
 document.getElementById('newUserId').addEventListener('keydown',e=>{if(e.key==='Enter')addUser()});
