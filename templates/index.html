@@ -637,25 +637,34 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
 /* ── Floating bubble navbar (centered) ── */
 .fbnav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6}
-.fbnav-pill{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 60px;overflow:visible}
+.fbnav-pill{position:relative;display:flex;align-items:center;justify-content:center;gap:2px;padding:6px 58px;overflow:visible}
 .fbnav-search-group{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;z-index:5}
 .fbnav-bg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:0;
   filter:drop-shadow(0 6px 18px rgba(30,40,80,.10)) drop-shadow(0 1px 3px rgba(0,0,0,.05));pointer-events:none}
 .fbnav-bg path{fill:rgba(255,255,255,.94);stroke:rgba(255,255,255,.95);stroke-width:1}
-.fbnav-btn{position:relative;z-index:3;width:40px;height:40px;border:none;background:none;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
-.fbnav-btn svg{width:20px;height:20px}
+/* nav button — icon + label stacked */
+.fbnav-btn{position:relative;z-index:3;width:44px;height:auto;border:none;background:none;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:5px 4px 5px;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
+.fbnav-btn svg{width:20px;height:20px;flex-shrink:0}
+.fbnav-btn-label{font-size:.48rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:inherit;line-height:1;transition:opacity .2s;white-space:nowrap}
+.fbnav-btn.active .fbnav-btn-label{opacity:0}
 .fbnav-btn:hover:not(.active){color:var(--ink);background:rgba(30,40,60,.05)}
 .fbnav-btn.active svg{opacity:0}
-.fbnav-div{width:1px;height:20px;background:rgba(30,40,60,.12);margin:0 4px;position:relative;z-index:3}
-.fbnav-search-btn{position:relative;z-index:3;width:38px;height:38px;border:none;background:none;border-radius:50%;
+.fbnav-div{width:1px;height:20px;background:rgba(30,40,60,.12);margin:0 2px;position:relative;z-index:3}
+.fbnav-search-btn{position:relative;z-index:3;width:36px;height:36px;border:none;background:none;border-radius:50%;
   display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
-.fbnav-search-btn svg{width:18px;height:18px}
+.fbnav-search-btn svg{width:17px;height:17px}
 .fbnav-search-btn:hover{color:var(--ink);background:rgba(30,40,60,.05)}
-.fbnav-search-box{position:relative;z-index:3;display:flex;align-items:center;gap:8px;width:0;overflow:hidden;opacity:0;
-  pointer-events:none;border-radius:100px;background:rgba(255,255,255,.96);border:1px solid var(--line);
+/* search box expands LEFTWARD from the search button — no layout shift ever */
+.fbnav-search-box{
+  position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:8px;
+  width:0;overflow:hidden;opacity:0;pointer-events:none;
+  border-radius:100px;background:rgba(255,255,255,.96);border:1px solid var(--line);height:36px;
   transition:width .4s cubic-bezier(.34,1.1,.64,1),opacity .22s}
-.fbnav-search-box.open{opacity:1;pointer-events:all;padding:6px 8px 6px 14px}
+.fbnav-search-box.open{opacity:1;pointer-events:all;padding:0 8px 0 14px}
 .fbnav-search-box input{flex:1;min-width:0;border:none;background:none;outline:none;font-family:'Inter',sans-serif;font-size:.82rem;color:var(--ink);caret-color:var(--accent)}
 .fbnav-search-box input::placeholder{color:var(--ink-dim)}
 .fbnav-search-box>svg{width:15px;height:15px;color:var(--ink-dim);flex-shrink:0}
@@ -981,18 +990,23 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
           <button class="fbnav-btn" data-view="recents" onclick="showView('recents')" aria-label="Recents">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span class="fbnav-btn-label">Recent</span>
           </button>
           <button class="fbnav-btn" data-view="browser" onclick="showView('browser')" aria-label="Browser">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span class="fbnav-btn-label">Browse</span>
           </button>
           <button class="fbnav-btn active" data-view="files" onclick="showView('files')" aria-label="Files">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="fbnav-btn-label">Home</span>
           </button>
           {% if is_admin %}<button class="fbnav-btn" data-view="members" onclick="showView('members')" aria-label="Members">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span class="fbnav-btn-label">Team</span>
           </button>{% endif %}
           {% if is_admin %}<button class="fbnav-btn" data-view="admin" onclick="showView('admin')" aria-label="Admin">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="fbnav-btn-label">Settings</span>
           </button>{% endif %}
 
           <div class="fbnav-search-group">
