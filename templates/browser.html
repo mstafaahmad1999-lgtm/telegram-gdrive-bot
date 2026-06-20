@@ -13,7 +13,7 @@ a{text-decoration:none;color:inherit}
 button{font-family:inherit}
 
 :root{
-  --bg:#F5F7F7;
+  --bg:#F0F4F7;
   --surface:#FFFFFF;
   --accent:#0ABAB5;
   --accent-soft:#81D8D0;
@@ -35,7 +35,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-he
 #cur.big{width:30px;height:30px;background:rgba(10,186,181,.16);border:1px solid var(--accent)}
 
 /* ── Nav ── */
-nav{position:sticky;top:0;z-index:800;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:var(--surface);border-bottom:1px solid var(--line)}
+nav{position:sticky;top:0;z-index:800;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
 .nav-logo{font-size:1.05rem;font-weight:700;letter-spacing:.01em;color:var(--ink)}
 .nav-r{display:flex;align-items:center;gap:18px}
 .nav-r a{font-size:.78rem;color:var(--ink-dim);transition:color .15s}
@@ -44,119 +44,224 @@ nav{position:sticky;top:0;z-index:800;display:flex;align-items:center;justify-co
 .nav-out:hover{color:var(--ink);border-color:var(--ink-dim)}
 
 /* ── Breadcrumb ── */
-.bc-bar{padding:14px 32px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surface)}
+.bc-bar{padding:12px 32px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:rgba(255,255,255,.7);backdrop-filter:blur(10px)}
 .crumb{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim);cursor:none;transition:color .15s}
 .crumb:hover{color:var(--accent-ink)}
 .crumb-sep{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--line)}
 .crumb-cur{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink)}
 
 /* ── Layout ── */
-main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
+main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
+.tool-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:600;cursor:none;transition:all .15s;white-space:nowrap}
+.tool-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent-ink)}
+.tool-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 14px rgba(10,186,181,.25)}
+.tool-btn.primary:hover{background:var(--accent-ink);box-shadow:0 6px 20px rgba(10,186,181,.35)}
+.tool-btn.sel-btn{background:rgba(10,186,181,.08);border-color:var(--accent-soft);color:var(--accent-ink)}
+.tool-btn.sel-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tool-sep{width:1px;height:24px;background:var(--line);flex-shrink:0}
 
 /* ── Section headers ── */
-.sec-hd{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px}
-.sec-title{font-size:1.15rem;font-weight:700;color:var(--ink)}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.sec-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-dim)}
 .sec-meta{font-size:.7rem;color:var(--ink-dim)}
 
 /* ── Folders ── */
-.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:48px}
-.folder-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 16px;cursor:none;transition:all .15s;display:flex;align-items:center;gap:11px}
-.folder-card:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(10,186,181,.10);transform:translateY(-2px)}
+.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:40px}
+.folder-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:none;transition:all .15s;display:flex;align-items:center;gap:10px}
+.folder-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(10,186,181,.12);transform:translateY(-1px)}
 .folder-icon{flex-shrink:0;display:flex;color:var(--accent)}
-.folder-icon svg{width:24px;height:24px}
-.folder-name{font-size:.9rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.no-folders{font-size:.74rem;color:var(--ink-dim);padding:16px 2px}
+.folder-icon svg{width:20px;height:20px}
+.folder-name{font-size:.84rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.no-folders{font-size:.74rem;color:var(--ink-dim);padding:8px 2px 28px}
 
-/* ── Gallery ── */
-.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.gallery-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:all .15s}
-.gallery-card:hover{border-color:var(--accent);box-shadow:0 6px 18px rgba(10,186,181,.10)}
+/* ── Gallery grid ── */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 
-.g-thumb{aspect-ratio:3/4;overflow:hidden;background:var(--bg);position:relative;display:flex;align-items:center;justify-content:center;cursor:none}
-.g-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s var(--ease),opacity .3s}
+/* ── Gallery card ── */
+.gallery-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:box-shadow .18s,border-color .18s,transform .18s;cursor:none}
+.gallery-card:hover{border-color:rgba(10,186,181,.4);box-shadow:0 8px 28px rgba(10,186,181,.14);transform:translateY(-2px)}
+.gallery-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+
+/* ── Checkbox ── */
+.card-check-wrap{position:absolute;top:10px;left:10px;z-index:10;opacity:0;transition:opacity .15s}
+.gallery-card:hover .card-check-wrap,
+.select-mode .card-check-wrap,
+.gallery-card.selected .card-check-wrap{opacity:1}
+.card-check-wrap input{display:none}
+.card-check-ring{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.9);background:rgba(0,0,0,.25);backdrop-filter:blur(4px);cursor:none;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.gallery-card.selected .card-check-ring{background:var(--accent);border-color:var(--accent)}
+.card-check-ring::after{content:'';width:6px;height:10px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(40deg) translate(0,-1px);opacity:0;transition:opacity .12s}
+.gallery-card.selected .card-check-ring::after{opacity:1}
+
+/* ── Options button ── */
+.card-opts-btn{position:absolute;top:8px;right:8px;z-index:10;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);color:#fff;font-size:.9rem;display:flex;align-items:center;justify-content:center;cursor:none;opacity:0;transition:opacity .15s,background .15s;line-height:1}
+.gallery-card:hover .card-opts-btn{opacity:1}
+.card-opts-btn:hover{background:rgba(0,0,0,.55)}
+
+/* ── Context menu ── */
+.ctx-menu{position:fixed;background:rgba(20,22,26,.96);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:6px;min-width:180px;z-index:6000;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:ctxIn .15s var(--eout)}
+@keyframes ctxIn{from{opacity:0;transform:scale(.92) translateY(-4px)}to{opacity:1;transform:none}}
+.ctx-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;border:none;background:none;color:rgba(255,255,255,.82);font-size:.82rem;font-weight:500;cursor:none;width:100%;text-align:left;transition:background .1s,color .1s;font-family:'Inter',sans-serif}
+.ctx-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.ctx-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.ctx-item:hover svg{opacity:1}
+.ctx-item.danger{color:rgba(220,80,80,.85)}
+.ctx-item.danger:hover{background:rgba(220,80,80,.14);color:#f87171}
+.ctx-item.danger svg{color:#f87171}
+.ctx-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 6px}
+
+/* ── Thumbnail ── */
+.g-thumb{aspect-ratio:3/4;overflow:hidden;background:#0a0c0e;position:relative;display:flex;align-items:center;justify-content:center;cursor:none}
+.g-thumb img,.g-thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.g-thumb img{transition:transform .5s var(--ease),opacity .3s}
 .g-thumb img.loading{opacity:0}
 .g-thumb img.loaded{opacity:1}
-.gallery-card:hover .g-thumb img{transform:scale(1.04)}
-.g-icon{font-size:2.4rem;color:var(--ink-dim);user-select:none}
+.gallery-card:hover .g-thumb img{transform:scale(1.05)}
+.g-icon{font-size:2.4rem;user-select:none}
+.g-thumb video{transition:opacity .3s}
 
-.play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(31,35,40,.3);opacity:0;transition:opacity .2s;pointer-events:none}
-.play-ring{width:44px;height:44px;border:1.5px solid rgba(255,255,255,.85);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;padding-left:3px}
+/* play overlay */
+.play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,12,14,.25);opacity:0;transition:opacity .2s;pointer-events:none}
+.play-ring{width:48px;height:48px;border:2px solid rgba(255,255,255,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(4px);background:rgba(0,0,0,.25)}
+.play-ring svg{width:18px;height:18px;margin-left:3px}
 .g-thumb:hover .play-ov{opacity:1}
 
-.g-info{padding:11px 13px 6px}
-.g-name{font-size:.82rem;font-weight:500;color:var(--ink);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px}
-.g-meta{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--ink-dim)}
+/* video badge */
+.vid-badge{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-family:'DM Mono',monospace;font-size:.55rem;padding:3px 7px;border-radius:6px;backdrop-filter:blur(6px);pointer-events:none}
 
-.g-actions{padding:7px 11px 11px;display:flex;gap:4px;flex-wrap:wrap;opacity:0;transition:opacity .2s}
-.gallery-card:hover .g-actions{opacity:1}
-.act{font-size:.6rem;padding:4px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink-dim);cursor:none;transition:all .15s;white-space:nowrap;display:inline-block;font-family:'Inter',sans-serif}
-.act:hover{border-color:var(--accent);color:var(--ink)}
-.act.danger:hover{border-color:var(--danger);color:var(--danger)}
-.act:disabled{opacity:.3;cursor:not-allowed}
-
-.rename-inp{background:var(--surface);border:none;border-bottom:1.5px solid var(--accent);color:var(--ink);font-family:'Inter',sans-serif;font-size:.82rem;width:100%;outline:none;padding:1px 0}
+/* ── Info ── */
+.g-info{padding:10px 12px 8px}
+.g-name{font-size:.8rem;font-weight:500;color:var(--ink);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.g-meta{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--ink-dim)}
+.rename-inp{background:transparent;border:none;border-bottom:1.5px solid var(--accent);color:var(--ink);font-family:'Inter',sans-serif;font-size:.8rem;width:100%;outline:none;padding:1px 0}
 
 /* ── Empty / Loading ── */
 .empty-msg,.load-msg{font-size:.78rem;color:var(--ink-dim);padding:48px;text-align:center;display:flex;align-items:center;justify-content:center;gap:9px}
 .spinner{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── Preview modal ── */
-#previewOverlay{display:none;position:fixed;inset:0;background:rgba(31,35,40,.82);z-index:3000;align-items:center;justify-content:center}
-#previewOverlay.open{display:flex}
-.preview-box{background:var(--surface);border-radius:15px;max-width:93vw;max-height:93vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.4)}
-.preview-hd{padding:13px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
-.preview-title{font-size:.8rem;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
-.preview-x{background:none;border:none;font-size:.74rem;color:var(--ink-dim);cursor:none}
-.preview-x:hover{color:var(--ink)}
-.preview-body{display:flex;align-items:center;justify-content:center;overflow:auto;flex:1;padding:16px;min-width:280px;min-height:180px}
-.preview-body img{max-width:84vw;max-height:76vh;display:block}
-.preview-body iframe{border:none;width:74vw;height:58vh}
-.preview-ft{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+/* ── CINEMATIC PREVIEW MODAL ── */
+#previewOverlay{
+  display:none;position:fixed;inset:0;z-index:5000;
+  background:rgba(6,8,10,.9);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  align-items:center;justify-content:center;
+}
+#previewOverlay.open{display:flex;animation:ovIn .2s var(--ease)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+
+.prev-wrap{
+  position:relative;
+  display:flex;flex-direction:column;
+  max-width:92vw;max-height:92vh;
+  animation:prevIn .3s var(--eout)
+}
+@keyframes prevIn{
+  from{opacity:0;transform:scale(.88);filter:blur(6px)}
+  to{opacity:1;transform:scale(1);filter:blur(0)}
+}
+
+.prev-media{
+  position:relative;border-radius:16px;overflow:hidden;
+  background:#000;
+  box-shadow:0 40px 100px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);
+  flex:1;display:flex;align-items:center;justify-content:center;
+  max-height:calc(92vh - 80px);
+}
+.prev-media img{max-width:88vw;max-height:calc(88vh - 80px);display:block;object-fit:contain}
+.prev-media video{max-width:88vw;max-height:calc(88vh - 80px);display:block;outline:none}
+
+.prev-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 4px 0;gap:12px;
+}
+.prev-name{font-size:.84rem;font-weight:500;color:rgba(255,255,255,.75);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:50vw}
+.prev-actions{display:flex;gap:8px;flex-shrink:0}
+.prev-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);
+  font-size:.76rem;font-weight:600;cursor:none;transition:all .15s;
+  font-family:'Inter',sans-serif;backdrop-filter:blur(8px);
+  text-decoration:none
+}
+.prev-btn:hover{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.22)}
+.prev-btn.close-btn{background:rgba(255,80,80,.15);border-color:rgba(255,80,80,.25);color:rgba(255,180,180,.9)}
+.prev-btn.close-btn:hover{background:rgba(255,80,80,.28);color:#fff}
+.prev-btn svg{width:13px;height:13px}
+
+/* Nav arrows */
+.prev-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.1);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
+  color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;
+  cursor:none;transition:all .15s;z-index:2;
+}
+.prev-arrow:hover{background:rgba(255,255,255,.2)}
+#prevArrowL{left:-22px}
+#prevArrowR{right:-22px}
+
+/* ── Batch selection bar ── */
+#batchBar{
+  display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:rgba(20,22,26,.95);backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.1);border-radius:16px;
+  padding:12px 20px;z-index:900;gap:16px;align-items:center;
+  white-space:nowrap;box-shadow:0 12px 40px rgba(0,0,0,.4);
+  animation:barIn .25s var(--eout)
+}
+@keyframes barIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+#batchBar.visible{display:flex}
+.batch-lbl{font-size:.8rem;color:rgba(255,255,255,.6)}
+.batch-lbl strong{color:#fff}
+.b-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:none;font-size:.75rem;font-weight:600;cursor:none;transition:all .15s;font-family:'Inter',sans-serif}
+.b-btn.del{background:rgba(192,57,43,.9);color:#fff}
+.b-btn.del:hover{background:#c0392b}
+.b-btn.dl{background:rgba(10,186,181,.2);color:var(--accent-soft);border:1px solid rgba(10,186,181,.3)}
+.b-btn.dl:hover{background:rgba(10,186,181,.32)}
+.b-btn.cancel{background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1)}
+.b-btn.cancel:hover{background:rgba(255,255,255,.14);color:#fff}
 
 /* ── Move modal ── */
-#moveOverlay{display:none;position:fixed;inset:0;background:rgba(31,35,40,.45);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#moveOverlay{display:none;position:fixed;inset:0;background:rgba(6,8,10,.7);z-index:4000;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
 #moveOverlay.open{display:flex}
-.move-box{background:var(--surface);border-radius:15px;width:430px;max-width:95vw;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 30px 70px rgba(0,0,0,.28);overflow:hidden}
+.move-box{background:var(--surface);border-radius:16px;width:430px;max-width:95vw;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 30px 70px rgba(0,0,0,.3);overflow:hidden;animation:prevIn .25s var(--eout)}
 .move-hd{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
 .move-title-txt{font-size:.98rem;font-weight:700}
 .move-x{background:none;border:none;font-size:.74rem;color:var(--ink-dim);cursor:none}
-.move-x:hover{color:var(--ink)}
 .move-bc{padding:9px 20px;background:var(--bg);font-family:'DM Mono',monospace;font-size:.66rem;color:var(--ink-dim);border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .move-bc span{cursor:pointer;transition:color .12s}
 .move-bc span:hover{color:var(--accent-ink)}
 .move-body{overflow-y:auto;flex:1;padding:6px}
 .move-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:none;transition:background .12s}
 .move-item:hover{background:var(--bg)}
-.move-item-name{flex:1;font-size:.85rem;display:flex;align-items:center;gap:9px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.move-item-name{flex:1;font-size:.85rem;display:flex;align-items:center;gap:9px;color:var(--ink)}
 .move-item-name svg{width:18px;height:18px;flex-shrink:0;color:var(--accent)}
-.move-item-arr{display:flex;flex-shrink:0;color:var(--ink-dim)}
-.move-item-arr svg{width:16px;height:16px}
-.move-item:hover .move-item-arr{color:var(--accent)}
-.move-empty{font-size:.74rem;color:var(--ink-dim);padding:24px;text-align:center;display:flex;align-items:center;justify-content:center;gap:9px}
+.move-item-arr svg{width:16px;height:16px;color:var(--ink-dim)}
+.move-item:hover .move-item-arr svg{color:var(--accent)}
+.move-empty{font-size:.74rem;color:var(--ink-dim);padding:24px;text-align:center}
 .move-ft{padding:13px 20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .move-cur{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--ink-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .move-confirm-btn{padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:.76rem;font-weight:600;cursor:none}
 .move-confirm-btn:hover{background:var(--accent-ink)}
 
 /* ── Toast ── */
-#toast{position:fixed;bottom:24px;right:24px;font-size:.8rem;font-weight:500;padding:12px 20px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.14)}
-#toast.show{opacity:1}
+#toast{position:fixed;bottom:28px;right:28px;font-size:.8rem;font-weight:500;padding:12px 20px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s var(--eout);z-index:9999;transform:translateY(8px);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+#toast.show{opacity:1;transform:translateY(0)}
 #toast.ok{background:#fff;border:1px solid #b6e3c6;color:#2e9e5b}
 #toast.err{background:#fff;border:1px solid #f0c2bd;color:var(--danger)}
-
-/* ── Toolbar ── */
-.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
-.tool-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:600;cursor:none;transition:background .12s,border-color .12s}
-.tool-btn:hover{background:var(--bg);border-color:var(--accent)}
-.tool-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.tool-btn.primary:hover{background:var(--accent-ink)}
 
 /* ── Responsive ── */
 @media(max-width:767px){
   nav{padding:13px 18px}
-  .bc-bar{padding:12px 18px}
-  main{padding:24px 18px 60px}
+  .bc-bar{padding:10px 18px}
+  main{padding:20px 14px 100px}
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+  #prevArrowL,#prevArrowR{display:none}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
@@ -182,20 +287,27 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
   <!-- Toolbar -->
   <div class="toolbar">
     <button class="tool-btn primary" onclick="newFolder()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       New folder
     </button>
     <button class="tool-btn" onclick="document.getElementById('browserUpload').click()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Upload here
     </button>
     <input type="file" id="browserUpload" multiple hidden onchange="uploadHere(this)">
+    <div class="tool-sep"></div>
+    <button class="tool-btn sel-btn" id="selectBtn" onclick="toggleSelectMode()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Select
+    </button>
+    <button class="tool-btn" id="selectAllBtn" onclick="selectAll()" style="display:none">Select all</button>
+    <button class="tool-btn" id="deselectAllBtn" onclick="deselectAll()" style="display:none">Deselect all</button>
   </div>
 
   <!-- Folders -->
   <div id="foldersSection">
     <div class="sec-hd">
-      <h2 class="sec-title">Folders</h2>
+      <span class="sec-title">Folders</span>
       <span class="sec-meta" id="folderCount"></span>
     </div>
     <div class="folder-grid" id="folderGrid"><div class="load-msg"><span class="spinner"></span>Loading…</div></div>
@@ -204,31 +316,43 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
   <!-- Files -->
   <div id="filesSection">
     <div class="sec-hd">
-      <h2 class="sec-title">Files</h2>
+      <span class="sec-title">Files</span>
       <span class="sec-meta" id="fileCount"></span>
     </div>
     <div class="gallery-grid" id="galleryGrid"><div class="load-msg" style="grid-column:1/-1"><span class="spinner"></span>Loading…</div></div>
   </div>
 </main>
 
-<!-- Preview -->
+<!-- ── Cinematic Preview ── -->
 <div id="previewOverlay" onclick="if(event.target===this)closePreview()">
-  <div class="preview-box">
-    <div class="preview-hd">
-      <span class="preview-title" id="previewTitle"></span>
-      <button class="preview-x" onclick="closePreview()">Close ✕</button>
+  <div class="prev-wrap" id="prevWrap">
+    <div class="prev-media" id="prevMedia">
+      <button class="prev-arrow" id="prevArrowL" onclick="shiftPreview(-1)">‹</button>
+      <div id="prevContent"></div>
+      <button class="prev-arrow" id="prevArrowR" onclick="shiftPreview(1)">›</button>
     </div>
-    <div class="preview-body" id="previewBody"></div>
-    <div class="preview-ft" id="previewFt"></div>
+    <div class="prev-bar">
+      <span class="prev-name" id="prevName"></span>
+      <div class="prev-actions">
+        <a class="prev-btn" id="prevDownload" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a>
+        <button class="prev-btn close-btn" onclick="closePreview()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Close
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Move -->
+<!-- ── Move modal ── -->
 <div id="moveOverlay" onclick="if(event.target===this)closeMoveModal()">
   <div class="move-box">
     <div class="move-hd">
       <span class="move-title-txt">Move to folder</span>
-      <button class="move-x" onclick="closeMoveModal()">Close ✕</button>
+      <button class="move-x" onclick="closeMoveModal()">✕</button>
     </div>
     <div class="move-bc" id="moveBc"></div>
     <div class="move-body" id="moveBody"></div>
@@ -239,6 +363,23 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
   </div>
 </div>
 
+<!-- ── Batch bar ── -->
+<div id="batchBar">
+  <span class="batch-lbl"><strong id="batchCount">0</strong> selected</span>
+  <button class="b-btn dl" onclick="batchDownload()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download
+  </button>
+  <button class="b-btn del" onclick="batchDelete()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    Delete
+  </button>
+  <button class="b-btn cancel" onclick="clearSelection()">Cancel</button>
+</div>
+
+<!-- ── Context menu (singleton) ── -->
+<div class="ctx-menu" id="ctxMenu" style="display:none"></div>
+
 <div id="toast"></div>
 
 <script>
@@ -247,7 +388,7 @@ const cur=document.getElementById('cur');
 let mx=0,my=0,cx=0,cy=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
 (function tick(){cx+=(mx-cx)*.35;cy+=(my-cy)*.35;cur.style.transform=`translate(${cx-cur.offsetWidth/2}px,${cy-cur.offsetHeight/2}px)`;requestAnimationFrame(tick)})();
-const HOVER_SEL='a,button,.folder-card,.gallery-card,.g-thumb,.move-item,.act';
+const HOVER_SEL='a,button,.folder-card,.gallery-card,.g-thumb,.move-item,.ctx-item,.b-btn,.tool-btn,.prev-btn,.prev-arrow,.card-opts-btn,.card-check-ring';
 document.addEventListener('mouseover',e=>{if(e.target.closest(HOVER_SEL))cur.classList.add('big')});
 document.addEventListener('mouseout', e=>{if(e.target.closest(HOVER_SEL))cur.classList.remove('big')});
 
@@ -259,11 +400,15 @@ const CHEV_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 let stack=[{id:'root',name:'Archive'}];
 let moveStack=[{id:'root',name:'Archive'}];
 let movingFile=null;
+let selectMode=false;
+let selectedIds=new Set();
+let previewFiles=[],previewIdx=0;
 
 const IMG=/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 const VID=/\.(mp4|webm|mov|m4v|avi|mkv)$/i;
 
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function escQ(s){return String(s).replace(/'/g,"\\'")}
 function fmtBytes(b){b=parseInt(b||0);if(b>=1073741824)return(b/1073741824).toFixed(2)+' GB';if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(1)+' KB';return b?b+' B':'—'}
 function showToast(msg,ok){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+(ok?'ok':'err');setTimeout(()=>t.className='',3200)}
 function currentId(){return stack[stack.length-1].id}
@@ -273,6 +418,7 @@ async function load(parentId){
   document.getElementById('folderGrid').innerHTML='<div class="load-msg"><span class="spinner"></span>Loading…</div>';
   document.getElementById('galleryGrid').innerHTML='<div class="load-msg" style="grid-column:1/-1"><span class="spinner"></span>Loading…</div>';
   renderBreadcrumb();
+  clearSelection();
 
   if(parentId==='root'){
     const p=new URLSearchParams(location.search).get('folder');
@@ -282,10 +428,7 @@ async function load(parentId){
   const res=await fetch('/api/browser?parent='+parentId);
   const d=await res.json();
   if(!d.ok){showToast(d.error||'Failed to load',false);return}
-
-  if(stack[stack.length-1].name==='…'&&d.name){
-    stack[stack.length-1].name=d.name;renderBreadcrumb();
-  }
+  if(stack[stack.length-1].name==='…'&&d.name){stack[stack.length-1].name=d.name;renderBreadcrumb()}
 
   renderFolders(d.folders);
   renderGallery(d.files,parentId);
@@ -306,11 +449,10 @@ function renderFolders(folders){
   const g=document.getElementById('folderGrid');
   document.getElementById('folderCount').textContent=folders.length?folders.length+' folder'+(folders.length>1?'s':''):'';
   if(!folders.length){
-    g.outerHTML='<div class="no-folders" id="folderGrid">No subfolders</div>';
-    return;
+    g.outerHTML='<div class="no-folders" id="folderGrid">No subfolders</div>';return;
   }
   g.innerHTML=folders.map(f=>
-    `<div class="folder-card" onclick="enterFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
+    `<div class="folder-card" onclick="enterFolder('${f.id}','${escQ(escH(f.name))}')">
       <span class="folder-icon">${FOLDER_SVG}</span>
       <span class="folder-name" title="${escH(f.name)}">${escH(f.name)}</span>
     </div>`
@@ -324,53 +466,232 @@ function renderGallery(files,parentId){
   document.getElementById('fileCount').textContent=files.length?files.length+' file'+(files.length>1?'s':''):'';
   if(!files.length){g.innerHTML='<div class="empty-msg" style="grid-column:1/-1">No files in this folder</div>';return}
 
-  g.innerHTML=files.map(f=>{
+  // Store for prev/next navigation
+  previewFiles=files.filter(f=>IMG.test(f.name)||VID.test(f.name));
+
+  g.innerHTML=files.map((f,idx)=>{
     const isImg=IMG.test(f.name),isVid=VID.test(f.name),prev=isImg||isVid;
-    const date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString():'';
-    const esc=escH(f.name).replace(/'/g,"\\'");
+    const date=f.modifiedTime?new Date(f.modifiedTime).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
     const icon=isVid?'🎬':isImg?'🖼':'📄';
+    const prevIdx=previewFiles.findIndex(x=>x.id===f.id);
 
-    let thumb=f.thumbnailLink
-      ?`<img src="/api/browser/thumbnail/${f.id}" class="loading"
-          onload="this.classList.remove('loading');this.classList.add('loaded')"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-          alt="${escH(f.name)}">
-         <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;"><span class="g-icon">${icon}</span></div>`
-      :`<span class="g-icon">${icon}</span>`;
+    let mediaHtml='';
+    if(isImg&&f.thumbnailLink){
+      mediaHtml=`<img src="/api/browser/thumbnail/${f.id}" class="loading"
+        onload="this.classList.remove('loading');this.classList.add('loaded')"
+        onerror="this.style.display='none'" alt="${escH(f.name)}" decoding="async"
+        loading="lazy">`;
+    } else if(isVid){
+      /* Video: hover to play muted, static icon otherwise */
+      mediaHtml=`<video data-src="/api/browser/download/${f.id}" muted loop playsinline preload="none"
+        style="width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s"></video>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center" class="vid-placeholder">
+          <span class="g-icon">🎬</span>
+        </div>
+        <span class="vid-badge">VIDEO</span>`;
+    } else {
+      mediaHtml=`<span class="g-icon">${icon}</span>`;
+    }
 
-    const playOv=isVid?`<div class="play-ov"><div class="play-ring">▶</div></div>`:'';
+    const playOv=isVid?`<div class="play-ov"><div class="play-ring"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>`:'';
+
     const thumbClick=prev
-      ?`onclick="openPreview('${f.id}','${esc}','${isVid?'video':'image'}','${escH(f.webViewLink||'')}')"`
-      :`onclick="window.open('${escH(f.webViewLink||'#')}','_blank')"`;
+      ?`onclick="openPreview(${prevIdx})" style="cursor:none"`
+      :`style="cursor:none"`;
 
-    return `<div class="gallery-card" id="gcard-${f.id}">
-      <div class="g-thumb" ${thumbClick}>${thumb}${playOv}</div>
+    return `<div class="gallery-card${selectMode?' select-mode':''}" id="gcard-${f.id}" data-id="${f.id}" data-name="${escH(f.name)}">
+      <!-- Checkbox -->
+      <label class="card-check-wrap" onclick="event.stopPropagation()">
+        <div class="card-check-ring" onclick="toggleSelect('${f.id}',this.closest('.gallery-card'))"></div>
+      </label>
+      <!-- Options -->
+      <button class="card-opts-btn" onclick="openCtxMenu(event,'${f.id}','${escQ(f.name)}','${prev?prevIdx:-1}','${parentId}')">···</button>
+      <!-- Thumb -->
+      <div class="g-thumb" ${thumbClick}
+        ${isVid?`onmouseenter="hoverPlayVid(this)" onmouseleave="hoverPauseVid(this)"`:''}
+      >${mediaHtml}${playOv}</div>
+      <!-- Info -->
       <div class="g-info">
         <span class="g-name" id="gname-${f.id}" title="${escH(f.name)}">${escH(f.name)}</span>
         <span class="g-meta">${fmtBytes(f.size)}${date?' · '+date:''}</span>
       </div>
-      <div class="g-actions">
-        ${prev?`<button class="act" onclick="openPreview('${f.id}','${esc}','${isVid?'video':'image'}','${escH(f.webViewLink||'')}')">Preview</button>`:''}
-        <a class="act" href="/api/browser/download/${f.id}">↓ Download</a>
-        <button class="act" onclick="startRename('${f.id}','${esc}')">Rename</button>
-        <button class="act" onclick="startMove('${f.id}','${parentId}')">Move</button>
-        <button class="act danger" onclick="deleteFile('${f.id}','${esc}')">Delete</button>
-      </div>
     </div>`;
   }).join('');
+
+  if(selectMode)document.getElementById('galleryGrid').classList.add('select-mode');
 }
 
-/* ─── Preview ─── */
-function openPreview(fileId,fileName,type,viewLink){
-  document.getElementById('previewTitle').textContent=fileName;
-  const body=document.getElementById('previewBody'),ft=document.getElementById('previewFt');
-  body.innerHTML=type==='image'
-    ?`<img src="/api/browser/download/${fileId}" alt="${escH(fileName)}">`
-    :`<video src="/api/browser/download/${fileId}" controls autoplay playsinline style="max-width:100%;max-height:78vh"></video>`;
-  ft.innerHTML=`<a class="act" href="/api/browser/download/${fileId}" style="display:inline-block">↓ Download</a><a class="act" href="/api/browser/download/${fileId}" target="_blank" style="display:inline-block">↗ Open</a>`;
-  document.getElementById('previewOverlay').classList.add('open');
+/* ─── Video hover autoplay ─── */
+function hoverPlayVid(thumb){
+  const vid=thumb.querySelector('video');
+  if(!vid)return;
+  const placeholder=thumb.querySelector('.vid-placeholder');
+  if(!vid.src&&vid.dataset.src){vid.src=vid.dataset.src}
+  vid.play().then(()=>{
+    vid.style.opacity='1';
+    if(placeholder)placeholder.style.display='none';
+  }).catch(()=>{});
 }
-function closePreview(){document.getElementById('previewOverlay').classList.remove('open');document.getElementById('previewBody').innerHTML='';document.getElementById('previewFt').innerHTML=''}
+function hoverPauseVid(thumb){
+  const vid=thumb.querySelector('video');
+  if(vid){vid.pause();vid.style.opacity='0';const p=thumb.querySelector('.vid-placeholder');if(p)p.style.display='flex';}
+}
+
+/* ─── CINEMATIC PREVIEW ─── */
+function openPreview(idx){
+  previewIdx=idx;
+  const f=previewFiles[idx];
+  if(!f)return;
+  renderPreview(f);
+  document.getElementById('previewOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  updateArrows();
+}
+
+function renderPreview(f){
+  const isVid=VID.test(f.name);
+  document.getElementById('prevName').textContent=f.name;
+  document.getElementById('prevDownload').href='/api/browser/download/'+f.id;
+  const c=document.getElementById('prevContent');
+  if(isVid){
+    c.innerHTML=`<video src="/api/browser/download/${f.id}" controls autoplay playsinline preload="auto"
+      style="max-width:86vw;max-height:calc(88vh - 80px);display:block;outline:none;border-radius:4px"></video>`;
+  } else {
+    c.innerHTML=`<img src="/api/browser/download/${f.id}" alt="${escH(f.name)}"
+      decoding="async"
+      style="max-width:86vw;max-height:calc(88vh - 80px);display:block;border-radius:4px">`;
+  }
+}
+
+function shiftPreview(dir){
+  const next=previewIdx+dir;
+  if(next<0||next>=previewFiles.length)return;
+  // stop current video
+  const vid=document.querySelector('#prevContent video');
+  if(vid){vid.pause();}
+  previewIdx=next;
+  renderPreview(previewFiles[previewIdx]);
+  updateArrows();
+}
+
+function updateArrows(){
+  document.getElementById('prevArrowL').style.opacity=previewIdx>0?'1':'0.2';
+  document.getElementById('prevArrowR').style.opacity=previewIdx<previewFiles.length-1?'1':'0.2';
+  document.getElementById('prevArrowL').style.pointerEvents=previewIdx>0?'auto':'none';
+  document.getElementById('prevArrowR').style.pointerEvents=previewIdx<previewFiles.length-1?'auto':'none';
+}
+
+function closePreview(){
+  document.getElementById('previewOverlay').classList.remove('open');
+  document.body.style.overflow='';
+  const vid=document.querySelector('#prevContent video');
+  if(vid)vid.pause();
+  document.getElementById('prevContent').innerHTML='';
+}
+
+/* ─── CONTEXT MENU ─── */
+let ctxOpen=false;
+function openCtxMenu(e,fileId,fileName,prevIdx,parentId){
+  e.stopPropagation();
+  closeCtxMenu();
+  const menu=document.getElementById('ctxMenu');
+  const canPreview=prevIdx>=0;
+  menu.innerHTML=`
+    ${canPreview?`<button class="ctx-item" onclick="closeCtxMenu();openPreview(${prevIdx})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"/></svg> Preview</button>`:''}
+    <a class="ctx-item" href="/api/browser/download/${fileId}" onclick="closeCtxMenu()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Download</a>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item" onclick="closeCtxMenu();startRename('${fileId}','${escQ(fileName)}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename</button>
+    <button class="ctx-item" onclick="closeCtxMenu();startMove('${fileId}','${parentId}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg> Move</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" onclick="closeCtxMenu();deleteFile('${fileId}','${escQ(fileName)}')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Delete</button>
+  `;
+  menu.style.display='block';
+  const r=e.currentTarget.getBoundingClientRect();
+  let x=r.right+6,y=r.top;
+  if(x+200>window.innerWidth)x=r.left-200;
+  if(y+menu.scrollHeight>window.innerHeight)y=window.innerHeight-menu.scrollHeight-10;
+  menu.style.left=x+'px';menu.style.top=Math.max(8,y)+'px';
+  ctxOpen=true;
+}
+function closeCtxMenu(){document.getElementById('ctxMenu').style.display='none';ctxOpen=false}
+document.addEventListener('click',()=>{if(ctxOpen)closeCtxMenu()});
+document.addEventListener('scroll',()=>{if(ctxOpen)closeCtxMenu()},true);
+
+/* ─── Selection ─── */
+function toggleSelectMode(){
+  selectMode=!selectMode;
+  const btn=document.getElementById('selectBtn');
+  const aBtn=document.getElementById('selectAllBtn');
+  const dBtn=document.getElementById('deselectAllBtn');
+  btn.classList.toggle('active',selectMode);
+  aBtn.style.display=selectMode?'':'none';
+  dBtn.style.display='none';
+  if(!selectMode)clearSelection();
+  document.querySelectorAll('.gallery-card').forEach(c=>c.classList.toggle('select-mode',selectMode));
+}
+
+function toggleSelect(fileId,card){
+  if(selectedIds.has(fileId)){selectedIds.delete(fileId);card.classList.remove('selected')}
+  else{selectedIds.add(fileId);card.classList.add('selected')}
+  updateBatchBar();
+  const aBtn=document.getElementById('selectAllBtn');
+  const dBtn=document.getElementById('deselectAllBtn');
+  if(selectedIds.size>0){aBtn.style.display='none';dBtn.style.display='';}
+  else{aBtn.style.display=selectMode?'':'none';dBtn.style.display='none';}
+}
+
+function selectAll(){
+  document.querySelectorAll('.gallery-card').forEach(c=>{
+    const id=c.dataset.id;if(id){selectedIds.add(id);c.classList.add('selected')}
+  });
+  updateBatchBar();
+  document.getElementById('selectAllBtn').style.display='none';
+  document.getElementById('deselectAllBtn').style.display='';
+}
+
+function deselectAll(){
+  selectedIds.clear();
+  document.querySelectorAll('.gallery-card').forEach(c=>c.classList.remove('selected'));
+  updateBatchBar();
+  document.getElementById('deselectAllBtn').style.display='none';
+  document.getElementById('selectAllBtn').style.display=selectMode?'':'none';
+}
+
+function clearSelection(){
+  deselectAll();
+  if(selectMode)toggleSelectMode();
+}
+
+function updateBatchBar(){
+  const bar=document.getElementById('batchBar');
+  document.getElementById('batchCount').textContent=selectedIds.size;
+  bar.classList.toggle('visible',selectedIds.size>0);
+}
+
+/* ─── Batch actions ─── */
+async function batchDelete(){
+  if(!selectedIds.size)return;
+  if(!confirm(`Delete ${selectedIds.size} file(s)? This cannot be undone.`))return;
+  let ok=0;
+  for(const id of selectedIds){
+    const res=await fetch('/api/files/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:id})});
+    const d=await res.json();if(d.ok){document.getElementById('gcard-'+id)?.remove();ok++}
+  }
+  showToast(`Deleted ${ok} file(s)`,ok>0);
+  selectedIds.clear();updateBatchBar();
+}
+
+function batchDownload(){
+  for(const id of selectedIds){
+    const a=document.createElement('a');a.href='/api/browser/download/'+id;a.download='';a.click();
+  }
+  showToast(`Downloading ${selectedIds.size} file(s)`,true);
+}
 
 /* ─── Rename ─── */
 function startRename(fileId,currentName){
@@ -403,14 +724,13 @@ function updateMoveBc(){
 }
 function moveNavTo(i){moveStack=moveStack.slice(0,i+1);loadMoveFolder(moveStack[moveStack.length-1].id)}
 async function loadMoveFolder(parentId){
-  document.getElementById('moveBody').innerHTML='<div class="move-empty"><span class="spinner"></span>Loading…</div>';
+  document.getElementById('moveBody').innerHTML='<div class="move-empty"><span class="spinner"></span></div>';
   updateMoveBc();
-  const res=await fetch('/api/browser?parent='+parentId);
-  const d=await res.json();
+  const res=await fetch('/api/browser?parent='+parentId);const d=await res.json();
   const body=document.getElementById('moveBody');
   if(!d.ok||!d.folders.length){body.innerHTML='<div class="move-empty">No subfolders here</div>';return}
   body.innerHTML=d.folders.map(f=>
-    `<div class="move-item" onclick="enterMoveFolder('${f.id}','${escH(f.name).replace(/'/g,"\\'")}')">
+    `<div class="move-item" onclick="enterMoveFolder('${f.id}','${escQ(escH(f.name))}')">
       <span class="move-item-name">${FOLDER_SVG} ${escH(f.name)}</span>
       <span class="move-item-arr">${CHEV_SVG}</span>
     </div>`
@@ -426,12 +746,9 @@ async function confirmMove(){
   d.ok?(showToast('Moved!',true),document.getElementById('gcard-'+movingFile.id)?.remove()):showToast(d.error||'Failed',false);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePreview();closeMoveModal()}});
-
 /* ─── New folder ─── */
 async function newFolder(){
-  const name=prompt('New folder name:');
-  if(!name||!name.trim())return;
+  const name=prompt('New folder name:');if(!name||!name.trim())return;
   const res=await fetch('/api/folders/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),parent:currentId()})});
   const d=await res.json();
   if(d.ok){showToast('Folder created',true);load(currentId())}
@@ -440,20 +757,22 @@ async function newFolder(){
 
 /* ─── Upload into current folder ─── */
 async function uploadHere(input){
-  const files=[...input.files];input.value='';
-  if(!files.length)return;
+  const files=[...input.files];input.value='';if(!files.length)return;
   showToast('Uploading '+files.length+' file'+(files.length>1?'s':'')+'…',true);
   let ok=0;
   for(const file of files){
     const fd=new FormData();fd.append('file',file);fd.append('folder_id',currentId());
-    try{
-      const res=await fetch('/api/files/upload',{method:'POST',body:fd});
-      const d=await res.json();if(d.ok)ok++;
-    }catch(e){}
+    try{const res=await fetch('/api/files/upload',{method:'POST',body:fd});const d=await res.json();if(d.ok)ok++}catch(e){}
   }
-  showToast(ok+' of '+files.length+' uploaded',ok>0);
-  load(currentId());
+  showToast(ok+' of '+files.length+' uploaded',ok>0);load(currentId());
 }
+
+/* ─── Keyboard ─── */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closePreview();closeMoveModal();closeCtxMenu()}
+  if(e.key==='ArrowRight'&&document.getElementById('previewOverlay').classList.contains('open'))shiftPreview(1);
+  if(e.key==='ArrowLeft'&&document.getElementById('previewOverlay').classList.contains('open'))shiftPreview(-1);
+});
 
 /* ─── Boot ─── */
 load('root');
