@@ -600,6 +600,26 @@ def api_profile_update():
     return jsonify({"ok": True})
 
 
+@app.route("/api/admin/users/reset-password", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_reset_password():
+    data = request.get_json(force=True)
+    account_id = data.get("account_id")
+    new_pw = data.get("password", "").strip()
+    if len(new_pw) < 6:
+        return jsonify({"ok": False, "error": "Password must be at least 6 characters"}), 400
+    accounts = _load_accounts()
+    acct = next((a for a in accounts if a.get("id") == account_id), None)
+    if not acct:
+        return jsonify({"ok": False, "error": "Account not found"}), 404
+    if acct.get("role") == "admin" and acct.get("id") != session.get("user_id"):
+        return jsonify({"ok": False, "error": "Cannot reset another admin's password"}), 403
+    acct["password_hash"] = generate_password_hash(new_pw)
+    _save_accounts(accounts)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/admin/users/delete", methods=["POST"])
 @login_required
 @admin_required

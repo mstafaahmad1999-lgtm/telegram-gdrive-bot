@@ -43,7 +43,7 @@
       width: 38vw;
       max-width: 600px;
       height: auto;
-      mix-blend-mode: difference;
+      opacity: 0.88;
       animation: fadeScaleIn 1.4s cubic-bezier(0.16,1,0.3,1) forwards;
       pointer-events: none;
     }
@@ -85,8 +85,16 @@
       width: 200px;
       height: auto;
       filter: invert(1);
-      mix-blend-mode: screen;
       display: block;
+    }
+    #wordmark-fb {
+      display: none;
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: .3em;
+      text-align: center;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.7);
     }
     .star-cover {
       position: absolute;
@@ -264,8 +272,13 @@
 <!-- WebGL background -->
 <canvas id="gl-canvas"></canvas>
 
-<!-- Act 1: Symbol -->
-<img id="symbol" src="/static/sovan-symbol.svg" alt="" aria-hidden="true" />
+<!-- Act 1: Symbol (inline SVG — no file dependency) -->
+<svg id="symbol" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="100" cy="100" r="88" fill="none" stroke="white" stroke-width="2.5"/>
+  <polygon points="100,18 122,76 184,76 136,114 155,174 100,136 45,174 64,114 16,76 78,76"
+           fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="100" cy="100" r="8" fill="white" opacity="0.6"/>
+</svg>
 
 <!-- Act 2: Login form -->
 <div id="login-overlay" style="display:none;">
@@ -273,9 +286,13 @@
 
     <!-- Logo -->
     <div class="logo-wrap">
-      <img class="wordmark" src="/static/sovan-logo.png" alt="SOVAN" />
+      <img class="wordmark" src="/static/sovan-logo.png" alt="SOVAN"
+           onerror="this.style.display='none';document.getElementById('wordmark-fb').style.display='block'" />
+      <div id="wordmark-fb">SOVAN</div>
       <div class="star-cover"></div>
-      <img class="star-blue" src="/static/sovan-symbol.svg" alt="" aria-hidden="true" />
+      <svg class="star-blue" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="filter:invert(45%) sepia(90%) saturate(600%) hue-rotate(200deg) brightness(1.2)">
+        <polygon points="100,18 122,76 184,76 136,114 155,174 100,136 45,174 64,114 16,76 78,76" fill="white"/>
+      </svg>
     </div>
 
     <p class="subtitle">Sign in to continue</p>

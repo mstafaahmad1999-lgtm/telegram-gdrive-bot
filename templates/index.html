@@ -72,7 +72,8 @@ body{
 #cur.big{width:30px;height:30px;background:rgba(10,186,181,.16);border:1px solid var(--accent)}
 
 /* ── App grid ── */
-.app{display:grid;grid-template-columns:72px 248px 1fr;min-height:100vh}
+.app{display:grid;grid-template-columns:1fr;min-height:100vh}
+.rail,.side{display:none}
 
 /* ── Icon rail ── */
 .rail{
@@ -627,17 +628,20 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .browse-link{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;color:var(--accent-ink);transition:opacity .15s}
 .browse-link:hover{opacity:.7}
 
+/* ── Topbar nav ── */
+.topbar-nav{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-nav-btn{padding:6px 14px;border-radius:20px;border:none;background:none;
+  color:var(--ink-dim);font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap}
+.tb-nav-btn:hover{background:var(--bg2);color:var(--ink)}
+.tb-nav-btn.active{background:var(--accent);color:#fff}
+
+/* ── pp-edit-page scrollbar hide ── */
+.pp-edit-page::-webkit-scrollbar{display:none}
+
 /* ── Responsive ── */
-@media(max-width:1024px){
-  .app{grid-template-columns:72px 1fr}
-  .side{display:none}
-}
 @media(max-width:600px){
-  .app{grid-template-columns:1fr}
-  .rail{flex-direction:row;height:auto;width:100%;position:sticky;top:0;justify-content:space-around;padding:6px 4px;gap:0;z-index:60}
-  .rail-logo{display:none}
-  .rail .side-spacer{display:none}
-  .rail-btn{width:auto;padding:6px 10px}
+  .topbar-nav{gap:2px}
+  .tb-nav-btn{padding:5px 10px;font-size:.72rem}
   .content{padding:16px}
   .topbar{padding:10px 14px;gap:8px}
   .btn-upgrade,.topbar>a{display:none}
@@ -802,7 +806,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 @keyframes ppSlideIn{from{transform:translateX(18px);opacity:0}to{transform:none;opacity:1}}
 .pp-edit-page{
   position:absolute;inset:0;background:#0d0f13;border-radius:24px;
-  overflow-y:auto;z-index:2;
+  overflow-y:auto;z-index:2;scrollbar-width:none;-ms-overflow-style:none;
   animation:ppSlideIn .22s cubic-bezier(.16,1,.3,1)
 }
 
@@ -888,9 +892,11 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
     <button class="rail-btn" data-view="recents" onclick="showView('recents')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Recents</span>
     </button>
+    {% if is_admin %}
     <button class="rail-btn" data-view="members" onclick="showView('members')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg><span>Members</span>
     </button>
+    {% endif %}
     {% if is_admin %}
     <button class="rail-btn" data-view="admin" onclick="showView('admin')" style="position:relative">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
@@ -930,6 +936,13 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   <!-- ── Main ── -->
   <main class="main">
     <div class="topbar">
+      <nav class="topbar-nav">
+        <button class="tb-nav-btn active" data-view="files" onclick="showView('files')">Files</button>
+        <button class="tb-nav-btn" data-view="recents" onclick="showView('recents')">Recents</button>
+        <button class="tb-nav-btn" data-view="browser" onclick="showView('browser')">Browser</button>
+        {% if is_admin %}<button class="tb-nav-btn" data-view="members" onclick="showView('members')">Members</button>{% endif %}
+        {% if is_admin %}<button class="tb-nav-btn" data-view="admin" onclick="showView('admin')">Admin</button>{% endif %}
+      </nav>
       <div class="topbar-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
         <input id="searchBar" type="text" placeholder="Search files…" oninput="onSearch(this.value)">
@@ -1411,11 +1424,10 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
                   {% endif %}
                 </td>
                 <td style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--ink-dim)">{{ a.created_at[:10] }}</td>
-                <td>
+                <td style="display:flex;gap:6px;align-items:center">
+                  <button class="act-btn" onclick="resetAccountPassword('{{ a.id }}','{{ a.username }}')">Reset PW</button>
                   {% if a.role != 'admin' %}
                   <button class="act-btn danger" onclick="deleteAccount('{{ a.id }}','{{ a.username }}')">Delete</button>
-                  {% else %}
-                  <span style="font-size:.7rem;color:var(--ink-dim)">—</span>
                   {% endif %}
                 </td>
               </tr>
@@ -2380,6 +2392,18 @@ async function rejectUser(accountId){
         else b.textContent=remaining;
       });
     }else{showToast(d.error||'Failed',false);if(btn){btn.disabled=false;btn.textContent='Reject'}}
+  }catch(e){showToast('Network error',false)}
+}
+
+async function resetAccountPassword(accountId,username){
+  const newPw=prompt('New password for "'+username+'" (min 6 characters):');
+  if(!newPw)return;
+  if(newPw.length<6){showToast('Password must be at least 6 characters',false);return}
+  try{
+    const res=await fetch('/api/admin/users/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account_id:accountId,password:newPw})});
+    const d=await res.json();
+    if(d.ok){showToast('Password reset for '+username,true)}
+    else{showToast(d.error||'Failed',false)}
   }catch(e){showToast('Network error',false)}
 }
 
