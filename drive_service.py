@@ -1,196 +1,287 @@
-"""Google Drive API wrapper: auth, folder listing, file upload, and management."""
-import logging
-import os
-from typing import Callable
+"""Local filesystem storage backend.
 
-from google.auth.exceptions import RefreshError, TransportError
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+Drop-in replacement for the old Google Drive wrapper: the public function
+names, signatures, and return-dict shapes are unchanged, so every caller
+(dashboard.py and the bot handlers) keeps working without edits. Files are
+stored on the phone's own storage instead of Google Drive.
+
+IDs are URL-safe base64 of the path relative to ROOT, so they are opaque
+strings, safe inside URL path segments, and round-trippable. The literal
+string "root" maps to ROOT itself.
+"""
+import base64
+import logging
+import mimetypes
+import os
+import shutil
+from datetime import datetime, timezone
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/drive"]
 PAGE_SIZE = 8
-_service_cache = None
 
 
-def get_drive_service():
-    global _service_cache
-    token_path = os.getenv("GOOGLE_TOKEN_PATH", "token.json")
-    credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH", "credentials.json")
+def _resolve_root() -> str:
+    env = os.getenv("STORAGE_ROOT")
+    if env:
+        root = env
+    elif os.path.isdir(os.path.expanduser("~/storage/shared")):
+        # Termux shared storage (visible in the phone's file manager / gallery)
+        root = os.path.expanduser("~/storage/shared/SOVAN_Archive")
+    else:
+        # PC / dev fallback
+        root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage_data")
+    os.makedirs(root, exist_ok=True)
+    return root
 
-    creds = None
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+ROOT = _resolve_root()
+
+# Public base for click-through links shown in Telegram messages (optional).
+PUBLIC_BASE = os.getenv("PUBLIC_DASHBOARD_URL", os.getenv("DASHBOARD_URL", "")).rstrip("/")
+
+
+# ── id <-> path helpers ─────────────────────────────────────────────────────────
+
+def _encode(rel: str) -> str:
+    if not rel:
+        return "root"
+    return base64.urlsafe_b64encode(rel.encode()).decode().rstrip("=")
+
+
+def _decode(fid: str) -> str:
+    if not fid or fid == "root":
+        return ""
+    pad = "=" * (-len(fid) % 4)
+    return base64.urlsafe_b64decode(fid + pad).decode()
+
+
+def _abspath(fid: str) -> str:
+    """Resolve an id to an absolute path, blocking traversal outside ROOT."""
+    rel = _decode(fid)
+    p = os.path.realpath(os.path.join(ROOT, rel))
+    root = os.path.realpath(ROOT)
+    if p != root and not p.startswith(root + os.sep):
+        raise ValueError("path outside storage root")
+    return p
+
+
+def _id_of(abspath: str) -> str:
+    rel = os.path.relpath(abspath, ROOT).replace(os.sep, "/")
+    return _encode("" if rel == "." else rel)
+
+
+def _link(fid: str) -> str:
+    """webViewLink replacement — points at the dashboard download route."""
+    return f"{PUBLIC_BASE}/api/browser/download/{fid}" if PUBLIC_BASE else f"/api/browser/download/{fid}"
+
+
+def _iso(ts: float) -> str:
+    return datetime.fromtimestamp(ts, timezone.utc).isoformat()
+
+
+def _safe_name(name: str) -> str:
+    """Strip any path components from a user/Telegram supplied name."""
+    return os.path.basename(name).replace("/", "_").replace("\\", "_") or "file"
+
+
+def _unique_path(folder: str, name: str) -> str:
+    """Return a non-colliding path inside folder, auto-suffixing '(n)' as needed."""
+    candidate = os.path.join(folder, name)
+    if not os.path.exists(candidate):
+        return candidate
+    stem, ext = os.path.splitext(name)
+    i = 1
+    while True:
+        candidate = os.path.join(folder, f"{stem} ({i}){ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        i += 1
+
+
+def _file_meta(abspath: str) -> dict:
+    st = os.stat(abspath)
+    fid = _id_of(abspath)
+    name = os.path.basename(abspath)
+    mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+    entry = {
+        "id": fid,
+        "name": name,
+        "size": str(st.st_size),
+        "mimeType": mime,
+        "webViewLink": _link(fid),
+        "webContentLink": _link(fid),
+        "createdTime": _iso(st.st_mtime),
+        "modifiedTime": _iso(st.st_mtime),
+        "parents": [_id_of(os.path.dirname(abspath))],
+    }
+    if mime.startswith("image/"):
+        entry["thumbnailLink"] = _link(fid)
+    return entry
+
+
+def _dir_size(path: str) -> int:
+    total = 0
+    for dirpath, _dirs, files in os.walk(path):
+        for f in files:
             try:
-                creds.refresh(Request())
-                _save_token(creds, token_path)
-            except (RefreshError, TransportError) as exc:
-                logger.error("Drive token refresh failed: %s", exc)
-                raise
-        else:
-            raise FileNotFoundError(
-                f"No valid Drive credentials found at '{token_path}'. "
-                "Run setup_google_auth.py to authenticate."
-            )
-
-    _service_cache = build("drive", "v3", credentials=creds)
-    return _service_cache
+                total += os.path.getsize(os.path.join(dirpath, f))
+            except OSError:
+                pass
+    return total
 
 
-def _save_token(creds: Credentials, path: str) -> None:
-    with open(path, "w") as fh:
-        fh.write(creds.to_json())
-
+# ── listing ─────────────────────────────────────────────────────────────────────
 
 def list_folders(parent_id: str = "root", page_token: str | None = None) -> tuple[list[dict], str | None]:
-    service = get_drive_service()
-    query = (
-        f"mimeType='application/vnd.google-apps.folder' "
-        f"and trashed=false "
-        f"and '{parent_id}' in parents"
-    )
-    params = {
-        "q": query,
-        "fields": "nextPageToken, files(id, name)",
-        "pageSize": PAGE_SIZE,
-        "orderBy": "name",
-    }
-    if page_token:
-        params["pageToken"] = page_token
+    base = _abspath(parent_id)
+    dirs = []
+    if os.path.isdir(base):
+        with os.scandir(base) as it:
+            for e in it:
+                if e.is_dir():
+                    dirs.append(e.path)
+    dirs.sort(key=lambda p: os.path.basename(p).lower())
 
-    result = service.files().list(**params).execute()
-    folders = result.get("files", [])
-    next_token = result.get("nextPageToken")
+    offset = int(page_token) if page_token else 0
+    page = dirs[offset:offset + PAGE_SIZE]
+    next_token = str(offset + PAGE_SIZE) if offset + PAGE_SIZE < len(dirs) else None
+    folders = [{"id": _id_of(p), "name": os.path.basename(p)} for p in page]
     return folders, next_token
 
 
 def list_files(parent_id: str = "root", page_token: str | None = None) -> tuple[list[dict], str | None]:
-    """List non-folder files in a folder."""
-    service = get_drive_service()
-    query = (
-        f"mimeType!='application/vnd.google-apps.folder' "
-        f"and trashed=false "
-        f"and '{parent_id}' in parents"
-    )
-    params = {
-        "q": query,
-        "fields": "nextPageToken, files(id, name, size, mimeType, webViewLink, createdTime)",
-        "pageSize": PAGE_SIZE,
-        "orderBy": "createdTime desc",
-    }
-    if page_token:
-        params["pageToken"] = page_token
+    base = _abspath(parent_id)
+    files = []
+    if os.path.isdir(base):
+        with os.scandir(base) as it:
+            for e in it:
+                if e.is_file():
+                    files.append(e.path)
+    files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
 
-    result = service.files().list(**params).execute()
-    files = result.get("files", [])
-    next_token = result.get("nextPageToken")
-    return files, next_token
+    offset = int(page_token) if page_token else 0
+    page = files[offset:offset + PAGE_SIZE]
+    next_token = str(offset + PAGE_SIZE) if offset + PAGE_SIZE < len(files) else None
+    out = []
+    for p in page:
+        m = _file_meta(p)
+        out.append({
+            "id": m["id"], "name": m["name"], "size": m["size"],
+            "mimeType": m["mimeType"], "webViewLink": m["webViewLink"],
+            "createdTime": m["createdTime"],
+        })
+    return out, next_token
+
+
+def list_folder_contents(parent_id: str = "root") -> dict:
+    base = _abspath(parent_id)
+    folders, files = [], []
+    if os.path.isdir(base):
+        with os.scandir(base) as it:
+            for e in it:
+                if e.is_dir():
+                    folders.append({"id": _id_of(e.path), "name": e.name})
+                elif e.is_file():
+                    files.append(_file_meta(e.path))
+    folders.sort(key=lambda f: f["name"].lower())
+    files.sort(key=lambda f: f["name"].lower())
+    return {"folders": folders, "files": files}
 
 
 def get_folder_name(folder_id: str) -> str:
     if folder_id == "root":
-        return "My Drive"
+        return "SOVAN Archive"
     try:
-        service = get_drive_service()
-        meta = service.files().get(fileId=folder_id, fields="name").execute()
-        return meta.get("name", folder_id)
+        return os.path.basename(_abspath(folder_id)) or "SOVAN Archive"
     except Exception:
         return folder_id
 
 
+def get_file_info(file_id: str) -> dict:
+    p = _abspath(file_id)
+    if not os.path.exists(p):
+        raise FileNotFoundError(file_id)
+    return _file_meta(p)
+
+
+# ── mutations ─────────────────────────────────────────────────────────────────────
+
 def create_folder(name: str, parent_id: str = "root") -> dict:
-    """Create a new folder and return its metadata."""
-    service = get_drive_service()
-    body = {
-        "name": name,
-        "mimeType": "application/vnd.google-apps.folder",
-        "parents": [parent_id],
-    }
-    folder = service.files().create(body=body, fields="id, name").execute()
-    return folder
+    parent = _abspath(parent_id)
+    path = os.path.join(parent, _safe_name(name))
+    os.makedirs(path, exist_ok=True)
+    return {"id": _id_of(path), "name": os.path.basename(path)}
 
 
 def delete_file(file_id: str) -> None:
-    """Permanently delete a file from Drive."""
-    service = get_drive_service()
-    service.files().delete(fileId=file_id).execute()
-
-
-def get_file_info(file_id: str) -> dict:
-    """Return metadata for a single file."""
-    return get_drive_service().files().get(
-        fileId=file_id,
-        fields="id, name, size, mimeType, webViewLink, parents, createdTime",
-    ).execute()
+    p = _abspath(file_id)
+    if os.path.isdir(p):
+        shutil.rmtree(p)
+    elif os.path.exists(p):
+        os.remove(p)
 
 
 def rename_file(file_id: str, new_name: str) -> dict:
-    """Rename a file on Drive."""
-    return get_drive_service().files().update(
-        fileId=file_id,
-        body={"name": new_name},
-        fields="id, name, webViewLink",
-    ).execute()
+    p = _abspath(file_id)
+    folder = os.path.dirname(p)
+    target = _unique_path(folder, _safe_name(new_name))
+    os.rename(p, target)
+    fid = _id_of(target)
+    return {"id": fid, "name": os.path.basename(target), "webViewLink": _link(fid)}
 
 
-def move_file(file_id: str, new_parent_id: str, old_parent_id: str) -> dict:
-    """Move a file to a different folder."""
-    return get_drive_service().files().update(
-        fileId=file_id,
-        addParents=new_parent_id,
-        removeParents=old_parent_id,
-        fields="id, name, webViewLink, parents",
-    ).execute()
-
-
-def get_storage_quota() -> dict:
-    """Return Drive storage quota info."""
-    result = get_drive_service().about().get(fields="storageQuota").execute()
-    return result.get("storageQuota", {})
-
-
-def list_folder_contents(parent_id: str = "root") -> dict:
-    """Return folders and files inside a folder for the browser."""
-    service = get_drive_service()
-    fq = f"mimeType='application/vnd.google-apps.folder' and trashed=false and '{parent_id}' in parents"
-    folders = service.files().list(
-        q=fq, fields="files(id,name)", orderBy="name", pageSize=100
-    ).execute().get("files", [])
-    fq2 = f"mimeType!='application/vnd.google-apps.folder' and trashed=false and '{parent_id}' in parents"
-    files = service.files().list(
-        q=fq2,
-        fields="files(id,name,size,mimeType,webViewLink,webContentLink,thumbnailLink,modifiedTime)",
-        orderBy="name", pageSize=100,
-    ).execute().get("files", [])
-    return {"folders": folders, "files": files}
+def move_file(file_id: str, new_parent_id: str, old_parent_id: str = "root") -> dict:
+    p = _abspath(file_id)
+    new_parent = _abspath(new_parent_id)
+    os.makedirs(new_parent, exist_ok=True)
+    target = _unique_path(new_parent, os.path.basename(p))
+    shutil.move(p, target)
+    fid = _id_of(target)
+    return {
+        "id": fid,
+        "name": os.path.basename(target),
+        "webViewLink": _link(fid),
+        "parents": [_id_of(new_parent)],
+    }
 
 
 def check_duplicate(folder_id: str, file_name: str) -> bool:
-    """Return True if a file with this exact name exists in the folder."""
-    safe = file_name.replace("'", "\\'")
-    q = f"name='{safe}' and '{folder_id}' in parents and trashed=false"
-    result = get_drive_service().files().list(q=q, fields="files(id)", pageSize=1).execute()
-    return len(result.get("files", [])) > 0
+    folder = _abspath(folder_id)
+    return os.path.exists(os.path.join(folder, _safe_name(file_name)))
 
 
 def search_files(query: str, max_results: int = 10) -> list[dict]:
-    """Search Drive for files whose name contains query."""
-    safe = query.replace("'", "\\'")
-    q = f"name contains '{safe}' and trashed=false and mimeType!='application/vnd.google-apps.folder'"
-    result = get_drive_service().files().list(
-        q=q,
-        fields="files(id, name, size, mimeType, webViewLink, parents, createdTime)",
-        pageSize=max_results,
-        orderBy="createdTime desc",
-    ).execute()
-    return result.get("files", [])
+    q = query.lower()
+    results = []
+    for dirpath, _dirs, files in os.walk(ROOT):
+        for f in files:
+            if q in f.lower():
+                m = _file_meta(os.path.join(dirpath, f))
+                results.append({
+                    "id": m["id"], "name": m["name"], "size": m["size"],
+                    "mimeType": m["mimeType"], "webViewLink": m["webViewLink"],
+                    "parents": m["parents"], "createdTime": m["createdTime"],
+                })
+                if len(results) >= max_results:
+                    return results
+    return results
+
+
+def get_storage_quota() -> dict:
+    used = _dir_size(ROOT)
+    try:
+        free = shutil.disk_usage(ROOT).free
+    except OSError:
+        free = 0
+    limit = used + free
+    return {
+        "limit": str(limit),
+        "usage": str(used),
+        "usageInDrive": str(used),
+        "usageInGooglePhotos": "0",
+    }
 
 
 def upload_file(
@@ -200,51 +291,22 @@ def upload_file(
     folder_id: str,
     progress_callback: Callable[[int], None] | None = None,
 ) -> dict:
-    service = get_drive_service()
-    body = {"name": file_name, "parents": [folder_id]}
+    folder = _abspath(folder_id)
+    os.makedirs(folder, exist_ok=True)
+    target = _unique_path(folder, _safe_name(file_name))
+    shutil.copy2(file_path, target)
 
-    file_size = os.path.getsize(file_path)
-    SIMPLE_UPLOAD_MAX = 50 * 1024 * 1024  # files at/under this → single fast upload
+    if progress_callback:
+        try:
+            progress_callback(100)
+        except Exception:
+            pass
 
-    # Small files: one-shot upload (much faster — no resumable session handshake)
-    if file_size <= SIMPLE_UPLOAD_MAX:
-        media = MediaFileUpload(file_path, mimetype=mime_type, resumable=False)
-        response = service.files().create(
-            body=body,
-            media_body=media,
-            fields="id, name, size, webViewLink",
-        ).execute()
-        if progress_callback:
-            try:
-                progress_callback(100)
-            except Exception:
-                pass
-        return response
-
-    # Large files: resumable with bigger chunks (fewer round-trips)
-    media = MediaFileUpload(
-        file_path,
-        mimetype=mime_type,
-        resumable=True,
-        chunksize=16 * 1024 * 1024,
-    )
-    request = service.files().create(
-        body=body,
-        media_body=media,
-        fields="id, name, size, webViewLink",
-    )
-
-    response = None
-    last_pct = -1
-    while response is None:
-        status, response = request.next_chunk()
-        if status and progress_callback:
-            pct = int(status.progress() * 100)
-            if pct != last_pct:
-                last_pct = pct
-                try:
-                    progress_callback(pct)
-                except Exception:
-                    pass
-
-    return response
+    st = os.stat(target)
+    fid = _id_of(target)
+    return {
+        "id": fid,
+        "name": os.path.basename(target),
+        "size": str(st.st_size),
+        "webViewLink": _link(fid),
+    }

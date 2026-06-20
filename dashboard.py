@@ -7,6 +7,7 @@ The Android bot pushes data here via POST /api/internal/push
 protected by the shared DASHBOARD_SYNC_TOKEN.
 """
 import json
+import mimetypes
 import os
 import tempfile
 import uuid
@@ -773,12 +774,10 @@ def api_browser_move():
 def api_thumbnail(file_id):
     import drive_service
     try:
-        info = drive_service.get_drive_service().files().get(
-            fileId=file_id, fields="thumbnailLink"
-        ).execute()
-        thumb = info.get("thumbnailLink", "")
-        if thumb:
-            return redirect(thumb.replace("=s220", "=s400"))
+        path = drive_service._abspath(file_id)
+        mime = mimetypes.guess_type(path)[0] or ""
+        if os.path.isfile(path) and mime.startswith("image/"):
+            return send_file(path, conditional=True)
         return ("", 404)
     except Exception:
         return ("", 404)
@@ -789,26 +788,13 @@ def api_thumbnail(file_id):
 def api_browser_download(file_id):
     try:
         import drive_service
-        from googleapiclient.http import MediaIoBaseDownload
-        import io
-        info = drive_service.get_file_info(file_id)
-        name = info.get("name", "file")
-        mime = info.get("mimeType", "application/octet-stream")
-        if mime.startswith("application/vnd.google-apps."):
-            return redirect(info.get("webViewLink", "/browser"))
-        service = drive_service.get_drive_service()
-        req = service.files().get_media(fileId=file_id)
-        buf = io.BytesIO()
-        dl = MediaIoBaseDownload(buf, req, chunksize=8 * 1024 * 1024)
-        done = False
-        while not done:
-            _, done = dl.next_chunk()
-        buf.seek(0)
-        return Response(
-            buf.read(),
-            mimetype=mime,
-            headers={"Content-Disposition": f'attachment; filename="{name}"'},
-        )
+        path = drive_service._abspath(file_id)
+        if not os.path.isfile(path):
+            return jsonify({"ok": False, "error": "Not found"}), 404
+        # conditional=True → honors HTTP Range so video scrubbing / large files
+        # stream instead of loading into memory. Inline (no as_attachment) so
+        # images/video render in the preview; the browser's download link still saves.
+        return send_file(path, conditional=True, download_name=os.path.basename(path))
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
 

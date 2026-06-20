@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Drive Archive</title>
+<title>SOVAN Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -912,7 +912,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
   <!-- ── Secondary sidebar ── -->
   <aside class="side">
-    <div class="side-title">Drive Archive</div>
+    <div class="side-title">SOVAN Archive</div>
     <button class="side-upload" onclick="showView('files');document.getElementById('fileInput').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6M4 20h16"/></svg>Upload files
     </button>
@@ -1140,7 +1140,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           <div class="stat-card">
             <div class="stat-lbl">Total size</div>
             <div class="stat-val" style="font-size:1.4rem;padding-top:5px">{{ stats.total_size }}</div>
-            <div class="stat-sub">uploaded to Drive</div>
+            <div class="stat-sub">uploaded to archive</div>
           </div>
           <div class="stat-card">
             <div class="stat-lbl">Users</div>
@@ -1159,7 +1159,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
         </div>
 
         <!-- Upload zone -->
-        <div class="sub-head" id="upload">Upload to Drive</div>
+        <div class="sub-head" id="upload">Upload to Archive</div>
         <div class="upload-section">
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             <div class="drop-icon">
@@ -1183,7 +1183,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
               <span class="dest-lbl">Destination</span>
               <button class="folder-pick-btn" id="folderPickBtn" onclick="openFolderModal()" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;color:var(--accent)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                <span id="folderPickLabel">My Drive (root)</span>
+                <span id="folderPickLabel">Archive (root)</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-left:auto;opacity:.6"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
@@ -1211,7 +1211,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
             <span class="soc soc-x" title="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3h3l-7 8 8.2 10h-6.4l-5-6.1L4.8 21H1.7l7.7-8.8L1.5 3h6.6l4.3 5.4L17.5 3z"/></svg></span>
             <span class="soc soc-yt" title="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.2-.4-4.7c-.2-.9-.9-1.5-1.7-1.7C19.3 5.2 12 5.2 12 5.2s-7.3 0-8.9.4c-.8.2-1.5.8-1.7 1.7C1 8.8 1 12 1 12s0 3.2.4 4.7c.2.9.9 1.5 1.7 1.7 1.6.4 8.9.4 8.9.4s7.3 0 8.9-.4c.8-.2 1.5-.8 1.7-1.7.4-1.5.4-4.7.4-4.7zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg></span>
           </div>
-          <p class="link-tag">Paste a link — we'll grab the video and send it straight to your Drive.</p>
+          <p class="link-tag">Paste a link — we'll grab the video and send it straight to your archive.</p>
 
           <div class="link-modes">
             <button class="mode-pill active" data-mode="auto" onclick="setLinkMode('auto')">⚡ Auto upload</button>
@@ -1228,7 +1228,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
               <span class="dest-lbl">Destination</span>
               <button class="folder-pick-btn" id="linkFolderBtn" onclick="openFolderModal('link')" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;flex-shrink:0;color:var(--accent)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                <span id="linkFolderLabel">My Drive (root)</span>
+                <span id="linkFolderLabel">Archive (root)</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;flex-shrink:0;margin-left:auto;opacity:.6"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
@@ -1462,10 +1462,10 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       <span class="modal-title">Choose folder</span>
       <button class="modal-x" onclick="closeFolderModal()">Close ✕</button>
     </div>
-    <div class="modal-bc" id="modalBc">My Drive</div>
+    <div class="modal-bc" id="modalBc">Archive</div>
     <div class="modal-body" id="modalBody"><div class="folder-loading">Loading…</div></div>
     <div class="modal-ft">
-      <span class="modal-cur" id="modalCur">My Drive</span>
+      <span class="modal-cur" id="modalCur">Archive</span>
       <button class="select-btn" onclick="confirmFolder()">Select here</button>
     </div>
   </div>
@@ -1538,7 +1538,7 @@ async function loadFolders(){
     const res=await fetch('/api/folders?parent=root');
     const d=await res.json();
     if(!d.ok||!d.folders.length){
-      track.innerHTML='<div class="fs-loading"><span>No folders in My Drive</span></div>';
+      track.innerHTML='<div class="fs-loading"><span>No folders in Archive</span></div>';
       quick.innerHTML='<div class="quick-empty">No folders yet</div>';
       return;
     }
@@ -1651,11 +1651,11 @@ function closePanel(){
 document.getElementById('fpClose').onclick=closePanel;
 
 async function deleteFolderFile(fileId,fileName,btn){
-  if(!confirm('Delete "'+fileName+'" from Drive?\n\nThis cannot be undone.'))return;
+  if(!confirm('Delete "'+fileName+'" from the archive?\n\nThis cannot be undone.'))return;
   btn.disabled=true;btn.textContent='…';
   const res=await fetch('/api/files/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:fileId})});
   const d=await res.json();
-  if(d.ok){showToast('Deleted from Drive',true);btn.closest('.fp-card').remove()}
+  if(d.ok){showToast('Deleted',true);btn.closest('.fp-card').remove()}
   else{showToast(d.error||'Delete failed',false);btn.disabled=false;btn.textContent='✕'}
 }
 
@@ -1678,7 +1678,7 @@ function openPreview(fileId,fileName){
   if(IMG_EXT.test(fileName))
     body.innerHTML=`<img src="/api/browser/download/${fileId}" alt="${fileName}">`;
   else if(VID_EXT.test(fileName))
-    body.innerHTML=`<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
+    body.innerHTML=`<video src="/api/browser/download/${fileId}" controls autoplay playsinline style="max-width:100%;max-height:80vh"></video>`;
   else
     body.innerHTML='<div class="preview-unsupported">Preview not available for this file type.</div>';
   document.getElementById('previewOverlay').classList.add('open');
@@ -1690,8 +1690,8 @@ function closePreview(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePreview();closeFolderModal()}});
 
 /* ─── Upload ─── */
-let fileQueue=[],folderStack=[{id:'root',name:'My Drive'}],selectedFolder={id:'root',name:'My Drive'};
-let selectedLinkFolder={id:'root',name:'My Drive'},folderTarget='upload';
+let fileQueue=[],folderStack=[{id:'root',name:'Archive'}],selectedFolder={id:'root',name:'Archive'};
+let selectedLinkFolder={id:'root',name:'Archive'},folderTarget='upload';
 
 function onFilesChosen(input){
   fileQueue=Array.from(input.files).slice(0,50).map(f=>({file:f,status:'pending'}));
@@ -1777,7 +1777,7 @@ dz.addEventListener('drop',e=>{
 /* ─── Folder Modal (upload picker) ─── */
 function openFolderModal(target){
   folderTarget=(target==='link')?'link':'upload';
-  folderStack=[{id:'root',name:'My Drive'}];
+  folderStack=[{id:'root',name:'Archive'}];
   document.getElementById('folderModal').classList.add('open');
   renderModalFolders('root');
 }
@@ -1827,7 +1827,7 @@ function _applyFolderChoice(id,name,label){
 function selectFolderDirect(id,name){_applyFolderChoice(id,name)}
 function confirmFolder(){
   const sel=folderStack[folderStack.length-1];
-  _applyFolderChoice(sel.id,sel.name,folderStack.length===1?'My Drive (root)':sel.name);
+  _applyFolderChoice(sel.id,sel.name,folderStack.length===1?'Archive (root)':sel.name);
 }
 
 /* ─── Download from link ─── */
@@ -1896,10 +1896,10 @@ async function doFetchLink(){
       const dlUrl=purl+'?dl=1&name='+encodeURIComponent(d.file_name);
       preview.innerHTML=`${media}${info}
         <div class="lp-upload">
-          <button class="upload-btn" onclick="uploadFetched()">⬆ Upload to Drive</button>
+          <button class="upload-btn" onclick="uploadFetched()">⬆ Upload to Archive</button>
           <a class="hbtn" href="${dlUrl}">⬇ Download to device</a>
           <button class="hbtn lp-cancel" onclick="cancelFetched()">✕ Cancel</button>
-          <span class="lp-meta">into <strong id="lpFolderName">${selectedLinkFolder.name||'My Drive'}</strong></span>
+          <span class="lp-meta">into <strong id="lpFolderName">${selectedLinkFolder.name||'Archive'}</strong></span>
         </div>`;
       btn.disabled=false;btn.textContent='Fetch';
     }
@@ -1918,8 +1918,8 @@ async function uploadFetched(){
     if(d.ok){
       setLinkFlux(100,'complete');
       const e=d.entry;
-      preview.innerHTML=`<div class="lp-meta">✅ Uploaded <strong>${e.file_name}</strong> → ${e.folder_name} · ${formatBytes(e.file_size)} · <a href="${e.web_link}" target="_blank">Open in Drive</a></div>`;
-      showToast('Uploaded to Drive!',true);
+      preview.innerHTML=`<div class="lp-meta">✅ Uploaded <strong>${e.file_name}</strong> → ${e.folder_name} · ${formatBytes(e.file_size)} · <a href="${e.web_link}" target="_blank">Open</a></div>`;
+      showToast('Uploaded to archive!',true);
       document.getElementById('linkInput').value='';fetchedTmp=null;
       setTimeout(()=>location.reload(),2000);
     }else{
@@ -1974,11 +1974,11 @@ async function batchDelete(){
 }
 
 async function deleteFile(fileId,fileName,btn){
-  if(!confirm('Delete "'+fileName+'" from Drive?\n\nThis cannot be undone.'))return;
+  if(!confirm('Delete "'+fileName+'" from the archive?\n\nThis cannot be undone.'))return;
   btn.disabled=true;btn.textContent='…';
   const res=await fetch('/api/files/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({file_id:fileId})});
   const d=await res.json();
-  if(d.ok){showToast('Deleted from Drive',true);btn.closest('tr').remove()}
+  if(d.ok){showToast('Deleted',true);btn.closest('tr').remove()}
   else{showToast(d.error||'Delete failed',false);btn.disabled=false;btn.textContent='✕'}
 }
 
