@@ -401,6 +401,7 @@ def index():
         unread_count=unread_count,
         is_admin=session.get("role") == "admin",
         current_user=session.get("username", ""),
+        display_name=next((a.get("display_name") or a.get("username","") for a in accounts if a.get("id")==session.get("user_id")), session.get("username","")),
     )
 
 

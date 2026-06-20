@@ -894,22 +894,22 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       </div>
       <div class="profile-wrap" id="profileWrap">
         <button class="avatar" id="profileBtn" onclick="toggleProfilePanel()" style="cursor:none">
-          <span id="profileBtnInner">{{ current_user[:2].upper() if current_user else 'MA' }}</span>
+          <span id="profileBtnInner">{{ display_name[:2].upper() if display_name else 'MA' }}</span>
         </button>
         <div class="profile-panel" id="profilePanel" style="display:none">
           <!-- Full-bleed photo hero -->
           <div class="pp-photo">
             <img class="pp-photo-img" id="ppPhotoImg" src="" alt="" style="display:none">
-            <div class="pp-photo-initials" id="ppAvatarInitials">{{ current_user[:2].upper() if current_user else 'MA' }}</div>
+            <div class="pp-photo-initials" id="ppAvatarInitials">{{ display_name[:2].upper() if display_name else 'MA' }}</div>
             <button class="pp-photo-edit" onclick="document.getElementById('avatarInput').click()" title="Change photo">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </button>
             <div class="pp-glass">
-              <div class="pp-glass-name" id="ppName">{{ current_user }}</div>
+              <div class="pp-glass-name" id="ppName">{{ display_name }}</div>
               <div class="pp-glass-role"><span class="pp-online-dot"></span>{{ current_role }}</div>
             </div>
           </div>
-          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="openCropModal(this)">
           <!-- hidden compat element for JS that reads ppAvatar -->
           <div id="ppAvatar" style="display:none"></div>
           <!-- Stats -->
@@ -938,6 +938,44 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
               Sign Out
             </a>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo Crop Modal -->
+    <div class="modal-overlay" id="cropModal" onclick="if(event.target===this)closeCropModal()">
+      <div class="modal" style="max-width:340px;padding:0;overflow:hidden;border-radius:20px;background:#111">
+        <div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08)">
+          <span style="font-weight:700;color:#fff;font-size:.9rem">Position Photo</span>
+          <button onclick="closeCropModal()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:none;font-size:.8rem">✕</button>
+        </div>
+        <!-- Drag-to-reposition viewport -->
+        <div id="cropViewport" style="position:relative;width:100%;height:320px;overflow:hidden;background:#000;cursor:grab;touch-action:none">
+          <img id="cropImg" src="" alt="" draggable="false" style="position:absolute;max-width:none;user-select:none;touch-action:none">
+          <!-- circular mask overlay -->
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <mask id="circleMask">
+                  <rect width="100%" height="100%" fill="white"/>
+                  <circle cx="50%" cy="50%" r="130" fill="black"/>
+                </mask>
+              </defs>
+              <rect width="100%" height="100%" fill="rgba(0,0,0,.6)" mask="url(#circleMask)"/>
+              <circle cx="50%" cy="50%" r="130" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:.65rem;color:rgba(255,255,255,.4);pointer-events:none">Drag to reposition · Pinch or scroll to zoom</div>
+        </div>
+        <!-- Zoom slider -->
+        <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.08)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="flex:1;accent-color:var(--accent)" oninput="onCropZoom(this.value)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+        </div>
+        <div style="padding:0 16px 16px;display:flex;gap:8px">
+          <button onclick="closeCropModal()" style="flex:1;padding:10px;border-radius:12px;background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.6);font-size:.82rem;cursor:none">Cancel</button>
+          <button onclick="confirmCrop()" style="flex:2;padding:10px;border-radius:12px;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:.82rem;cursor:none">Use Photo</button>
         </div>
       </div>
     </div>
@@ -1988,30 +2026,142 @@ async function saveProfile(){
   }catch(e){showToast('Network error',false)}
 }
 
-async function uploadAvatar(input){
+/* ── Photo crop modal ── */
+const _crop={file:null,x:0,y:0,scale:1,dragging:false,lastX:0,lastY:0,natW:0,natH:0,vpW:340,vpH:320};
+
+function openCropModal(input){
   const file=input.files[0];
   if(!file)return;
-  if(file.size>5*1024*1024){showToast('Image must be under 5 MB',false);return}
-  const form=new FormData();form.append('avatar',file);
-  try{
-    showToast('Uploading photo…',true);
-    const res=await fetch('/api/profile/avatar',{method:'POST',body:form});
-    const d=await res.json();
-    if(d.ok){
-      _setAvatar(d.url);
-      showToast('Photo updated!',true);
-    }else showToast(d.error||'Upload failed',false);
-  }catch(e){showToast('Network error',false)}
+  if(file.size>15*1024*1024){showToast('Image must be under 15 MB',false);return}
+  _crop.file=file;
+  const url=URL.createObjectURL(file);
+  const img=document.getElementById('cropImg');
+  img.onload=function(){
+    _crop.natW=img.naturalWidth; _crop.natH=img.naturalHeight;
+    const vp=document.getElementById('cropViewport');
+    _crop.vpW=vp.offsetWidth; _crop.vpH=vp.offsetHeight;
+    // fit image to fill viewport at scale=1
+    const scaleW=_crop.vpW/_crop.natW, scaleH=_crop.vpH/_crop.natH;
+    _crop.baseScale=Math.max(scaleW,scaleH);
+    _crop.scale=1;
+    document.getElementById('cropZoom').value=1;
+    _applyCropTransform();
+  };
+  img.src=url;
+  document.getElementById('cropModal').classList.add('open');
   input.value='';
+  _initCropDrag();
 }
+
+function _applyCropTransform(){
+  const img=document.getElementById('cropImg');
+  const s=_crop.baseScale*_crop.scale;
+  const w=_crop.natW*s, h=_crop.natH*s;
+  // clamp so image always covers viewport
+  const minX=_crop.vpW-w, minY=_crop.vpH-h;
+  _crop.x=Math.min(0,Math.max(minX,_crop.x));
+  _crop.y=Math.min(0,Math.max(minY,_crop.y));
+  img.style.width=w+'px'; img.style.height=h+'px';
+  img.style.left=_crop.x+'px'; img.style.top=_crop.y+'px';
+}
+
+function onCropZoom(v){
+  const prev=_crop.scale;
+  _crop.scale=parseFloat(v);
+  // zoom from center
+  const ratio=_crop.scale/prev;
+  _crop.x=_crop.vpW/2-(_crop.vpW/2-_crop.x)*ratio;
+  _crop.y=_crop.vpH/2-(_crop.vpH/2-_crop.y)*ratio;
+  _applyCropTransform();
+}
+
+function _initCropDrag(){
+  const vp=document.getElementById('cropViewport');
+  // remove old listeners by cloning
+  const fresh=vp.cloneNode(true);
+  vp.parentNode.replaceChild(fresh,vp);
+  // re-attach zoom slider (was inside cloned vp? no, it's outside)
+  // Mouse
+  fresh.addEventListener('mousedown',e=>{
+    _crop.dragging=true; _crop.lastX=e.clientX; _crop.lastY=e.clientY;
+    fresh.style.cursor='grabbing'; e.preventDefault();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!_crop.dragging)return;
+    _crop.x+=e.clientX-_crop.lastX; _crop.y+=e.clientY-_crop.lastY;
+    _crop.lastX=e.clientX; _crop.lastY=e.clientY;
+    _applyCropTransform();
+  });
+  window.addEventListener('mouseup',()=>{_crop.dragging=false; fresh.style.cursor='grab';});
+  // Touch
+  let lastTouchDist=null;
+  fresh.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){_crop.dragging=true;_crop.lastX=e.touches[0].clientX;_crop.lastY=e.touches[0].clientY;}
+    if(e.touches.length===2){lastTouchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);}
+    e.preventDefault();
+  },{passive:false});
+  fresh.addEventListener('touchmove',e=>{
+    if(e.touches.length===1&&_crop.dragging){
+      _crop.x+=e.touches[0].clientX-_crop.lastX; _crop.y+=e.touches[0].clientY-_crop.lastY;
+      _crop.lastX=e.touches[0].clientX; _crop.lastY=e.touches[0].clientY;
+      _applyCropTransform();
+    }
+    if(e.touches.length===2&&lastTouchDist){
+      const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      const slider=document.getElementById('cropZoom');
+      const newScale=Math.min(3,Math.max(1,_crop.scale*(d/lastTouchDist)));
+      slider.value=newScale; onCropZoom(newScale); lastTouchDist=d;
+    }
+    e.preventDefault();
+  },{passive:false});
+  fresh.addEventListener('touchend',()=>{_crop.dragging=false; lastTouchDist=null;});
+  // Scroll-to-zoom
+  fresh.addEventListener('wheel',e=>{
+    const slider=document.getElementById('cropZoom');
+    const newScale=Math.min(3,Math.max(1,_crop.scale-(e.deltaY*0.002)));
+    slider.value=newScale; onCropZoom(newScale); e.preventDefault();
+  },{passive:false});
+}
+
+function closeCropModal(){
+  document.getElementById('cropModal').classList.remove('open');
+}
+
+async function confirmCrop(){
+  // Render crop to canvas (circle crop 260×260)
+  const size=260;
+  const canvas=document.createElement('canvas');
+  canvas.width=size; canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  ctx.beginPath(); ctx.arc(size/2,size/2,size/2,0,Math.PI*2); ctx.clip();
+  const img=document.getElementById('cropImg');
+  const s=_crop.baseScale*_crop.scale;
+  // offset from viewport center (circle center = vp center)
+  const cx=_crop.vpW/2, cy=_crop.vpH/2;
+  const srcX=(cx-_crop.x)/s, srcY=(cy-_crop.y)/s;
+  const cropR=(size/2)/s;
+  ctx.drawImage(img.complete?img:await _imgLoaded(img), srcX-cropR, srcY-cropR, cropR*2, cropR*2, 0, 0, size, size);
+  canvas.toBlob(async blob=>{
+    closeCropModal();
+    if(!blob){showToast('Crop failed',false);return}
+    const form=new FormData(); form.append('avatar', blob, 'avatar.jpg');
+    try{
+      showToast('Uploading photo…',true);
+      const res=await fetch('/api/profile/avatar',{method:'POST',body:form});
+      const d=await res.json();
+      if(d.ok){_setAvatar(d.url);showToast('Photo updated!',true);}
+      else showToast(d.error||'Upload failed',false);
+    }catch(e){showToast('Network error',false)}
+  },'image/jpeg',0.92);
+}
+
+function _imgLoaded(img){return new Promise(r=>{img.onload=()=>r(img);})}
 
 function _setAvatar(url){
   const ts=url+'?t='+Date.now();
-  // hero full-bleed
   const photoImg=document.getElementById('ppPhotoImg');
   photoImg.src=ts; photoImg.style.display='block';
   document.getElementById('ppAvatarInitials').style.display='none';
-  // topbar button
   const btn=document.getElementById('profileBtn');
   btn.style.backgroundImage=`url(${ts})`;
   btn.style.backgroundSize='cover';
