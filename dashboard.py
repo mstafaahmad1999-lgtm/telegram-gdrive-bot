@@ -508,13 +508,17 @@ def api_profile_avatar():
     if "avatar" not in request.files:
         return jsonify({"ok": False, "error": "No file"}), 400
     f = request.files["avatar"]
-    if not f.content_type.startswith("image/"):
-        return jsonify({"ok": False, "error": "Must be an image"}), 400
-    user_id = session.get("user_id", "unknown")
+    username = session.get("username", "unknown").lower()
     avatars_dir = os.path.join("static", "avatars")
     os.makedirs(avatars_dir, exist_ok=True)
-    ext = os.path.splitext(f.filename)[1].lower() or ".jpg"
-    filename = f"{user_id}{ext}"
+    for old_ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+        old = os.path.join(avatars_dir, f"{username}{old_ext}")
+        if os.path.exists(old):
+            os.remove(old)
+    ext = os.path.splitext(f.filename or "")[1].lower() or ".jpg"
+    if ext not in (".jpg", ".jpeg", ".png", ".webp"):
+        ext = ".jpg"
+    filename = f"{username}{ext}"
     f.save(os.path.join(avatars_dir, filename))
     return jsonify({"ok": True, "url": f"/static/avatars/{filename}"})
 
@@ -522,12 +526,12 @@ def api_profile_avatar():
 @app.route("/api/profile/avatar-url")
 @login_required
 def api_profile_avatar_url():
-    user_id = session.get("user_id", "unknown")
+    username = session.get("username", "unknown").lower()
     avatars_dir = os.path.join("static", "avatars")
     for ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
-        path = os.path.join(avatars_dir, f"{user_id}{ext}")
+        path = os.path.join(avatars_dir, f"{username}{ext}")
         if os.path.exists(path):
-            return jsonify({"ok": True, "url": f"/static/avatars/{user_id}{ext}"})
+            return jsonify({"ok": True, "url": f"/static/avatars/{username}{ext}"})
     return jsonify({"ok": True, "url": None})
 
 
@@ -535,17 +539,41 @@ def api_profile_avatar_url():
 @login_required
 def api_profile_update():
     data = request.get_json(force=True)
-    display_name = data.get("display_name", "").strip()
-    if not display_name:
-        return jsonify({"ok": False, "error": "Name cannot be empty"}), 400
+    field = data.get("field", "name")
     accounts = _load_accounts()
-    for a in accounts:
-        if a.get("id") == session.get("user_id"):
-            a["display_name"] = display_name
-            _save_accounts(accounts)
-            session["username"] = display_name
-            return jsonify({"ok": True})
-    return jsonify({"ok": False, "error": "Account not found"}), 404
+    acct = next((a for a in accounts if a.get("id") == session.get("user_id")), None)
+    if not acct:
+        return jsonify({"ok": False, "error": "Account not found"}), 404
+
+    if field == "name":
+        val = data.get("value", "").strip()
+        if not val:
+            return jsonify({"ok": False, "error": "Name cannot be empty"}), 400
+        acct["display_name"] = val
+        session["username"] = val
+
+    elif field == "email":
+        val = data.get("value", "").strip().lower()
+        if not val or "@" not in val:
+            return jsonify({"ok": False, "error": "Invalid email"}), 400
+        if any(a.get("email") == val and a.get("id") != acct["id"] for a in accounts):
+            return jsonify({"ok": False, "error": "Email already in use"}), 400
+        acct["email"] = val
+
+    elif field == "password":
+        current = data.get("current", "")
+        new_pw = data.get("value", "")
+        if not check_password_hash(acct.get("password_hash", ""), current):
+            return jsonify({"ok": False, "error": "Current password is wrong"}), 400
+        if len(new_pw) < 6:
+            return jsonify({"ok": False, "error": "Password must be at least 6 characters"}), 400
+        acct["password_hash"] = generate_password_hash(new_pw)
+
+    else:
+        return jsonify({"ok": False, "error": "Unknown field"}), 400
+
+    _save_accounts(accounts)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/admin/users/delete", methods=["POST"])

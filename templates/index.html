@@ -797,6 +797,47 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .pp-signout:hover{background:rgba(224,85,85,.1);color:#f87171}
 .pp-signout:hover svg{color:#f87171}
 
+/* ── Edit Profile Modal tabs ── */
+.ep-tab{
+  padding:8px 14px 10px;background:none;border:none;
+  font-size:.78rem;font-weight:600;color:rgba(255,255,255,.35);
+  cursor:none;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;margin-bottom:-1px;
+  font-family:'Inter',sans-serif;letter-spacing:.01em
+}
+.ep-tab.active,.ep-tab:hover{color:#fff}
+.ep-tab.active{border-bottom-color:var(--accent)}
+.ep-field{display:flex;flex-direction:column;gap:6px}
+.ep-lbl{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.35)}
+.ep-input-wrap{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;padding:11px 14px;
+  transition:border-color .15s
+}
+.ep-input-wrap:focus-within{border-color:var(--accent);background:rgba(10,186,181,.06)}
+.ep-icon{width:15px;height:15px;flex-shrink:0;color:rgba(255,255,255,.25)}
+.ep-input{
+  flex:1;background:none;border:none;outline:none;
+  color:#fff;font-size:.88rem;font-family:'Inter',sans-serif;
+}
+.ep-input::placeholder{color:rgba(255,255,255,.2)}
+.ep-error{
+  font-size:.72rem;color:#f87171;min-height:16px;margin-top:4px;
+  display:none
+}
+.ep-error.show{display:block}
+.ep-save{
+  width:100%;margin-top:18px;padding:12px;
+  background:var(--accent);border:none;border-radius:12px;
+  color:#000;font-weight:700;font-size:.85rem;
+  cursor:none;transition:opacity .15s,transform .1s;
+  font-family:'Inter',sans-serif;letter-spacing:.01em
+}
+.ep-save:hover{opacity:.88}
+.ep-save:active{transform:scale(.98)}
+
 /* ── Admin panel ── */
 .admin-card{
   background:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.95);border-radius:15px;
@@ -982,17 +1023,63 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
     <!-- Edit Profile Modal -->
     <div class="modal-overlay" id="editProfileModal" onclick="if(event.target===this)closeEditProfile()">
-      <div class="modal" style="max-width:360px">
-        <div class="modal-hd">
-          <span class="modal-title">Edit Profile</span>
-          <button class="modal-x" onclick="closeEditProfile()">Close ✕</button>
+      <div style="background:#0d0f13;border-radius:24px;width:min(92vw,400px);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07);animation:ppIn .25s cubic-bezier(.16,1,.3,1)">
+        <!-- Header -->
+        <div style="padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:-.01em">Edit Profile</span>
+          <button onclick="closeEditProfile()" style="background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:50%;cursor:none;font-size:.8rem;display:flex;align-items:center;justify-content:center">✕</button>
         </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-          <div>
-            <label class="form-lbl">Display Name</label>
-            <input type="text" id="editDisplayName" class="uid-input" style="width:100%" placeholder="Your name">
+        <!-- Tabs -->
+        <div style="display:flex;gap:0;padding:16px 22px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+          <button class="ep-tab active" data-tab="name" onclick="switchEditTab('name')">Name</button>
+          <button class="ep-tab" data-tab="email" onclick="switchEditTab('email')">Email</button>
+          <button class="ep-tab" data-tab="password" onclick="switchEditTab('password')">Password</button>
+        </div>
+        <!-- Tab: Name -->
+        <div class="ep-panel active" id="ep-name" style="padding:22px">
+          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">This is the name shown on your profile card.</p>
+          <div class="ep-field">
+            <label class="ep-lbl">Display Name</label>
+            <div class="ep-input-wrap">
+              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input type="text" id="editDisplayName" class="ep-input" placeholder="Your name">
+            </div>
           </div>
-          <button class="add-btn" style="width:100%;padding:11px" onclick="saveProfile()">Save Changes</button>
+          <div class="ep-error" id="ep-name-err"></div>
+          <button class="ep-save" onclick="saveProfileField('name')">Save Name</button>
+        </div>
+        <!-- Tab: Email -->
+        <div class="ep-panel" id="ep-email" style="padding:22px;display:none">
+          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">Your login email address.</p>
+          <div class="ep-field">
+            <label class="ep-lbl">Email Address</label>
+            <div class="ep-input-wrap">
+              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              <input type="email" id="editEmail" class="ep-input" placeholder="you@example.com">
+            </div>
+          </div>
+          <div class="ep-error" id="ep-email-err"></div>
+          <button class="ep-save" onclick="saveProfileField('email')">Save Email</button>
+        </div>
+        <!-- Tab: Password -->
+        <div class="ep-panel" id="ep-password" style="padding:22px;display:none">
+          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">Choose a strong password of at least 6 characters.</p>
+          <div class="ep-field">
+            <label class="ep-lbl">Current Password</label>
+            <div class="ep-input-wrap">
+              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" id="editCurrentPw" class="ep-input" placeholder="Current password">
+            </div>
+          </div>
+          <div class="ep-field" style="margin-top:10px">
+            <label class="ep-lbl">New Password</label>
+            <div class="ep-input-wrap">
+              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <input type="password" id="editNewPw" class="ep-input" placeholder="New password (min 6 chars)">
+            </div>
+          </div>
+          <div class="ep-error" id="ep-password-err"></div>
+          <button class="ep-save" onclick="saveProfileField('password')">Update Password</button>
         </div>
       </div>
     </div>
@@ -2004,27 +2091,71 @@ function openEditProfile(){
   profileOpen=false;
   document.getElementById('profilePanel').style.display='none';
   document.getElementById('editDisplayName').value=document.getElementById('ppName').textContent.trim();
+  document.getElementById('editEmail').value='';
+  document.getElementById('editCurrentPw').value='';
+  document.getElementById('editNewPw').value='';
+  ['ep-name-err','ep-email-err','ep-password-err'].forEach(id=>{
+    const el=document.getElementById(id);el.textContent='';el.classList.remove('show');
+  });
+  switchEditTab('name');
   document.getElementById('editProfileModal').classList.add('open');
 }
 function closeEditProfile(){
   document.getElementById('editProfileModal').classList.remove('open');
 }
-async function saveProfile(){
-  const name=document.getElementById('editDisplayName').value.trim();
-  if(!name){showToast('Name cannot be empty',false);return}
+function switchEditTab(tab){
+  document.querySelectorAll('.ep-tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.tab===tab);
+  });
+  ['name','email','password'].forEach(t=>{
+    const p=document.getElementById('ep-'+t);
+    p.style.display=t===tab?'block':'none';
+  });
+}
+function _epErr(id, msg){
+  const el=document.getElementById(id);
+  el.textContent=msg; el.classList.toggle('show',!!msg);
+}
+async function saveProfileField(field){
+  _epErr('ep-'+field+'-err','');
+  let body={field};
+  if(field==='name'){
+    const v=document.getElementById('editDisplayName').value.trim();
+    if(!v){_epErr('ep-name-err','Name cannot be empty');return}
+    body.value=v;
+  } else if(field==='email'){
+    const v=document.getElementById('editEmail').value.trim();
+    if(!v||!v.includes('@')){_epErr('ep-email-err','Enter a valid email');return}
+    body.value=v;
+  } else if(field==='password'){
+    const cur=document.getElementById('editCurrentPw').value;
+    const nw=document.getElementById('editNewPw').value;
+    if(!cur){_epErr('ep-password-err','Enter your current password');return}
+    if(nw.length<6){_epErr('ep-password-err','New password must be at least 6 characters');return}
+    body.current=cur; body.value=nw;
+  }
+  const btn=event.target; btn.textContent='Saving…'; btn.disabled=true;
   try{
-    const res=await fetch('/api/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name})});
+    const res=await fetch('/api/profile/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json();
     if(d.ok){
-      const initials=name.slice(0,2).toUpperCase();
-      document.getElementById('ppName').textContent=name;
-      document.getElementById('ppAvatarInitials').textContent=initials;
-      document.getElementById('profileBtnInner').textContent=initials;
-      showToast('Profile updated!',true);
+      if(field==='name'){
+        const initials=body.value.slice(0,2).toUpperCase();
+        document.getElementById('ppName').textContent=body.value;
+        document.getElementById('ppAvatarInitials').textContent=initials;
+        document.getElementById('profileBtnInner').textContent=initials;
+      }
+      showToast(field==='password'?'Password updated!':field==='email'?'Email updated!':'Name updated!',true);
       closeEditProfile();
-    }else showToast(d.error||'Failed',false);
-  }catch(e){showToast('Network error',false)}
+    } else {
+      _epErr('ep-'+field+'-err', d.error||'Something went wrong');
+    }
+  }catch(e){_epErr('ep-'+field+'-err','Network error')}
+  btn.textContent=field==='name'?'Save Name':field==='email'?'Save Email':'Update Password';
+  btn.disabled=false;
 }
+// keep old name so any stray calls don't break
+function saveProfile(){saveProfileField('name')}
 
 /* ── Photo crop modal ── */
 const _crop={file:null,x:0,y:0,scale:1,dragging:false,lastX:0,lastY:0,natW:0,natH:0,vpW:340,vpH:320};
@@ -2128,18 +2259,16 @@ function closeCropModal(){
 }
 
 async function confirmCrop(){
-  // Render crop to canvas (circle crop 260×260)
-  const size=260;
+  // Render the full visible region (square from circle guide) — no circle clip
+  const size=520; // hi-res square
   const canvas=document.createElement('canvas');
   canvas.width=size; canvas.height=size;
   const ctx=canvas.getContext('2d');
-  ctx.beginPath(); ctx.arc(size/2,size/2,size/2,0,Math.PI*2); ctx.clip();
   const img=document.getElementById('cropImg');
   const s=_crop.baseScale*_crop.scale;
-  // offset from viewport center (circle center = vp center)
   const cx=_crop.vpW/2, cy=_crop.vpH/2;
   const srcX=(cx-_crop.x)/s, srcY=(cy-_crop.y)/s;
-  const cropR=(size/2)/s;
+  const cropR=(130)/s; // 130 = circle radius in CSS
   ctx.drawImage(img.complete?img:await _imgLoaded(img), srcX-cropR, srcY-cropR, cropR*2, cropR*2, 0, 0, size, size);
   canvas.toBlob(async blob=>{
     closeCropModal();
