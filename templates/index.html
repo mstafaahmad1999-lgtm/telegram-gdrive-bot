@@ -2120,12 +2120,13 @@ function openEditProfile(){
     const el=document.getElementById(id);if(el){el.textContent='';el.classList.remove('show');}
   });
   switchEditTab('name');
-  document.getElementById('ppMainPage').style.display='none';
+  // use visibility:hidden so panel keeps its height (display:none collapses it)
+  document.getElementById('ppMainPage').style.visibility='hidden';
   document.getElementById('ppEditPage').style.display='block';
 }
 function closeEditProfile(){
   document.getElementById('ppEditPage').style.display='none';
-  document.getElementById('ppMainPage').style.display='';
+  document.getElementById('ppMainPage').style.visibility='';
 }
 function togglePwInline(id,btn){
   const inp=document.getElementById(id);
