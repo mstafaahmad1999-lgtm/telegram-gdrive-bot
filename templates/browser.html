@@ -197,11 +197,12 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 .prev-arrow{
   position:absolute;top:50%;transform:translateY(-50%);
   width:44px;height:44px;border-radius:50%;
-  background:rgba(255,255,255,.1);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
-  color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;
-  cursor:none;transition:all .15s;z-index:2;
+  background:rgba(255,255,255,.12);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  cursor:none;transition:all .15s;z-index:2;flex-shrink:0;
 }
-.prev-arrow:hover{background:rgba(255,255,255,.2)}
+.prev-arrow svg{width:20px;height:20px;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.prev-arrow:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.35)}
 #prevArrowL{left:-22px}
 #prevArrowR{right:-22px}
 
@@ -327,9 +328,9 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 <div id="previewOverlay" onclick="if(event.target===this)closePreview()">
   <div class="prev-wrap" id="prevWrap">
     <div class="prev-media" id="prevMedia">
-      <button class="prev-arrow" id="prevArrowL" onclick="shiftPreview(-1)">‹</button>
+      <button class="prev-arrow" id="prevArrowL" onclick="shiftPreview(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
       <div id="prevContent"></div>
-      <button class="prev-arrow" id="prevArrowR" onclick="shiftPreview(1)">›</button>
+      <button class="prev-arrow" id="prevArrowR" onclick="shiftPreview(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
     <div class="prev-bar">
       <span class="prev-name" id="prevName"></span>
@@ -519,23 +520,34 @@ function renderGallery(files,parentId){
   }).join('');
 
   if(selectMode)document.getElementById('galleryGrid').classList.add('select-mode');
+  requestAnimationFrame(setupVidObservers);
 }
 
-/* ─── Video hover autoplay ─── */
-function hoverPlayVid(thumb){
-  const vid=thumb.querySelector('video');
-  if(!vid)return;
-  const placeholder=thumb.querySelector('.vid-placeholder');
-  if(!vid.src&&vid.dataset.src){vid.src=vid.dataset.src}
-  vid.play().then(()=>{
-    vid.style.opacity='1';
-    if(placeholder)placeholder.style.display='none';
-  }).catch(()=>{});
+/* ─── Video autoplay via IntersectionObserver ─── */
+const vidObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    const vid=entry.target;
+    const placeholder=vid.closest('.g-thumb')?.querySelector('.vid-placeholder');
+    if(entry.isIntersecting){
+      if(!vid.src&&vid.dataset.src)vid.src=vid.dataset.src;
+      vid.play().then(()=>{
+        vid.style.opacity='1';
+        if(placeholder)placeholder.style.display='none';
+      }).catch(()=>{});
+    } else {
+      vid.pause();
+    }
+  });
+},{threshold:0.3});
+
+function setupVidObservers(){
+  document.querySelectorAll('.g-thumb video[data-src],.g-thumb video[src]').forEach(vid=>{
+    vidObserver.unobserve(vid);
+    vidObserver.observe(vid);
+  });
 }
-function hoverPauseVid(thumb){
-  const vid=thumb.querySelector('video');
-  if(vid){vid.pause();vid.style.opacity='0';const p=thumb.querySelector('.vid-placeholder');if(p)p.style.display='flex';}
-}
+function hoverPlayVid(){}
+function hoverPauseVid(){}
 
 /* ─── CINEMATIC PREVIEW ─── */
 function openPreview(idx){
