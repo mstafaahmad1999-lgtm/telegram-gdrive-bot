@@ -1,4 +1,5 @@
 .env
+.secret_key
 token.json
 credentials.json
 cookies.txt

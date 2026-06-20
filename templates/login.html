@@ -231,6 +231,17 @@
     .btn-signin .arrow { transition: transform 0.2s; }
     .btn-signin:hover .arrow { transform: translateX(4px); }
 
+    /* ── Password eye toggle ── */
+    .pw-eye {
+      position: absolute;
+      right: 0; top: 50%; transform: translateY(-50%);
+      background: none; border: none; padding: 4px 2px;
+      color: rgba(255,255,255,0.35); cursor: pointer;
+      display: flex; align-items: center;
+      transition: color 0.2s;
+    }
+    .pw-eye:hover { color: rgba(255,255,255,0.7); }
+
     /* ── Footer ── */
     .card-footer {
       text-align: center;
@@ -262,7 +273,7 @@
 
     <!-- Logo -->
     <div class="logo-wrap">
-      <img class="wordmark" src="/static/sovan-logo.png.png" alt="SOVAN" />
+      <img class="wordmark" src="/static/sovan-logo.png" alt="SOVAN" />
       <div class="star-cover"></div>
       <img class="star-blue" src="/static/sovan-symbol.svg" alt="" aria-hidden="true" />
     </div>
@@ -288,7 +299,7 @@
 
       <!-- Password -->
       <div class="field">
-        <input type="password" id="password" name="password" placeholder=" " required autocomplete="current-password" />
+        <input type="password" id="password" name="password" placeholder=" " required autocomplete="current-password" style="padding-right:28px" />
         <label for="password">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -296,6 +307,11 @@
           </svg>
           Password
         </label>
+        <button type="button" class="pw-eye" onclick="togglePw('password',this)" tabindex="-1" aria-label="Show password">
+          <svg id="eye-icon-password" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
       </div>
 
       <div class="row-actions">
@@ -397,6 +413,15 @@ setTimeout(() => {
   symbol.style.display = 'none';
   loginOverlay.style.display = 'flex';
 }, 3900);
+
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = isHidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
 </script>
 
 </body>

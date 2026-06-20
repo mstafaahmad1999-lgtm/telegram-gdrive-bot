@@ -20,7 +20,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("DASHBOARD_SECRET_KEY", os.urandom(24).hex())
+
+# Persist secret key so sessions survive server restarts
+_KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".secret_key")
+
+def _get_secret_key() -> str:
+    key = os.getenv("DASHBOARD_SECRET_KEY")
+    if key:
+        return key
+    if os.path.exists(_KEY_FILE):
+        with open(_KEY_FILE) as f:
+            k = f.read().strip()
+            if k:
+                return k
+    key = os.urandom(32).hex()
+    with open(_KEY_FILE, "w") as f:
+        f.write(key)
+    return key
+
+app.secret_key = _get_secret_key()
 app.permanent_session_lifetime = timedelta(days=30)
 
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin")
@@ -182,7 +200,9 @@ def _format_size(size_bytes: int) -> str:
     return f"{size_bytes} B"
 
 
-def _compute_stats(history: list[dict]) -> dict:
+def _compute_stats(history: list[dict], user_id=None) -> dict:
+    if user_id is not None:
+        history = [e for e in history if str(e.get("user_id", "")) == str(user_id)]
     total_files = len(history)
     total_bytes = sum(e.get("file_size", 0) for e in history)
     uploaders: dict[int, int] = {}
@@ -362,7 +382,8 @@ def index():
     history = _load_history()
     users = _load_users()
     accounts = _load_accounts()
-    stats = _compute_stats(history)
+    stats_uid = None if session.get("role") == "admin" else session.get("user_id")
+    stats = _compute_stats(history, user_id=stats_uid)
 
     page = max(1, int(request.args.get("page", 1)))
     all_reversed = list(reversed(history))
@@ -417,6 +438,9 @@ def browser():
 @login_required
 def api_notifications():
     notifications = list(reversed(_load_notifications()))
+    if session.get("role") != "admin":
+        allowed = {"upload", "download", "general"}
+        notifications = [n for n in notifications if n.get("type") in allowed]
     unread = sum(1 for n in notifications if not n.get("read"))
     return jsonify({"ok": True, "notifications": notifications[:50], "unread": unread})
 

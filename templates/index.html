@@ -797,7 +797,16 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .pp-signout:hover{background:rgba(224,85,85,.1);color:#f87171}
 .pp-signout:hover svg{color:#f87171}
 
-/* ── Edit Profile Modal tabs ── */
+/* ── Profile panel pages ── */
+.pp-main-page{position:relative}
+@keyframes ppSlideIn{from{transform:translateX(18px);opacity:0}to{transform:none;opacity:1}}
+.pp-edit-page{
+  position:absolute;inset:0;background:#0d0f13;border-radius:24px;
+  overflow-y:auto;z-index:2;
+  animation:ppSlideIn .22s cubic-bezier(.16,1,.3,1)
+}
+
+/* ── Edit Profile inline tabs ── */
 .ep-tab{
   padding:8px 14px 10px;background:none;border:none;
   font-size:.78rem;font-weight:600;color:rgba(255,255,255,.35);
@@ -837,6 +846,12 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 }
 .ep-save:hover{opacity:.88}
 .ep-save:active{transform:scale(.98)}
+.ep-eye{
+  background:none;border:none;padding:2px;margin-left:4px;
+  color:rgba(255,255,255,.3);cursor:none;flex-shrink:0;
+  display:flex;align-items:center;transition:color .15s
+}
+.ep-eye:hover{color:rgba(255,255,255,.7)}
 
 /* ── Admin panel ── */
 .admin-card{
@@ -938,46 +953,117 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           <span id="profileBtnInner">{{ display_name[:2].upper() if display_name else 'MA' }}</span>
         </button>
         <div class="profile-panel" id="profilePanel" style="display:none">
-          <!-- Full-bleed photo hero -->
-          <div class="pp-photo">
-            <img class="pp-photo-img" id="ppPhotoImg" src="" alt="" style="display:none">
-            <div class="pp-photo-initials" id="ppAvatarInitials">{{ display_name[:2].upper() if display_name else 'MA' }}</div>
-            <button class="pp-photo-edit" onclick="document.getElementById('avatarInput').click()" title="Change photo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            </button>
-            <div class="pp-glass">
-              <div class="pp-glass-name" id="ppName">{{ display_name }}</div>
-              <div class="pp-glass-role"><span class="pp-online-dot"></span>{{ current_role }}</div>
+          <!-- ── Main page ── -->
+          <div class="pp-main-page" id="ppMainPage">
+            <!-- Full-bleed photo hero -->
+            <div class="pp-photo">
+              <img class="pp-photo-img" id="ppPhotoImg" src="" alt="" style="display:none">
+              <div class="pp-photo-initials" id="ppAvatarInitials">{{ display_name[:2].upper() if display_name else 'MA' }}</div>
+              <button class="pp-photo-edit" onclick="document.getElementById('avatarInput').click()" title="Change photo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </button>
+              <div class="pp-glass">
+                <div class="pp-glass-name" id="ppName">{{ display_name }}</div>
+                <div class="pp-glass-role"><span class="pp-online-dot"></span>{{ current_role }}</div>
+              </div>
+            </div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="openCropModal(this)">
+            <div id="ppAvatar" style="display:none"></div>
+            <!-- Stats -->
+            <div class="pp-stats">
+              <div class="pp-stat">
+                <span class="pp-stat-val">{{ stats.total_files }}</span>
+                <span class="pp-stat-lbl">Uploads</span>
+              </div>
+              <div class="pp-stat">
+                <span class="pp-stat-val">{{ stats.total_size }}</span>
+                <span class="pp-stat-lbl">Size</span>
+              </div>
+              <div class="pp-stat">
+                <span class="pp-stat-val">{{ users|length }}</span>
+                <span class="pp-stat-lbl">Members</span>
+              </div>
+            </div>
+            <!-- Menu -->
+            <div class="pp-menu">
+              <button class="pp-item" onclick="openEditProfile()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit Profile
+              </button>
+              <a class="pp-item pp-signout" href="/logout">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                Sign Out
+              </a>
             </div>
           </div>
-          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="openCropModal(this)">
-          <!-- hidden compat element for JS that reads ppAvatar -->
-          <div id="ppAvatar" style="display:none"></div>
-          <!-- Stats -->
-          <div class="pp-stats">
-            <div class="pp-stat">
-              <span class="pp-stat-val">{{ stats.total_files }}</span>
-              <span class="pp-stat-lbl">Uploads</span>
+
+          <!-- ── Edit page (inline, slides over main) ── -->
+          <div class="pp-edit-page" id="ppEditPage" style="display:none">
+            <!-- Header -->
+            <div style="padding:16px 16px 0;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:12px">
+              <button onclick="closeEditProfile()" style="background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.6);width:28px;height:28px;border-radius:50%;cursor:none;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <span style="font-size:.88rem;font-weight:700;color:#fff">Edit Profile</span>
             </div>
-            <div class="pp-stat">
-              <span class="pp-stat-val">{{ stats.total_size }}</span>
-              <span class="pp-stat-lbl">Total size</span>
+            <!-- Tabs -->
+            <div style="display:flex;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.07)">
+              <button class="ep-tab active" data-tab="name" onclick="switchEditTab('name')">Name</button>
+              <button class="ep-tab" data-tab="email" onclick="switchEditTab('email')">Email</button>
+              <button class="ep-tab" data-tab="password" onclick="switchEditTab('password')">Password</button>
             </div>
-            <div class="pp-stat">
-              <span class="pp-stat-val">{{ users|length }}</span>
-              <span class="pp-stat-lbl">Members</span>
+            <!-- Tab: Name -->
+            <div id="ep-name" style="padding:16px">
+              <p style="font-size:.72rem;color:rgba(255,255,255,.3);margin:0 0 12px">Name shown on your profile.</p>
+              <div class="ep-field">
+                <label class="ep-lbl">Display Name</label>
+                <div class="ep-input-wrap">
+                  <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <input type="text" id="editDisplayName" class="ep-input" placeholder="Your name">
+                </div>
+              </div>
+              <div class="ep-error" id="ep-name-err"></div>
+              <button class="ep-save" onclick="saveProfileField('name')">Save Name</button>
             </div>
-          </div>
-          <!-- Menu -->
-          <div class="pp-menu">
-            <button class="pp-item" onclick="openEditProfile()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Edit Profile
-            </button>
-            <a class="pp-item pp-signout" href="/logout">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-              Sign Out
-            </a>
+            <!-- Tab: Email -->
+            <div id="ep-email" style="padding:16px;display:none">
+              <p style="font-size:.72rem;color:rgba(255,255,255,.3);margin:0 0 12px">Your login email address.</p>
+              <div class="ep-field">
+                <label class="ep-lbl">Email Address</label>
+                <div class="ep-input-wrap">
+                  <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                  <input type="email" id="editEmail" class="ep-input" placeholder="you@example.com">
+                </div>
+              </div>
+              <div class="ep-error" id="ep-email-err"></div>
+              <button class="ep-save" onclick="saveProfileField('email')">Save Email</button>
+            </div>
+            <!-- Tab: Password -->
+            <div id="ep-password" style="padding:16px;display:none">
+              <p style="font-size:.72rem;color:rgba(255,255,255,.3);margin:0 0 12px">Min 6 characters.</p>
+              <div class="ep-field">
+                <label class="ep-lbl">Current Password</label>
+                <div class="ep-input-wrap">
+                  <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <input type="password" id="editCurrentPw" class="ep-input" placeholder="Current password">
+                  <button type="button" class="ep-eye" onclick="togglePwInline('editCurrentPw',this)" tabindex="-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ep-field" style="margin-top:10px">
+                <label class="ep-lbl">New Password</label>
+                <div class="ep-input-wrap">
+                  <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <input type="password" id="editNewPw" class="ep-input" placeholder="New password">
+                  <button type="button" class="ep-eye" onclick="togglePwInline('editNewPw',this)" tabindex="-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="ep-error" id="ep-password-err"></div>
+              <button class="ep-save" onclick="saveProfileField('password')">Update Password</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1021,75 +1107,13 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       </div>
     </div>
 
-    <!-- Edit Profile Modal -->
-    <div class="modal-overlay" id="editProfileModal" onclick="if(event.target===this)closeEditProfile()">
-      <div style="background:#0d0f13;border-radius:24px;width:min(92vw,400px);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07);animation:ppIn .25s cubic-bezier(.16,1,.3,1)">
-        <!-- Header -->
-        <div style="padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:-.01em">Edit Profile</span>
-          <button onclick="closeEditProfile()" style="background:rgba(255,255,255,.07);border:none;color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:50%;cursor:none;font-size:.8rem;display:flex;align-items:center;justify-content:center">✕</button>
-        </div>
-        <!-- Tabs -->
-        <div style="display:flex;gap:0;padding:16px 22px 0;border-bottom:1px solid rgba(255,255,255,.07)">
-          <button class="ep-tab active" data-tab="name" onclick="switchEditTab('name')">Name</button>
-          <button class="ep-tab" data-tab="email" onclick="switchEditTab('email')">Email</button>
-          <button class="ep-tab" data-tab="password" onclick="switchEditTab('password')">Password</button>
-        </div>
-        <!-- Tab: Name -->
-        <div class="ep-panel active" id="ep-name" style="padding:22px">
-          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">This is the name shown on your profile card.</p>
-          <div class="ep-field">
-            <label class="ep-lbl">Display Name</label>
-            <div class="ep-input-wrap">
-              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <input type="text" id="editDisplayName" class="ep-input" placeholder="Your name">
-            </div>
-          </div>
-          <div class="ep-error" id="ep-name-err"></div>
-          <button class="ep-save" onclick="saveProfileField('name')">Save Name</button>
-        </div>
-        <!-- Tab: Email -->
-        <div class="ep-panel" id="ep-email" style="padding:22px;display:none">
-          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">Your login email address.</p>
-          <div class="ep-field">
-            <label class="ep-lbl">Email Address</label>
-            <div class="ep-input-wrap">
-              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              <input type="email" id="editEmail" class="ep-input" placeholder="you@example.com">
-            </div>
-          </div>
-          <div class="ep-error" id="ep-email-err"></div>
-          <button class="ep-save" onclick="saveProfileField('email')">Save Email</button>
-        </div>
-        <!-- Tab: Password -->
-        <div class="ep-panel" id="ep-password" style="padding:22px;display:none">
-          <p style="font-size:.75rem;color:rgba(255,255,255,.35);margin:0 0 14px">Choose a strong password of at least 6 characters.</p>
-          <div class="ep-field">
-            <label class="ep-lbl">Current Password</label>
-            <div class="ep-input-wrap">
-              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <input type="password" id="editCurrentPw" class="ep-input" placeholder="Current password">
-            </div>
-          </div>
-          <div class="ep-field" style="margin-top:10px">
-            <label class="ep-lbl">New Password</label>
-            <div class="ep-input-wrap">
-              <svg class="ep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              <input type="password" id="editNewPw" class="ep-input" placeholder="New password (min 6 chars)">
-            </div>
-          </div>
-          <div class="ep-error" id="ep-password-err"></div>
-          <button class="ep-save" onclick="saveProfileField('password')">Update Password</button>
-        </div>
-      </div>
-    </div>
 
     <div class="content">
 
       <!-- ── FILES VIEW ── -->
       <section class="view active" id="view-files">
         <div class="view-head">
-          <h1 class="view-title">All files</h1>
+          <h1 class="view-title">My Statistics</h1>
           <div class="view-actions"></div>
         </div>
 
@@ -2088,20 +2112,28 @@ document.addEventListener('click',function(e){
   }
 });
 function openEditProfile(){
-  profileOpen=false;
-  document.getElementById('profilePanel').style.display='none';
   document.getElementById('editDisplayName').value=document.getElementById('ppName').textContent.trim();
   document.getElementById('editEmail').value='';
   document.getElementById('editCurrentPw').value='';
   document.getElementById('editNewPw').value='';
   ['ep-name-err','ep-email-err','ep-password-err'].forEach(id=>{
-    const el=document.getElementById(id);el.textContent='';el.classList.remove('show');
+    const el=document.getElementById(id);if(el){el.textContent='';el.classList.remove('show');}
   });
   switchEditTab('name');
-  document.getElementById('editProfileModal').classList.add('open');
+  document.getElementById('ppMainPage').style.display='none';
+  document.getElementById('ppEditPage').style.display='block';
 }
 function closeEditProfile(){
-  document.getElementById('editProfileModal').classList.remove('open');
+  document.getElementById('ppEditPage').style.display='none';
+  document.getElementById('ppMainPage').style.display='';
+}
+function togglePwInline(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.querySelector('svg').innerHTML=show
+    ?'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    :'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 }
 function switchEditTab(tab){
   document.querySelectorAll('.ep-tab').forEach(t=>{
