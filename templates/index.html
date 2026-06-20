@@ -939,7 +939,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
       <nav class="topbar-nav">
         <button class="tb-nav-btn active" data-view="files" onclick="showView('files')">Files</button>
         <button class="tb-nav-btn" data-view="recents" onclick="showView('recents')">Recents</button>
-        <button class="tb-nav-btn" data-view="browser" onclick="showView('browser')">Browser</button>
+        <button class="tb-nav-btn" onclick="location.href='/browser'">Browser</button>
         {% if is_admin %}<button class="tb-nav-btn" data-view="members" onclick="showView('members')">Members</button>{% endif %}
         {% if is_admin %}<button class="tb-nav-btn" data-view="admin" onclick="showView('admin')">Admin</button>{% endif %}
       </nav>

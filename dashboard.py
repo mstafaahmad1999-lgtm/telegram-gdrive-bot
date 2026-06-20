@@ -838,6 +838,22 @@ def api_folders():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/folders/create", methods=["POST"])
+@login_required
+def api_create_folder():
+    data = request.get_json(force=True)
+    name = (data.get("name") or "").strip()
+    parent = data.get("parent", "root")
+    if not name:
+        return jsonify({"ok": False, "error": "Folder name required"}), 400
+    try:
+        import drive_service
+        folder = drive_service.create_folder(name, parent)
+        return jsonify({"ok": True, "folder": folder})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @app.route("/api/files/upload", methods=["POST"])
 @login_required
 def api_upload_file():

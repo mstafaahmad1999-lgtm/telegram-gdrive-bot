@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>File Browser — Drive Archive</title>
+<title>File Browser — SOVAN Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -145,6 +145,13 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
 #toast.ok{background:#fff;border:1px solid #b6e3c6;color:#2e9e5b}
 #toast.err{background:#fff;border:1px solid #f0c2bd;color:var(--danger)}
 
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:22px;flex-wrap:wrap}
+.tool-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:600;cursor:none;transition:background .12s,border-color .12s}
+.tool-btn:hover{background:var(--bg);border-color:var(--accent)}
+.tool-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tool-btn.primary:hover{background:var(--accent-ink)}
+
 /* ── Responsive ── */
 @media(max-width:767px){
   nav{padding:13px 18px}
@@ -162,7 +169,7 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
 <div id="cur"></div>
 
 <nav>
-  <span class="nav-logo">Drive Archive</span>
+  <span class="nav-logo">SOVAN Archive</span>
   <div class="nav-r">
     <a href="/">← Dashboard</a>
     <a href="/logout" class="nav-out">Sign out</a>
@@ -172,6 +179,19 @@ main{max-width:1400px;margin:0 auto;padding:32px 32px 80px}
 <div class="bc-bar" id="breadcrumb"></div>
 
 <main>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="tool-btn primary" onclick="newFolder()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      New folder
+    </button>
+    <button class="tool-btn" onclick="document.getElementById('browserUpload').click()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload here
+    </button>
+    <input type="file" id="browserUpload" multiple hidden onchange="uploadHere(this)">
+  </div>
+
   <!-- Folders -->
   <div id="foldersSection">
     <div class="sec-hd">
@@ -236,8 +256,8 @@ const FOLDER_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const CHEV_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 
 /* ─── State ─── */
-let stack=[{id:'root',name:'My Drive'}];
-let moveStack=[{id:'root',name:'My Drive'}];
+let stack=[{id:'root',name:'Archive'}];
+let moveStack=[{id:'root',name:'Archive'}];
 let movingFile=null;
 
 const IMG=/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
@@ -256,15 +276,15 @@ async function load(parentId){
 
   if(parentId==='root'){
     const p=new URLSearchParams(location.search).get('folder');
-    if(p){stack=[{id:'root',name:'My Drive'},{id:p,name:'…'}];parentId=p;renderBreadcrumb()}
+    if(p){stack=[{id:'root',name:'Archive'},{id:p,name:'…'}];parentId=p;renderBreadcrumb()}
   }
 
   const res=await fetch('/api/browser?parent='+parentId);
   const d=await res.json();
   if(!d.ok){showToast(d.error||'Failed to load',false);return}
 
-  if(stack[stack.length-1].name==='…'&&d.current_name){
-    stack[stack.length-1].name=d.current_name;renderBreadcrumb();
+  if(stack[stack.length-1].name==='…'&&d.name){
+    stack[stack.length-1].name=d.name;renderBreadcrumb();
   }
 
   renderFolders(d.folders);
@@ -346,8 +366,8 @@ function openPreview(fileId,fileName,type,viewLink){
   const body=document.getElementById('previewBody'),ft=document.getElementById('previewFt');
   body.innerHTML=type==='image'
     ?`<img src="/api/browser/download/${fileId}" alt="${escH(fileName)}">`
-    :`<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe>`;
-  ft.innerHTML=`<a class="act" href="/api/browser/download/${fileId}" style="display:inline-block">↓ Download</a>${viewLink?`<a class="act" href="${escH(viewLink)}" target="_blank">↗ Open in Drive</a>`:''}`;
+    :`<video src="/api/browser/download/${fileId}" controls autoplay playsinline style="max-width:100%;max-height:78vh"></video>`;
+  ft.innerHTML=`<a class="act" href="/api/browser/download/${fileId}" style="display:inline-block">↓ Download</a><a class="act" href="/api/browser/download/${fileId}" target="_blank" style="display:inline-block">↗ Open</a>`;
   document.getElementById('previewOverlay').classList.add('open');
 }
 function closePreview(){document.getElementById('previewOverlay').classList.remove('open');document.getElementById('previewBody').innerHTML='';document.getElementById('previewFt').innerHTML=''}
@@ -375,7 +395,7 @@ async function deleteFile(fileId,name){
 }
 
 /* ─── Move ─── */
-function startMove(fileId,oldParent){movingFile={id:fileId,oldParent};moveStack=[{id:'root',name:'My Drive'}];document.getElementById('moveOverlay').classList.add('open');loadMoveFolder('root')}
+function startMove(fileId,oldParent){movingFile={id:fileId,oldParent};moveStack=[{id:'root',name:'Archive'}];document.getElementById('moveOverlay').classList.add('open');loadMoveFolder('root')}
 function closeMoveModal(){document.getElementById('moveOverlay').classList.remove('open');movingFile=null}
 function updateMoveBc(){
   document.getElementById('moveBc').innerHTML=moveStack.map((f,i)=>`<span onclick="moveNavTo(${i})">${escH(f.name)}</span>`).join(' › ');
@@ -407,6 +427,33 @@ async function confirmMove(){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closePreview();closeMoveModal()}});
+
+/* ─── New folder ─── */
+async function newFolder(){
+  const name=prompt('New folder name:');
+  if(!name||!name.trim())return;
+  const res=await fetch('/api/folders/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim(),parent:currentId()})});
+  const d=await res.json();
+  if(d.ok){showToast('Folder created',true);load(currentId())}
+  else showToast(d.error||'Failed to create folder',false);
+}
+
+/* ─── Upload into current folder ─── */
+async function uploadHere(input){
+  const files=[...input.files];input.value='';
+  if(!files.length)return;
+  showToast('Uploading '+files.length+' file'+(files.length>1?'s':'')+'…',true);
+  let ok=0;
+  for(const file of files){
+    const fd=new FormData();fd.append('file',file);fd.append('folder_id',currentId());
+    try{
+      const res=await fetch('/api/files/upload',{method:'POST',body:fd});
+      const d=await res.json();if(d.ok)ok++;
+    }catch(e){}
+  }
+  showToast(ok+' of '+files.length+' uploaded',ok>0);
+  load(currentId());
+}
 
 /* ─── Boot ─── */
 load('root');
