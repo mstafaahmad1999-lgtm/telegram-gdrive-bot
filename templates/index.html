@@ -1268,6 +1268,12 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           </div>
           <div id="fpContent" class="fp-grid"></div>
         </div>
+
+        <!-- Loose files at archive root -->
+        <div id="rootFilesSection" style="display:none">
+          <div class="sub-head">Files</div>
+          <div id="rootFiles" class="fp-grid"></div>
+        </div>
       </section>
 
       <!-- ── RECENTS VIEW ── -->
@@ -1528,7 +1534,49 @@ function showToast(msg,ok){
   }catch(e){document.getElementById('storageTotal').textContent='Unavailable'}
 })();
 
-/* ─── Load Drive folders ─── */
+/* ─── Shared file-card renderer (used by folder panel + root files) ─── */
+function _escq(s){return (s||'').replace(/'/g,"\\'")}
+function fileCardHTML(f){
+  const isImg=/^image\//.test(f.mimeType||'');
+  const isVid=(f.mimeType||'').startsWith('video/');
+  const thumb=f.thumbnailLink?f.thumbnailLink.replace('=s220','=s300'):'';
+  const icon=fileIcon(f.mimeType);
+  const size=f.size?formatBytes(parseInt(f.size)):'';
+  const previewable=isImg||isVid;
+  return `<div class="fp-card">
+    <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${_escq(f.name)}')`:''}" style="${previewable?'cursor:none':''}">
+      ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
+      ${isVid?'<div class="play-ov">▶</div>':''}
+    </div>
+    <div class="fp-info">
+      <div class="fp-fname" title="${f.name}">${f.name}</div>
+      <div class="fp-fmeta">${size}</div>
+    </div>
+    <div class="fp-actions">
+      ${previewable?`<button class="act-btn" onclick="openPreview('${f.id}','${_escq(f.name)}')">Preview</button>`:''}
+      <a href="/api/browser/download/${f.id}" class="act-btn" style="display:inline-block">↓</a>
+      <button class="act-btn danger" onclick="deleteFolderFile('${f.id}','${_escq(f.name)}',this)">✕</button>
+    </div>
+  </div>`;
+}
+
+/* ─── Load loose files at archive root ─── */
+async function loadRootFiles(){
+  const sec=document.getElementById('rootFilesSection');
+  const grid=document.getElementById('rootFiles');
+  try{
+    const res=await fetch('/api/browser?parent=root');
+    const d=await res.json();
+    if(d.ok&&d.files&&d.files.length){
+      grid.innerHTML=d.files.map(fileCardHTML).join('');
+      sec.style.display='block';
+    }else{
+      grid.innerHTML='';sec.style.display='none';
+    }
+  }catch(e){sec.style.display='none';}
+}
+
+/* ─── Load folders ─── */
 let activeFolderId=null;
 
 async function loadFolders(){
@@ -1559,6 +1607,7 @@ async function loadFolders(){
   }
 }
 loadFolders();
+loadRootFiles();
 
 function gotoFolder(id,name){
   showView('files');
@@ -1609,31 +1658,8 @@ async function openFolderPanel(folderId,folderName,frameEl){
     }
 
     // files as media cards
-    const IMAGE_MIME=/^image\//;
     if(d.files&&d.files.length){
-      html+=d.files.map(f=>{
-        const isImg=IMAGE_MIME.test(f.mimeType);
-        const isVid=f.mimeType&&f.mimeType.startsWith('video/');
-        const thumb=f.thumbnailLink?f.thumbnailLink.replace('=s220','=s300'):'';
-        const icon=fileIcon(f.mimeType);
-        const size=f.size?formatBytes(parseInt(f.size)):'';
-        const previewable=isImg||isVid;
-        return `<div class="fp-card">
-          <div class="fp-thumb" onclick="${previewable?`openPreview('${f.id}','${esc(f.name)}')`:''}" style="${previewable?'cursor:none':''}">
-            ${thumb?`<img src="${thumb}" alt="" loading="lazy">`:`<span class="fp-thumb-icon">${icon}</span>`}
-            ${isVid?'<div class="play-ov">▶</div>':''}
-          </div>
-          <div class="fp-info">
-            <div class="fp-fname" title="${f.name}">${f.name}</div>
-            <div class="fp-fmeta">${size}</div>
-          </div>
-          <div class="fp-actions">
-            ${previewable?`<button class="act-btn" onclick="openPreview('${f.id}','${esc(f.name)}')">Preview</button>`:''}
-            <a href="/api/browser/download/${f.id}" class="act-btn" style="display:inline-block">↓</a>
-            <button class="act-btn danger" onclick="deleteFolderFile('${f.id}','${esc(f.name)}',this)">✕</button>
-          </div>
-        </div>`;
-      }).join('');
+      html+=d.files.map(fileCardHTML).join('');
     }
 
     if(!html){content.innerHTML='<div class="fp-empty">This folder is empty.</div>';return}
