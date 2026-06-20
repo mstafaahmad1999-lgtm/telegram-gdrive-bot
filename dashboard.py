@@ -1059,6 +1059,112 @@ def api_internal_push():
     return jsonify({"ok": False, "error": f"Unknown type: {kind}"}), 400
 
 
+# ── public archive (no auth) ──────────────────────────────────────────────────
+
+@app.route("/archive")
+def archive():
+    return render_template("archive.html")
+
+
+def _build_archive_manifest():
+    """Walk the archive tree and return {images:[...], videos:[...]} newest first."""
+    import drive_service as ds
+
+    IMAGE_NAMES = {"image", "images", "img", "designs archive"}
+    VIDEO_NAMES = {"video", "videos", "vide0", "vids"}
+    ANIME_NAMES = {"anime", "animes"}
+
+    IMAGE_MIME = ("image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")
+    VIDEO_MIME = ("video/mp4", "video/quicktime", "video/webm", "video/x-matroska",
+                  "video/x-msvideo", "video/mpeg")
+
+    images = []
+    videos = []
+
+    def _files_in(folder_id, folder_label):
+        """Collect all files in a folder (all pages) and classify into images/videos."""
+        token = None
+        while True:
+            batch, token = ds.list_files(folder_id, page_token=token)
+            for f in batch:
+                mime = f.get("mimeType", "")
+                entry = {
+                    "id": f["id"],
+                    "name": f["name"],
+                    "date": f.get("createdTime", f.get("modifiedTime", "")),
+                    "folder": folder_label,
+                }
+                if any(mime.startswith(m) for m in IMAGE_MIME):
+                    images.append(entry)
+                elif any(mime.startswith(m) for m in VIDEO_MIME):
+                    videos.append(entry)
+            if not token:
+                break
+
+    # scan root's top-level folders to find IMAGE and VIDEO buckets
+    root_folders, _ = ds.list_folders("root")
+    for folder in root_folders:
+        fname = folder["name"].lower().strip()
+        if any(n in fname for n in IMAGE_NAMES):
+            # look one level deeper for anime sub-folder
+            sub_folders, _ = ds.list_folders(folder["id"])
+            for sf in sub_folders:
+                sfname = sf["name"].lower().strip()
+                if any(n in sfname for n in ANIME_NAMES):
+                    _files_in(sf["id"], "anime")
+                else:
+                    _files_in(sf["id"], "image")
+            _files_in(folder["id"], "image")
+        elif any(n in fname for n in VIDEO_NAMES):
+            _files_in(folder["id"], "video")
+
+    # also scan root-level files so a flat archive (no sub-folders yet) still shows up.
+    # _files_in already classifies by MIME type, so videos at root go to the Motion tab.
+    _files_in("root", "image")
+
+    # sort newest first
+    images.sort(key=lambda x: x["date"], reverse=True)
+    videos.sort(key=lambda x: x["date"], reverse=True)
+
+    return {"images": images, "videos": videos}
+
+
+@app.route("/api/archive/manifest")
+def archive_manifest():
+    try:
+        manifest = _build_archive_manifest()
+        resp = jsonify(manifest)
+        resp.headers["Cache-Control"] = "public, max-age=300"
+        return resp
+    except Exception as exc:
+        return jsonify({"images": [], "videos": [], "error": str(exc)}), 200
+
+
+@app.route("/api/archive/thumb/<file_id>")
+def archive_thumb(file_id):
+    try:
+        import drive_service as ds
+        path = ds._abspath(file_id)
+        mime = mimetypes.guess_type(path)[0] or ""
+        if os.path.isfile(path) and mime.startswith("image/"):
+            return send_file(path, conditional=True)
+        return ("", 404)
+    except Exception:
+        return ("", 404)
+
+
+@app.route("/api/archive/media/<file_id>")
+def archive_media(file_id):
+    try:
+        import drive_service as ds
+        path = ds._abspath(file_id)
+        if not os.path.isfile(path):
+            return ("", 404)
+        return send_file(path, conditional=True, download_name=os.path.basename(path))
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 # ── run ───────────────────────────────────────────────────────────────────────
 
 _ensure_admin_exists()
