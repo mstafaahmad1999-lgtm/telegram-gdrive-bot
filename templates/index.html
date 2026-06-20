@@ -637,7 +637,8 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
 /* ── Floating bubble navbar (centered) ── */
 .fbnav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6}
-.fbnav-pill{position:relative;display:flex;align-items:center;gap:4px;padding:6px 38px;overflow:visible}
+.fbnav-pill{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 60px;overflow:visible}
+.fbnav-search-group{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;z-index:5}
 .fbnav-bg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:0;
   filter:drop-shadow(0 6px 18px rgba(30,40,80,.10)) drop-shadow(0 1px 3px rgba(0,0,0,.05));pointer-events:none}
 .fbnav-bg path{fill:rgba(255,255,255,.94);stroke:rgba(255,255,255,.95);stroke-width:1}
@@ -994,17 +995,18 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>{% endif %}
 
-          <div class="fbnav-div"></div>
-
-          <button class="fbnav-search-btn" id="fbnavSearchBtn" aria-label="Search" onclick="fbOpenSearch()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-          </button>
-          <div class="fbnav-search-box" id="fbnavSearchBox">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-            <input id="searchBar" type="text" placeholder="Search files…" autocomplete="off" oninput="onSearch(this.value)">
-            <button class="fbnav-search-close" onclick="fbCloseSearch()" aria-label="Close search">
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+          <div class="fbnav-search-group">
+            <div class="fbnav-div"></div>
+            <button class="fbnav-search-btn" id="fbnavSearchBtn" aria-label="Search" onclick="fbOpenSearch()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
             </button>
+            <div class="fbnav-search-box" id="fbnavSearchBox">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+              <input id="searchBar" type="text" placeholder="Search files…" autocomplete="off" oninput="onSearch(this.value)">
+              <button class="fbnav-search-close" onclick="fbCloseSearch()" aria-label="Close search">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+              </button>
+            </div>
           </div>
         </nav>
         <div class="fbnav-bubble" id="fbnavBubble"><span class="fbnav-bubble-gloss"></span><span id="fbnavBubbleIcon"></span></div>
@@ -1644,12 +1646,19 @@ function fbCloseSearch(){if(window.__fbSearch)window.__fbSearch(false)}
     if(open===sOpen)return;sOpen=open;
     if(open){
       bubble.style.opacity='0';setNotch(-700,false);
+      btns.forEach(function(b){b.style.opacity='0';b.style.pointerEvents='none';});
       sbtn.style.display='none';
-      sbox.classList.add('open');sbox.style.width='240px';
+      sbox.classList.add('open');sbox.style.width='220px';
       reflow(460);setTimeout(function(){sinp.focus();},120);
     }else{
       sbox.style.width='0';sbox.classList.remove('open');
-      setTimeout(function(){sbtn.style.display='';bubble.style.opacity='1';if(sinp){sinp.value='';onSearch('');}reflow(40);place(false);},220);
+      setTimeout(function(){
+        sbtn.style.display='';
+        bubble.style.opacity='1';
+        btns.forEach(function(b){b.style.opacity='';b.style.pointerEvents='';});
+        if(sinp){sinp.value='';onSearch('');}
+        reflow(40);place(false);
+      },220);
       reflow(280);
     }
   };
