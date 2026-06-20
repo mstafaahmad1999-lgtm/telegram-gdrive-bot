@@ -161,7 +161,6 @@ body{
   min-height:96px;
   background:rgba(255,255,255,0.82);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--line);
   position:sticky;top:0;z-index:50;
   box-shadow:0 1px 0 rgba(255,255,255,.9),0 2px 12px rgba(0,0,0,.06)
 }
@@ -187,12 +186,11 @@ body{
 .topbar a{color:var(--ink-dim);font-size:.8rem;transition:color .15s}
 .topbar a:hover{color:var(--ink)}
 .avatar{
-  width:42px;height:42px;border-radius:14px;
-  background:linear-gradient(135deg,#3b82f6 0%,#6366f1 55%,#8b5cf6 100%);
-  color:#fff;
-  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;
-  border:1px solid rgba(110,168,251,.3);
-  box-shadow:0 4px 16px rgba(59,130,246,.35),0 0 0 3px rgba(99,102,241,.12)
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--gold) 100%);
+  color:#000;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.76rem;flex-shrink:0;
+  box-shadow:0 2px 10px rgba(10,186,181,.3)
 }
 
 /* ── Content / views ── */
@@ -641,27 +639,27 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .fbnav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6}
 .fbnav-pill{position:relative;display:flex;align-items:center;gap:4px;padding:6px 38px;overflow:visible}
 .fbnav-bg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:0;
-  filter:drop-shadow(0 8px 28px rgba(10,30,120,.38)) drop-shadow(0 2px 6px rgba(0,10,60,.25));pointer-events:none}
-.fbnav-bg path{fill:rgba(12,24,64,.82);stroke:rgba(60,100,220,.22);stroke-width:1}
+  filter:drop-shadow(0 6px 18px rgba(30,40,80,.10)) drop-shadow(0 1px 3px rgba(0,0,0,.05));pointer-events:none}
+.fbnav-bg path{fill:rgba(255,255,255,.94);stroke:rgba(255,255,255,.95);stroke-width:1}
 .fbnav-btn{position:relative;z-index:3;width:40px;height:40px;border:none;background:none;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;color:rgba(160,190,255,.55);cursor:none;transition:color .2s,background .2s}
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
 .fbnav-btn svg{width:20px;height:20px}
-.fbnav-btn:hover:not(.active){color:rgba(200,220,255,.9);background:rgba(80,130,255,.12)}
+.fbnav-btn:hover:not(.active){color:var(--ink);background:rgba(30,40,60,.05)}
 .fbnav-btn.active svg{opacity:0}
-.fbnav-div{width:1px;height:20px;background:rgba(80,130,255,.18);margin:0 4px;position:relative;z-index:3}
+.fbnav-div{width:1px;height:20px;background:rgba(30,40,60,.12);margin:0 4px;position:relative;z-index:3}
 .fbnav-search-btn{position:relative;z-index:3;width:38px;height:38px;border:none;background:none;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;color:rgba(160,190,255,.55);cursor:none;transition:color .2s,background .2s}
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
 .fbnav-search-btn svg{width:18px;height:18px}
-.fbnav-search-btn:hover{color:rgba(200,220,255,.9);background:rgba(80,130,255,.12)}
+.fbnav-search-btn:hover{color:var(--ink);background:rgba(30,40,60,.05)}
 .fbnav-search-box{position:relative;z-index:3;display:flex;align-items:center;gap:8px;width:0;overflow:hidden;opacity:0;
-  pointer-events:none;border-radius:100px;background:rgba(8,18,55,.9);border:1px solid rgba(80,130,255,.25);
+  pointer-events:none;border-radius:100px;background:rgba(255,255,255,.96);border:1px solid var(--line);
   transition:width .4s cubic-bezier(.34,1.1,.64,1),opacity .22s}
 .fbnav-search-box.open{opacity:1;pointer-events:all;padding:6px 8px 6px 14px}
-.fbnav-search-box input{flex:1;min-width:0;border:none;background:none;outline:none;font-family:'Inter',sans-serif;font-size:.82rem;color:#e0ecff;caret-color:#6ea8fb}
-.fbnav-search-box input::placeholder{color:rgba(160,190,255,.4)}
-.fbnav-search-box>svg{width:15px;height:15px;color:rgba(160,190,255,.5);flex-shrink:0}
-.fbnav-search-close{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(80,130,255,.15);border:none;cursor:none;
-  display:flex;align-items:center;justify-content:center;color:rgba(160,190,255,.7);padding:0}
+.fbnav-search-box input{flex:1;min-width:0;border:none;background:none;outline:none;font-family:'Inter',sans-serif;font-size:.82rem;color:var(--ink);caret-color:var(--accent)}
+.fbnav-search-box input::placeholder{color:var(--ink-dim)}
+.fbnav-search-box>svg{width:15px;height:15px;color:var(--ink-dim);flex-shrink:0}
+.fbnav-search-close{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(30,40,60,.08);border:none;cursor:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);padding:0}
 .fbnav-search-close svg{width:9px;height:9px}
 .fbnav-bubble{position:absolute;width:44px;height:44px;border-radius:50%;z-index:10;pointer-events:none;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
@@ -704,13 +702,11 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 /* ── Notification bell ── */
 .notif-wrap{position:relative}
 .notif-btn{
-  position:relative;width:40px;height:40px;border-radius:14px;border:1px solid rgba(80,130,255,.22);
-  background:rgba(12,24,64,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  display:flex;align-items:center;justify-content:center;
-  cursor:none;color:rgba(160,190,255,.65);transition:all .18s;
-  box-shadow:0 4px 16px rgba(10,30,120,.22)
+  position:relative;width:36px;height:36px;border-radius:9px;border:1px solid var(--line);
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+  cursor:none;color:var(--ink-dim);transition:all .15s
 }
-.notif-btn:hover{border-color:rgba(110,168,251,.5);color:#6ea8fb;background:rgba(20,40,100,.88)}
+.notif-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--glow)}
 .notif-badge{
   position:absolute;top:-5px;right:-5px;
   background:#e05555;color:#fff;
