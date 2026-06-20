@@ -158,6 +158,7 @@ body{
 .main{display:flex;flex-direction:column;min-height:100vh;background:transparent}
 .topbar{
   display:flex;align-items:center;gap:14px;padding:12px 28px;
+  min-height:96px;
   background:rgba(255,255,255,0.82);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
@@ -635,6 +636,43 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .tb-nav-btn:hover{background:var(--bg2);color:var(--ink)}
 .tb-nav-btn.active{background:var(--accent);color:#fff}
 
+/* ── Floating bubble navbar (centered) ── */
+.fbnav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6}
+.fbnav-pill{position:relative;display:flex;align-items:center;gap:4px;padding:6px 38px;overflow:visible}
+.fbnav-bg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;z-index:0;
+  filter:drop-shadow(0 6px 18px rgba(30,40,80,.10)) drop-shadow(0 1px 3px rgba(0,0,0,.05));pointer-events:none}
+.fbnav-bg path{fill:rgba(255,255,255,.94);stroke:rgba(255,255,255,.95);stroke-width:1}
+.fbnav-btn{position:relative;z-index:3;width:40px;height:40px;border:none;background:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
+.fbnav-btn svg{width:20px;height:20px}
+.fbnav-btn:hover:not(.active){color:var(--ink);background:rgba(30,40,60,.05)}
+.fbnav-btn.active svg{opacity:0}
+.fbnav-div{width:1px;height:20px;background:rgba(30,40,60,.12);margin:0 4px;position:relative;z-index:3}
+.fbnav-search-btn{position:relative;z-index:3;width:38px;height:38px;border:none;background:none;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);cursor:none;transition:color .2s,background .2s}
+.fbnav-search-btn svg{width:18px;height:18px}
+.fbnav-search-btn:hover{color:var(--ink);background:rgba(30,40,60,.05)}
+.fbnav-search-box{position:relative;z-index:3;display:flex;align-items:center;gap:8px;width:0;overflow:hidden;opacity:0;
+  pointer-events:none;border-radius:100px;background:rgba(255,255,255,.96);border:1px solid var(--line);
+  transition:width .4s cubic-bezier(.34,1.1,.64,1),opacity .22s}
+.fbnav-search-box.open{opacity:1;pointer-events:all;padding:6px 8px 6px 14px}
+.fbnav-search-box input{flex:1;min-width:0;border:none;background:none;outline:none;font-family:'Inter',sans-serif;font-size:.82rem;color:var(--ink);caret-color:var(--accent)}
+.fbnav-search-box input::placeholder{color:var(--ink-dim)}
+.fbnav-search-box>svg{width:15px;height:15px;color:var(--ink-dim);flex-shrink:0}
+.fbnav-search-close{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(30,40,60,.08);border:none;cursor:none;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-dim);padding:0}
+.fbnav-search-close svg{width:9px;height:9px}
+.fbnav-bubble{position:absolute;width:44px;height:44px;border-radius:50%;z-index:10;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:linear-gradient(155deg,#6ea8fb 0%,#5b6ef5 38%,#7c5cf0 72%,#9d6bf2 100%);
+  box-shadow:0 0 0 5px rgba(124,103,240,.12),0 0 22px 3px rgba(91,110,245,.5),0 0 46px 8px rgba(139,92,246,.28);
+  transition:left .46s cubic-bezier(.34,1.25,.64,1),top .46s cubic-bezier(.34,1.25,.64,1),opacity .22s}
+.fbnav-bubble-gloss{position:absolute;top:0;left:0;right:0;height:48%;border-radius:100px 100px 60% 60%;
+  background:linear-gradient(to bottom,rgba(255,255,255,.32),transparent);pointer-events:none;z-index:1}
+.fbnav-bubble svg{position:relative;z-index:2;width:20px;height:20px;color:#fff}
+/* right cluster: bell + avatar at top-right */
+.topbar-right{display:flex;align-items:center;gap:12px;margin-left:auto;position:relative;z-index:7}
+
 /* ── pp-edit-page scrollbar hide ── */
 .pp-edit-page::-webkit-scrollbar{display:none}
 
@@ -936,17 +974,45 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   <!-- ── Main ── -->
   <main class="main">
     <div class="topbar">
-      <nav class="topbar-nav">
-        <button class="tb-nav-btn active" data-view="files" onclick="showView('files')">Files</button>
-        <button class="tb-nav-btn" data-view="recents" onclick="showView('recents')">Recents</button>
-        <button class="tb-nav-btn" data-view="browser" onclick="showView('browser')">Browser</button>
-        {% if is_admin %}<button class="tb-nav-btn" data-view="members" onclick="showView('members')">Members</button>{% endif %}
-        {% if is_admin %}<button class="tb-nav-btn" data-view="admin" onclick="showView('admin')">Admin</button>{% endif %}
-      </nav>
-      <div class="topbar-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-        <input id="searchBar" type="text" placeholder="Search files…" oninput="onSearch(this.value)">
+      <!-- ── Floating bubble navbar (centered) ── -->
+      <div class="fbnav" id="fbnav">
+        <nav class="fbnav-pill" id="fbnavPill">
+          <svg class="fbnav-bg" id="fbnavBg" preserveAspectRatio="none"><path id="fbnavPath" d=""></path></svg>
+
+          <button class="fbnav-btn active" data-view="files" onclick="showView('files')" aria-label="Files">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </button>
+          <button class="fbnav-btn" data-view="recents" onclick="showView('recents')" aria-label="Recents">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </button>
+          <button class="fbnav-btn" data-view="browser" onclick="showView('browser')" aria-label="Browser">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </button>
+          {% if is_admin %}<button class="fbnav-btn" data-view="members" onclick="showView('members')" aria-label="Members">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>{% endif %}
+          {% if is_admin %}<button class="fbnav-btn" data-view="admin" onclick="showView('admin')" aria-label="Admin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>{% endif %}
+
+          <div class="fbnav-div"></div>
+
+          <button class="fbnav-search-btn" id="fbnavSearchBtn" aria-label="Search" onclick="fbOpenSearch()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          </button>
+          <div class="fbnav-search-box" id="fbnavSearchBox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+            <input id="searchBar" type="text" placeholder="Search files…" autocomplete="off" oninput="onSearch(this.value)">
+            <button class="fbnav-search-close" onclick="fbCloseSearch()" aria-label="Close search">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+            </button>
+          </div>
+        </nav>
+        <div class="fbnav-bubble" id="fbnavBubble"><span class="fbnav-bubble-gloss"></span><span id="fbnavBubbleIcon"></span></div>
       </div>
+
+      <!-- ── Right cluster: notifications + profile ── -->
+      <div class="topbar-right">
       <!-- Notification Bell -->
       <div class="notif-wrap" id="notifWrap">
         <button class="notif-btn" id="notifBtn" onclick="toggleNotifPanel()">
@@ -1118,6 +1184,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
           <button onclick="confirmCrop()" style="flex:2;padding:10px;border-radius:12px;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:.82rem;cursor:none">Use Photo</button>
         </div>
       </div>
+      </div><!-- /topbar-right -->
     </div>
 
 
@@ -1523,10 +1590,75 @@ function showView(name){
   }
   if(location.hash.slice(1)!==name)history.replaceState(null,'','#'+name);
   if(!isBrowser)window.scrollTo({top:0,behavior:'smooth'});
+  if(window.__fbPlace)window.__fbPlace(false);
 }
 function scrollToUpload(){const u=document.getElementById('upload');if(u)setTimeout(()=>u.scrollIntoView({behavior:'smooth',block:'start'}),80)}
 function onSearch(v){filterTable(v);if(v&&!document.getElementById('view-recents').classList.contains('active'))showView('recents')}
 (function(){const h=location.hash.slice(1);if(['files','recents','members','admin'].includes(h))showView(h)})();
+
+/* ─── Floating bubble navbar ─── */
+function fbOpenSearch(){if(window.__fbSearch)window.__fbSearch(true)}
+function fbCloseSearch(){if(window.__fbSearch)window.__fbSearch(false)}
+(function(){
+  var pill=document.getElementById('fbnavPill'); if(!pill)return;
+  var wrap=document.getElementById('fbnav');
+  var svg=document.getElementById('fbnavBg'), path=document.getElementById('fbnavPath');
+  var bubble=document.getElementById('fbnavBubble'), bIcon=document.getElementById('fbnavBubbleIcon');
+  var sbtn=document.getElementById('fbnavSearchBtn'), sbox=document.getElementById('fbnavSearchBox'), sinp=document.getElementById('searchBar');
+  var btns=[].slice.call(pill.querySelectorAll('.fbnav-btn'));
+  var D=44,RISE=26,GAP=6,FR=11,PR=18,PW=0,PH=0,sOpen=false;
+  var notchX=-700,notchTgt=-700,raf=null;
+
+  function measure(){var r=pill.getBoundingClientRect();PW=r.width;PH=r.height;svg.setAttribute('viewBox','0 0 '+PW+' '+PH);svg.setAttribute('width',PW);svg.setAttribute('height',PH);}
+  function build(cx){
+    var W=PW,H=PH,R=PR,rr=D/2+GAP,fr=FR,dd=Math.sqrt(rr*rr+2*rr*fr);
+    var c=Math.min(Math.max(cx,R+dd),W-R-dd);
+    var ux=dd/(rr+fr),uy=fr/(rr+fr);
+    var Tlx=(c-rr*ux).toFixed(2),Trx=(c+rr*ux).toFixed(2),Ty=(rr*uy).toFixed(2);
+    var Plf=(c-dd).toFixed(2),Prf=(c+dd).toFixed(2);
+    var d='M '+R+' 0 L '+Plf+' 0 ';
+    d+='A '+fr+' '+fr+' 0 0 1 '+Tlx+' '+Ty+' ';
+    d+='A '+rr+' '+rr+' 0 0 0 '+Trx+' '+Ty+' ';
+    d+='A '+fr+' '+fr+' 0 0 1 '+Prf+' 0 ';
+    d+='L '+(W-R)+' 0 Q '+W+' 0 '+W+' '+R+' L '+W+' '+(H-R)+' Q '+W+' '+H+' '+(W-R)+' '+H+' L '+R+' '+H+' Q 0 '+H+' 0 '+(H-R)+' L 0 '+R+' Q 0 0 '+R+' 0 Z';
+    return d;
+  }
+  function apply(x){path.setAttribute('d',build(x));}
+  function step(){notchX+=(notchTgt-notchX)*0.18;if(Math.abs(notchTgt-notchX)<0.5){notchX=notchTgt;apply(notchX);raf=null;return;}apply(notchX);raf=requestAnimationFrame(step);}
+  function setNotch(x,inst){notchTgt=x;if(inst){notchX=x;if(raf){cancelAnimationFrame(raf);raf=null;}apply(x);return;}if(!raf)raf=requestAnimationFrame(step);}
+  function reflow(dur){var t0=null;function f(ts){if(!t0)t0=ts;measure();apply(notchTgt);if(ts-t0<dur)requestAnimationFrame(f);}requestAnimationFrame(f);}
+
+  function activeBtn(){return pill.querySelector('.fbnav-btn.active')||btns[0];}
+  function syncIcon(btn){var s=btn.querySelector('svg');if(!s)return;var c=s.cloneNode(true);bIcon.innerHTML='';bIcon.appendChild(c);}
+  function move(btn,inst){
+    var wr=wrap.getBoundingClientRect(),pr=pill.getBoundingClientRect(),ir=btn.getBoundingClientRect();
+    var L=ir.left-wr.left+ir.width/2-D/2, T=ir.top-wr.top+ir.height/2-D/2-RISE, NX=ir.left-pr.left+ir.width/2;
+    if(inst)bubble.style.transition='none';
+    bubble.style.left=L+'px';bubble.style.top=T+'px';
+    if(inst){bubble.offsetWidth;bubble.style.transition='';}
+    setNotch(NX,inst);
+  }
+  function place(inst){var b=activeBtn();if(b){syncIcon(b);if(PW)move(b,inst);}}
+  window.__fbPlace=place;
+
+  window.__fbSearch=function(open){
+    if(open===sOpen)return;sOpen=open;
+    if(open){
+      bubble.style.opacity='0';setNotch(-700,false);
+      sbtn.style.display='none';
+      sbox.classList.add('open');sbox.style.width='240px';
+      reflow(460);setTimeout(function(){sinp.focus();},120);
+    }else{
+      sbox.style.width='0';sbox.classList.remove('open');
+      setTimeout(function(){sbtn.style.display='';bubble.style.opacity='1';if(sinp){sinp.value='';onSearch('');}reflow(40);place(false);},220);
+      reflow(280);
+    }
+  };
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&sOpen)fbCloseSearch();});
+
+  setTimeout(function(){measure();place(true);},60);
+  window.addEventListener('resize',function(){measure();place(true);});
+})();
 
 /* ─── Toast ─── */
 function showToast(msg,ok){

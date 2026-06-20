@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navbar Preview — SOVAN</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:100%;min-height:100vh;
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 20%,rgba(180,210,255,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 75% 70%,rgba(200,190,255,.12) 0%,transparent 55%),
+    linear-gradient(160deg,#e8eef6 0%,#f0f4f9 45%,#edf1f7 100%);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding-top:80px;
+  font-family:'DM Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* wrap: padding-top gives room for the bubble above the pill */
+.scene{
+  display:flex;align-items:flex-start;gap:12px;
+  animation:enter .6s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes enter{
+  from{opacity:0;transform:translateY(8px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+
+/* ── NAV WRAP (pill + bubble) ── */
+.nav-wrap{
+  position:relative;
+  display:inline-block;
+  padding-top:32px; /* room for circle above pill */
+}
+
+/* ── BUBBLE: perfect circle ── */
+.active-bubble{
+  position:absolute;
+  width:48px;height:48px;
+  border-radius:50%;
+  z-index:10;pointer-events:none;
+  background:linear-gradient(155deg,#6ea8fb 0%,#5b6ef5 38%,#7c5cf0 72%,#9d6bf2 100%);
+  /* symmetric halo (0 Y-offset) — no downward "tail" */
+  box-shadow:
+    0 0 0 6px  rgba(124,103,240,.12),
+    0 0 28px 3px rgba(91,110,245,.5),
+    0 0 58px 10px rgba(139,92,246,.28);
+  overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  transition:
+    left .44s cubic-bezier(.34,1.25,.64,1),
+    top  .44s cubic-bezier(.34,1.25,.64,1),
+    opacity .22s;
+}
+/* inner gloss */
+.active-bubble::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 20%,rgba(255,255,255,.28) 0%,transparent 70%);
+  pointer-events:none;z-index:1;
+}
+/* icon inside bubble */
+.bubble-icon{
+  position:relative;z-index:2;
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+
+/* ── PILL ── (shape drawn by SVG behind the icons) */
+.nav-pill{
+  display:flex;align-items:center;
+  padding:8px 10px;gap:4px;
+  position:relative;
+  overflow:visible;
+  /* light backdrop blur over whatever is behind — the SVG provides the white fill */
+  filter:none;
+}
+/* SVG that draws the rounded bar + animated notch scoop */
+.pill-bg{
+  position:absolute;
+  top:0;left:0;
+  width:100%;height:100%;
+  overflow:visible;
+  z-index:0;
+  pointer-events:none;
+  filter:drop-shadow(0 4px 22px rgba(0,0,0,.08)) drop-shadow(0 1px 3px rgba(0,0,0,.05));
+}
+.pill-bg path{
+  fill:rgba(255,255,255,.78);
+  stroke:rgba(255,255,255,.95);
+  stroke-width:1;
+}
+
+/* ── NAV ICON BUTTONS ── */
+.nav-item{
+  position:relative;z-index:3;
+  width:44px;height:44px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(30,40,60,.45);
+  cursor:pointer;border:none;background:none;
+  transition:color .25s,background .2s;
+  flex-shrink:0;
+}
+.nav-item:hover:not(.active){
+  color:rgba(30,40,60,.8);
+  background:rgba(30,40,60,.05);
+}
+/* active: icon invisible (shown in bubble) */
+.nav-item.active svg{
+  opacity:0;
+}
+
+/* divider */
+.nav-divider{
+  width:1px;height:20px;flex-shrink:0;
+  background:rgba(30,40,60,.1);margin:0 2px;
+  z-index:3;position:relative;
+  transition:width .32s,margin .32s,opacity .2s;
+}
+.nav-divider.hide{width:0;margin:0;opacity:0}
+
+/* search icon trigger */
+.search-btn{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(30,40,60,.42);
+  cursor:pointer;border:none;background:none;
+  flex-shrink:0;z-index:3;position:relative;
+  transition:color .2s,background .2s,opacity .18s,transform .18s;
+}
+.search-btn:hover{
+  color:rgba(30,40,60,.75);
+  background:rgba(30,40,60,.05);
+}
+
+/* expanded search box */
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 12px 7px 16px;border-radius:100px;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(99,102,241,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 3px rgba(99,102,241,.07);
+  width:0;overflow:hidden;opacity:0;white-space:nowrap;pointer-events:none;
+  position:relative;z-index:3;flex-shrink:0;
+  transition:width .38s cubic-bezier(.34,1.1,.64,1),opacity .22s;
+}
+.search-box.open{opacity:1;pointer-events:all}
+.search-box svg{flex-shrink:0;color:rgba(30,40,60,.38)}
+.search-box input{
+  flex:1;min-width:0;border:none;background:none;outline:none;
+  font-family:'DM Sans',sans-serif;font-size:.82rem;
+  color:rgba(30,40,60,.85);caret-color:#4f46e5;
+}
+.search-box input::placeholder{color:rgba(30,40,60,.3)}
+.search-close{
+  flex-shrink:0;width:20px;height:20px;border-radius:50%;
+  background:rgba(30,40,60,.08);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(30,40,60,.4);transition:background .15s;padding:0;
+}
+.search-close:hover{background:rgba(30,40,60,.14)}
+
+/* ── AVATAR — separate pill ── */
+.avatar-pill{
+  display:flex;align-items:center;
+  padding:5px;
+  border-radius:100px;
+  background:rgba(255,255,255,.68);
+  backdrop-filter:blur(28px) saturate(160%);
+  -webkit-backdrop-filter:blur(28px) saturate(160%);
+  border:1px solid rgba(255,255,255,.92);
+  box-shadow:
+    0 4px 24px rgba(0,0,0,.07),
+    0 1px 4px rgba(0,0,0,.05),
+    inset 0 1px 0 rgba(255,255,255,.95);
+}
+.avatar-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,#4f46e5,#2563eb);
+  border:2px solid rgba(255,255,255,.9);
+  box-shadow:0 2px 8px rgba(79,70,229,.3);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:box-shadow .2s,transform .15s;
+}
+.avatar-btn:hover{
+  box-shadow:0 4px 16px rgba(79,70,229,.45);
+  transform:scale(1.06);
+}
+.avatar-btn svg{color:#fff}
+
+/* ripple layer */
+.ripple-layer{
+  position:absolute;inset:0;border-radius:inherit;
+  overflow:hidden;pointer-events:none;z-index:1;
+}
+.click-ripple{
+  position:absolute;border-radius:50%;
+  background:rgba(99,102,241,.08);transform:scale(0);
+  animation:rip .5s ease-out forwards;pointer-events:none;
+}
+@keyframes rip{to{transform:scale(5);opacity:0}}
+
+.demo-label{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(30,40,60,.2);pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="scene">
+
+  <!-- NAV PILL + BUBBLE -->
+  <div class="nav-wrap" id="navWrap">
+
+    <nav class="nav-pill" id="navPill">
+      <!-- SVG draws the bar shape + the smooth animated notch scoop -->
+      <svg class="pill-bg" id="pillBg" preserveAspectRatio="none">
+        <path id="pillPath" d=""></path>
+      </svg>
+      <div class="ripple-layer" id="rippleLayer"></div>
+
+      <!-- Home -->
+      <button class="nav-item active" data-key="home" title="Home" onclick="setActive(this,event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </button>
+
+      <!-- Recents -->
+      <button class="nav-item" data-key="recent" title="Recents" onclick="setActive(this,event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </button>
+
+      <!-- Browser / Folder -->
+      <button class="nav-item" data-key="folder" title="Browser" onclick="setActive(this,event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+        </svg>
+      </button>
+
+      <!-- Members -->
+      <button class="nav-item" data-key="members" title="Members" onclick="setActive(this,event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+      </button>
+
+      <!-- Admin / Settings -->
+      <button class="nav-item" data-key="admin" title="Admin" onclick="setActive(this,event)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+      </button>
+
+      <div class="nav-divider" id="div1"></div>
+
+      <!-- Search icon — expands to search box -->
+      <button class="search-btn" id="searchBtn" title="Search" onclick="openSearch()">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="15" y2="15"/>
+        </svg>
+      </button>
+
+      <div class="search-box" id="searchBox">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6.5" cy="6.5" r="5"/><line x1="10.5" y1="10.5" x2="15" y2="15"/>
+        </svg>
+        <input id="searchInput" type="text" placeholder="Search files, folders…" autocomplete="off">
+        <button class="search-close" onclick="closeSearch()" aria-label="Close search">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/>
+          </svg>
+        </button>
+      </div>
+
+    </nav>
+
+    <!-- bubble AFTER pill — renders on top, pill mask creates the notch hole beneath it -->
+    <div class="active-bubble" id="activeBubble">
+      <span class="bubble-icon" id="bubbleIcon"></span>
+    </div>
+
+  </div>
+
+  <!-- AVATAR — completely separate pill -->
+  <div class="avatar-pill">
+    <button class="avatar-btn" title="Profile">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<p class="demo-label">Preview only — not yet applied to dashboard</p>
+
+<script>
+const wrap     = document.getElementById('navWrap');
+const pill     = document.getElementById('navPill');
+const bubble   = document.getElementById('activeBubble');
+const bIcon    = document.getElementById('bubbleIcon');
+const rippleL  = document.getElementById('rippleLayer');
+const div1     = document.getElementById('div1');
+const searchBtn= document.getElementById('searchBtn');
+const box      = document.getElementById('searchBox');
+const inp      = document.getElementById('searchInput');
+
+const pillBg   = document.getElementById('pillBg');
+const pillPath = document.getElementById('pillPath');
+
+const D     = 48;  // bubble circle diameter
+const RISE  = 32;  // px bubble rises above pill top (more = floats higher)
+const SCOOP = 54;  // half-width of the notch opening (wide gentle valley)
+const DEPTH = 34;  // scoop deeper than bubble bottom → ~10px open gap beneath
+
+let isOpen = false;
+let PW = 0, PH = 0, PR = 0; // pill width/height/corner-radius (set on layout)
+
+/* measure pill + size the SVG viewBox to its pixel dimensions */
+function measurePill(){
+  const r = pill.getBoundingClientRect();
+  PW = r.width;
+  PH = r.height;
+  PR = 20; // corner radius
+  pillBg.setAttribute('viewBox', `0 0 ${PW} ${PH}`);
+  pillBg.setAttribute('width',  PW);
+  pillBg.setAttribute('height', PH);
+}
+
+/* build the rounded-bar path with a smooth scoop centered at cx
+   (cx far off-screen → plain rounded bar, no notch) */
+function buildPath(cx){
+  const W = PW, H = PH, R = PR;
+  // scoop opening edges, clamped to stay inside the rounded corners
+  let lx = cx - SCOOP, rx = cx + SCOOP;
+  const hasScoop = (rx > R && lx < W - R);
+
+  let d = `M ${R} 0 `;
+  if(hasScoop){
+    lx = Math.max(lx, R);
+    rx = Math.min(rx, W - R);
+    const bx   = Math.min(Math.max(cx, lx + 6), rx - 6); // scoop bottom x
+    const half = bx - lx;          // half the opening — handle base (NO crossover)
+    const k    = half * 0.55;      // shoulder handle: gentle blend with flat bar
+    const kb   = half * 0.32;      // floor handle: wide rounded valley bottom
+    d += `L ${lx} 0 `;
+    // left wall down: horizontal tangent at top (lx) and at floor (bx) — smooth, no neck
+    d += `C ${lx + k} 0 ${bx - kb} ${DEPTH} ${bx} ${DEPTH} `;
+    // right wall up: mirror
+    d += `C ${bx + kb} ${DEPTH} ${rx - k} 0 ${rx} 0 `;
+  }
+  d += `L ${W - R} 0 `;
+  d += `Q ${W} 0 ${W} ${R} `;          // top-right corner
+  d += `L ${W} ${H - R} `;
+  d += `Q ${W} ${H} ${W - R} ${H} `;   // bottom-right
+  d += `L ${R} ${H} `;
+  d += `Q 0 ${H} 0 ${H - R} `;         // bottom-left
+  d += `L 0 ${R} `;
+  d += `Q 0 0 ${R} 0 `;                // top-left
+  d += `Z`;
+  return d;
+}
+
+/* ── animated notch position ── */
+let notchX   = -400;
+let notchTgt = -400;
+let notchRaf = null;
+
+function applyNotch(x){ pillPath.setAttribute('d', buildPath(x)); }
+
+function stepNotch(){
+  notchX += (notchTgt - notchX) * 0.16;
+  if(Math.abs(notchTgt - notchX) < 0.5){
+    notchX = notchTgt;
+    applyNotch(notchX);
+    notchRaf = null;
+    return;
+  }
+  applyNotch(notchX);
+  notchRaf = requestAnimationFrame(stepNotch);
+}
+
+function setNotch(x, instant){
+  notchTgt = x;
+  if(instant){
+    notchX = x;
+    if(notchRaf){ cancelAnimationFrame(notchRaf); notchRaf = null; }
+    applyNotch(x);
+    return;
+  }
+  if(!notchRaf) notchRaf = requestAnimationFrame(stepNotch);
+}
+
+/* place bubble centered on button, risen above bar */
+function moveBubble(btn, instant){
+  const wr = wrap.getBoundingClientRect();
+  const pr = pill.getBoundingClientRect();
+  const ir = btn.getBoundingClientRect();
+  const L  = ir.left - wr.left + ir.width / 2 - D / 2;
+  const T  = ir.top  - wr.top  - RISE;
+  const NX = ir.left - pr.left + ir.width / 2; // notch X relative to pill
+
+  if(instant){
+    bubble.style.transition = 'none';
+    bubble.offsetWidth;
+  }
+  bubble.style.left = L + 'px';
+  bubble.style.top  = T + 'px';
+  if(instant){
+    bubble.offsetWidth;
+    bubble.style.transition = '';
+  }
+  setNotch(NX, instant);
+}
+
+/* clone the button's SVG icon into the bubble (white) */
+function syncIcon(btn){
+  const svg = btn.querySelector('svg');
+  if(!svg) return;
+  const c = svg.cloneNode(true);
+  c.removeAttribute('style');
+  c.style.color  = '#fff';
+  c.style.stroke = '#fff';
+  bIcon.innerHTML = '';
+  bIcon.appendChild(c);
+}
+
+function setActive(btn, e){
+  pill.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  syncIcon(btn);
+  moveBubble(btn, false);
+  spawnRipple(e);
+}
+
+function spawnRipple(e){
+  const pr = pill.getBoundingClientRect();
+  const r  = document.createElement('div');
+  r.className = 'click-ripple';
+  const sz = 40;
+  r.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX-pr.left-sz/2}px;top:${e.clientY-pr.top-sz/2}px`;
+  rippleL.appendChild(r);
+  r.addEventListener('animationend', () => r.remove());
+}
+
+/* search */
+function openSearch(){
+  if(isOpen) return;
+  isOpen = true;
+  bubble.style.opacity  = '0';
+  setNotch(-400, false); // slide notch off-screen
+  div1.classList.add('hide');
+  searchBtn.style.opacity = '0';
+  searchBtn.style.transform = 'scale(.9)';
+  searchBtn.style.pointerEvents = 'none';
+  setTimeout(() => {
+    searchBtn.style.position = 'absolute';
+    box.style.width = '260px';
+    box.classList.add('open');
+    setTimeout(() => inp.focus(), 160);
+  }, 180);
+}
+
+function closeSearch(){
+  if(!isOpen) return;
+  isOpen = false;
+  box.style.width = '0';
+  box.classList.remove('open');
+  searchBtn.style.position = '';
+  searchBtn.style.opacity = '1';
+  searchBtn.style.transform = '';
+  searchBtn.style.pointerEvents = '';
+  setTimeout(() => {
+    div1.classList.remove('hide');
+    bubble.style.opacity = '1';
+    inp.value = '';
+    const a = pill.querySelector('.nav-item.active');
+    if(a) moveBubble(a, false);
+  }, 200);
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSearch(); });
+
+/* init */
+setTimeout(() => {
+  measurePill();
+  const a = pill.querySelector('.nav-item.active');
+  if(a){
+    syncIcon(a);
+    moveBubble(a, true);
+  }
+}, 60);
+
+window.addEventListener('resize', () => {
+  if(!isOpen){
+    measurePill();
+    const a = pill.querySelector('.nav-item.active');
+    if(a) moveBubble(a, true);
+  }
+});
+</script>
+</body>
+</html>
