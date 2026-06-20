@@ -194,17 +194,17 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 .prev-btn svg{width:13px;height:13px}
 
 /* Nav arrows */
+.prev-row{display:flex;align-items:center;gap:16px;max-height:calc(92vh - 80px)}
 .prev-arrow{
-  position:absolute;top:50%;transform:translateY(-50%);
-  width:44px;height:44px;border-radius:50%;
+  flex-shrink:0;
+  width:48px;height:48px;border-radius:50%;
   background:rgba(255,255,255,.12);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);
   color:#fff;display:flex;align-items:center;justify-content:center;
-  cursor:none;transition:all .15s;z-index:2;flex-shrink:0;
+  cursor:none;transition:all .2s;
 }
-.prev-arrow svg{width:20px;height:20px;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
-.prev-arrow:hover{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.35)}
-#prevArrowL{left:-22px}
-#prevArrowR{right:-22px}
+.prev-arrow svg{width:22px;height:22px;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none;display:block}
+.prev-arrow:hover{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.4);transform:scale(1.08)}
+.prev-arrow[style*="pointer-events:none"]{opacity:.25}
 
 /* ── Batch selection bar ── */
 #batchBar{
@@ -327,9 +327,11 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 <!-- ── Cinematic Preview ── -->
 <div id="previewOverlay" onclick="if(event.target===this)closePreview()">
   <div class="prev-wrap" id="prevWrap">
-    <div class="prev-media" id="prevMedia">
+    <div class="prev-row">
       <button class="prev-arrow" id="prevArrowL" onclick="shiftPreview(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div id="prevContent"></div>
+      <div class="prev-media" id="prevMedia">
+        <div id="prevContent"></div>
+      </div>
       <button class="prev-arrow" id="prevArrowR" onclick="shiftPreview(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
     <div class="prev-bar">
