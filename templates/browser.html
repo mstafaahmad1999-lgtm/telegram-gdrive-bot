@@ -13,14 +13,14 @@ a{text-decoration:none;color:inherit}
 button{font-family:inherit}
 
 :root{
-  --bg:#F0F4F7;
+  --bg:#cdccd0;
   --surface:#FFFFFF;
-  --accent:#0ABAB5;
-  --accent-soft:#81D8D0;
-  --accent-ink:#06756f;
-  --ink:#1F2328;
-  --ink-dim:#6B7177;
-  --line:#E3E7E8;
+  --accent:#C9A84C;
+  --accent-soft:#d6bd8a;
+  --accent-ink:#8a6a22;
+  --ink:#211E18;
+  --ink-dim:#6b6357;
+  --line:#cfcdce;
   --danger:#c0392b;
   --ease:cubic-bezier(0.25,0.46,0.45,0.94);
   --eout:cubic-bezier(0.16,1,0.3,1);
@@ -32,7 +32,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);min-he
 
 /* ── Cursor ── */
 #cur{position:fixed;top:0;left:0;width:8px;height:8px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;will-change:transform;transition:width .18s,height .18s,background .18s}
-#cur.big{width:30px;height:30px;background:rgba(10,186,181,.16);border:1px solid var(--accent)}
+#cur.big{width:30px;height:30px;background:rgba(201,168,76,.16);border:1px solid var(--accent)}
 
 /* ── Nav ── */
 nav{position:sticky;top:0;z-index:800;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
@@ -57,9 +57,9 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
 .tool-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:600;cursor:none;transition:all .15s;white-space:nowrap}
 .tool-btn:hover{background:var(--bg);border-color:var(--accent);color:var(--accent-ink)}
-.tool-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 14px rgba(10,186,181,.25)}
-.tool-btn.primary:hover{background:var(--accent-ink);box-shadow:0 6px 20px rgba(10,186,181,.35)}
-.tool-btn.sel-btn{background:rgba(10,186,181,.08);border-color:var(--accent-soft);color:var(--accent-ink)}
+.tool-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 4px 14px rgba(201,168,76,.25)}
+.tool-btn.primary:hover{background:var(--accent-ink);box-shadow:0 6px 20px rgba(201,168,76,.35)}
+.tool-btn.sel-btn{background:rgba(201,168,76,.08);border-color:var(--accent-soft);color:var(--accent-ink)}
 .tool-btn.sel-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tool-sep{width:1px;height:24px;background:var(--line);flex-shrink:0}
 
@@ -71,7 +71,7 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 /* ── Folders ── */
 .folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:40px}
 .folder-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:none;transition:all .15s;display:flex;align-items:center;gap:10px}
-.folder-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(10,186,181,.12);transform:translateY(-1px)}
+.folder-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(201,168,76,.12);transform:translateY(-1px)}
 .folder-icon{flex-shrink:0;display:flex;color:var(--accent)}
 .folder-icon svg{width:20px;height:20px}
 .folder-name{font-size:.84rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -82,7 +82,7 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 
 /* ── Gallery card ── */
 .gallery-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:box-shadow .18s,border-color .18s,transform .18s;cursor:none}
-.gallery-card:hover{border-color:rgba(10,186,181,.4);box-shadow:0 8px 28px rgba(10,186,181,.14);transform:translateY(-2px)}
+.gallery-card:hover{border-color:rgba(201,168,76,.4);box-shadow:0 8px 28px rgba(201,168,76,.14);transform:translateY(-2px)}
 .gallery-card.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 
 /* ── Checkbox ── */
@@ -222,8 +222,8 @@ main{max-width:1400px;margin:0 auto;padding:28px 32px 120px}
 .b-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:none;font-size:.75rem;font-weight:600;cursor:none;transition:all .15s;font-family:'Inter',sans-serif}
 .b-btn.del{background:rgba(192,57,43,.9);color:#fff}
 .b-btn.del:hover{background:#c0392b}
-.b-btn.dl{background:rgba(10,186,181,.2);color:var(--accent-soft);border:1px solid rgba(10,186,181,.3)}
-.b-btn.dl:hover{background:rgba(10,186,181,.32)}
+.b-btn.dl{background:rgba(201,168,76,.2);color:var(--accent-soft);border:1px solid rgba(201,168,76,.3)}
+.b-btn.dl:hover{background:rgba(201,168,76,.32)}
 .b-btn.cancel{background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.1)}
 .b-btn.cancel:hover{background:rgba(255,255,255,.14);color:#fff}
 
