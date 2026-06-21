@@ -1050,6 +1050,16 @@ body.sv-low .sv-sheen{display:none}
   .sv-reveal{transition-duration:.001ms}
   .sv-hero-panel{animation-duration:.001ms}
 }
+
+/* gold thread + cursor sheen only on Home */
+.sv-thread,.sv-sheen{opacity:0;transition:opacity .4s ease}
+body.home-active .sv-thread,body.home-active .sv-sheen{opacity:1}
+
+/* phone / low-end: drop ALL live backdrop-filter blur (translucent fills stay legible) */
+@media(max-width:820px){
+  body *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 </style>
 </head>
 <body>
@@ -1768,6 +1778,7 @@ document.addEventListener('mouseout', e=>{if(e.target.closest(HOVER_SEL))cur.cla
 /* ─── View switching ─── */
 function showView(name){
   const isBrowser=(name==='browser');
+  document.body.classList.toggle('home-active',name==='home');
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
   const wrap=document.getElementById('browserWrap');
@@ -2797,23 +2808,58 @@ function formatBytes(b){
   var CATS=[
     {n:'Designs Archive',k:248},{n:'Anime',k:96},{n:'Video',k:54},{n:'Image',k:1204}];
 
-  var strip=document.getElementById('svStrip');
-  if(strip) FEATURED.forEach(function(p,i){
-    strip.insertAdjacentHTML('beforeend',
-      '<article class="sv-card"><div class="sv-plate" style="background:'+plate(i)+'" role="img" aria-label="'+p.n+', '+p.c+'"></div>'
-      +'<div class="sv-cap"><span class="sv-cap-name">'+p.n+'</span><span class="sv-cap-cat">'+p.c+'</span></div></article>');
-  });
-  var rec=document.getElementById('svRecent');
-  if(rec) RECENT.forEach(function(p,i){
-    rec.insertAdjacentHTML('beforeend',
-      '<div class="sv-tile" style="background:'+plate(i+3)+'" onclick="showView(\'recents\')"><span class="sv-tile-cap">'+p.n+'</span></div>');
-  });
-  var cats=document.getElementById('svCats');
-  if(cats) CATS.forEach(function(p,i){
-    cats.insertAdjacentHTML('beforeend',
-      '<a class="sv-cat" style="background:'+plate(i+7)+'" onclick="showView(\'browser\')" aria-label="'+p.n+', '+p.k.toLocaleString()+' items">'
-      +'<div class="sv-cat-veil"><div class="sv-cat-name">'+p.n+'</div><div class="sv-cat-count">'+p.k.toLocaleString()+' items</div></div></a>');
-  });
+  /* thread + sheen only on Home (home is the default view on load) */
+  document.body.classList.toggle('home-active', !!document.querySelector('#view-home.active'));
+
+  var strip=document.getElementById('svStrip'),
+      rec=document.getElementById('svRecent'),
+      cats=document.getElementById('svCats');
+
+  function esc(s){return (s||'').replace(/[<>"&]/g,function(c){return {'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;'}[c]})}
+  function cleanName(s){return esc((s||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim())||'Untitled'}
+  function catLabel(f){return {image:'Image',anime:'Anime',video:'Video'}[f]||'Archive'}
+  function isImg(n){return /\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(n||'')}
+  function bgFor(it,i){return (isImg(it.name)?"url('/api/browser/thumbnail/"+encodeURIComponent(it.id)+"') center/cover no-repeat, ":"")+plate(i)}
+
+  function cardHTML(name,cat,bg){
+    return '<article class="sv-card"><div class="sv-plate" style="background:'+bg+'" role="img" aria-label="'+name+', '+cat+'"></div>'
+      +'<div class="sv-cap"><span class="sv-cap-name">'+name+'</span><span class="sv-cap-cat">'+cat+'</span></div></article>';
+  }
+  function tileHTML(name,bg){
+    return '<div class="sv-tile" style="background:'+bg+'" onclick="showView(\'recents\')"><span class="sv-tile-cap">'+name+'</span></div>';
+  }
+  function catHTML(name,count,seed){
+    return '<a class="sv-cat" style="background:'+plate(seed)+'" onclick="showView(\'browser\')" aria-label="'+esc(name)+', '+count+' items">'
+      +'<div class="sv-cat-veil"><div class="sv-cat-name">'+esc(name)+'</div><div class="sv-cat-count">'+Number(count).toLocaleString()+' items</div></div></a>';
+  }
+
+  /* paint curated placeholders immediately (instant, never blank) */
+  if(strip) strip.innerHTML=FEATURED.map(function(p,i){return cardHTML(p.n,p.c,plate(i))}).join('');
+  if(rec) rec.innerHTML=RECENT.map(function(p,i){return tileHTML(p.n,plate(i+3))}).join('');
+  if(cats) cats.innerHTML=CATS.map(function(p,i){return catHTML(p.n,p.k,i+7)}).join('');
+
+  /* upgrade to real archive data when available; placeholders stay on any failure */
+  (async function(){
+    try{
+      var m=await (await fetch('/api/archive/manifest')).json();
+      var items=[].concat(m.images||[],m.videos||[]).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
+      if(items.length){
+        if(strip) strip.innerHTML=items.slice(0,8).map(function(it,i){return cardHTML(cleanName(it.name),catLabel(it.folder),bgFor(it,i))}).join('');
+        if(rec) rec.innerHTML=items.slice(0,4).map(function(it,i){return tileHTML(cleanName(it.name),bgFor(it,i))}).join('');
+      }
+    }catch(e){}
+    try{
+      var fd=await (await fetch('/api/folders?parent=root')).json();
+      if(fd.ok && fd.folders && fd.folders.length){
+        var folders=fd.folders.slice(0,6);
+        var counts=await Promise.all(folders.map(function(f){
+          return fetch('/api/browser?parent='+encodeURIComponent(f.id)).then(function(r){return r.json()})
+            .then(function(d){return (d.files?d.files.length:0)+(d.folders?d.folders.length:0)}).catch(function(){return 0});
+        }));
+        if(cats) cats.innerHTML=folders.map(function(f,i){return catHTML(f.name,counts[i],i+7)}).join('');
+      }
+    }catch(e){}
+  })();
 
   /* ── drag-to-scroll on featured strip ── */
   if(strip){
