@@ -1020,6 +1020,17 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-cta:hover{background:linear-gradient(rgba(255,255,255,.25),rgba(255,255,255,.25)),rgba(201,168,76,.26);border-color:var(--gold)}
 .sv-cta svg{width:15px;height:15px}
 
+/* hero — scroll-driven word sequence (WordHero) */
+.sv-wordhero{position:relative;height:300vh}            /* height set by JS from startVh+items*spaceVh */
+.sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.sv-wordhero-eye{position:absolute;top:16vh;color:var(--gold-ink);font-size:clamp(.56rem,1.4vw,.7rem)}
+.sv-wordhero-stage{position:relative;width:100%;height:1.1em;display:flex;align-items:center;justify-content:center}
+.sv-word{position:absolute;margin:0;white-space:nowrap;font-weight:500;letter-spacing:.005em;color:var(--ink);
+  font-size:clamp(3rem,13vw,11rem);line-height:1;opacity:0;pointer-events:none;will-change:transform,opacity,filter}
+.sv-wordhero-glow{position:absolute;width:60vmax;height:60vmax;border-radius:50%;pointer-events:none;
+  filter:blur(70px);opacity:.16;will-change:opacity;
+  background:radial-gradient(closest-side,hsl(var(--sv-hue,42) 65% 58%),transparent)}
+
 /* reveal */
 .sv-reveal{opacity:0;transform:translateY(22px);filter:blur(6px);transition:opacity .8s var(--sv-ease),transform .8s var(--sv-ease),filter .8s var(--sv-ease)}
 .sv-reveal.in{opacity:1;transform:none;filter:blur(0)}
@@ -1100,10 +1111,17 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
   .sv-foot{min-height:40vh}
 }
 
-/* hero respects reduced motion (show everything, no animation) */
+/* hero respects reduced motion (show everything statically, no animation) */
 @media(prefers-reduced-motion:reduce){
-  .sv-hero-eye,.sv-words,.sv-hero-cta,.sv-scrollcue,.sv-wordmark span{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}
-  .sv-rule{animation:none!important;width:min(420px,72vw)!important}
+  .sv-scrollcue{animation:none!important;opacity:1!important}
+  .sv-wordhero{height:auto!important}
+  .sv-wordhero-stick{position:static;height:auto;padding:16vh 0;overflow:visible}
+  .sv-wordhero-stage{height:auto;flex-wrap:wrap;gap:8px 22px}
+  .sv-word{position:static;opacity:1!important;transform:none!important;filter:none!important;font-size:clamp(1.6rem,7vw,3.6rem)}
+  .sv-wordhero-glow{display:none}
+}
+@media(max-width:820px){
+  .sv-wordhero-eye{top:13vh}
 }
 </style>
 </head>
@@ -1387,23 +1405,21 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
 
       <!-- ════════ CINEMATIC HOME VIEW ════════ -->
       <section class="view active" id="view-home">
-        <!-- Hero -->
-        <div class="sv-hero" id="svHero">
-          <div class="sv-hero-center" id="svHeroCenter">
-            <span class="sv-mono sv-hero-eye">Atelier Archive</span>
-            <h1 class="sv-display sv-wordmark" aria-label="SOVAN">
-              <span>S</span><span>O</span><span>V</span><span>A</span><span>N</span>
-            </h1>
-            <div class="sv-rule"></div>
-            <div class="sv-words sv-mono">
-              <span>Couture</span><i>·</i><span>Craft</span><i>·</i><span>Legacy</span>
+        <!-- Hero — scroll-driven word sequence -->
+        <section class="sv-wordhero" id="svWordHero">
+          <div class="sv-wordhero-stick">
+            <div class="sv-wordhero-glow" id="svWordGlow" aria-hidden="true"></div>
+            <span class="sv-mono sv-wordhero-eye">SOVAN · Atelier Archive</span>
+            <div class="sv-wordhero-stage">
+              <h1 class="sv-display sv-word">design.</h1>
+              <h1 class="sv-display sv-word">Couture.</h1>
+              <h1 class="sv-display sv-word">Craft.</h1>
+              <h1 class="sv-display sv-word">Legacy.</h1>
+              <h1 class="sv-display sv-word">ship.</h1>
             </div>
-            <button class="sv-cta sv-hero-cta" onclick="showView('files')">Enter the Archive
-              <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <div class="sv-scrollcue" aria-hidden="true"><span></span></div>
           </div>
-          <div class="sv-scrollcue" aria-hidden="true"><span></span></div>
-        </div>
+        </section>
 
         <!-- Featured -->
         <div class="sv-section sv-reveal">
@@ -2969,6 +2985,44 @@ function formatBytes(b){
       if(Math.abs(tx-cx)>0.5||Math.abs(ty-cy)>0.5){requestAnimationFrame(loop)}else{run=false}
     }
   } else if(sheen){ sheen.style.display='none'; }
+})();
+</script>
+
+<!-- ════════ SOVAN WordHero — scroll-driven word sequence ════════ -->
+<script>
+(function(){
+  var hero=document.getElementById('svWordHero'); if(!hero) return;
+  var words=[].slice.call(hero.querySelectorAll('.sv-word'));
+  var glow=document.getElementById('svWordGlow');
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){
+    words.forEach(function(w){w.style.opacity='1'}); return;   // static list (CSS handles layout)
+  }
+  var spaceVh=50;                                  // scroll distance per word (from config)
+  function vh(){return window.innerHeight/100}
+  function setH(){hero.style.height=((words.length-1)*spaceVh+100)+'vh'}
+  setH();
+  var tick=false;
+  function upd(){
+    tick=false;
+    var per=spaceVh*vh();
+    var prog=(-hero.getBoundingClientRect().top)/per;   // float "word index" under the pin
+    var last=words.length-1;
+    words.forEach(function(w,i){
+      var p=prog-i;
+      if((i===0&&p<0)||(i===last&&p>0))p=0;   // hold first word at start, last at end
+      var a=Math.abs(p);
+      w.style.opacity=Math.max(0,1-a*1.1).toFixed(3);
+      w.style.transform='translateY('+(p*-7).toFixed(2)+'vh) scale('+(1-a*0.13).toFixed(3)+')';
+      w.style.filter='blur('+Math.min(14,a*12).toFixed(1)+'px)';
+    });
+    if(glow){
+      var nearest=9; for(var i=0;i<words.length;i++){nearest=Math.min(nearest,Math.abs(prog-i))}
+      glow.style.opacity=(0.05+0.20*(1-Math.min(1,nearest))).toFixed(3);
+    }
+  }
+  addEventListener('scroll',function(){if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});
+  addEventListener('resize',function(){setH();upd()});
+  upd();
 })();
 </script>
 </body>
