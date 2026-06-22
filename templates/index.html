@@ -937,7 +937,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 :root{ --sv-ease:cubic-bezier(.22,.61,.36,1); }
 
 /* fixed atmosphere */
-.sv-marble{position:fixed;inset:0;z-index:-3;pointer-events:none;background-color:#cdccd0;
+.sv-marble{position:fixed;inset:0;z-index:-3;pointer-events:none;overflow:hidden;background-color:#cdccd0;
   background-image:
     radial-gradient(120% 80% at 18% 8%,rgba(255,255,255,.72),transparent 58%),
     radial-gradient(100% 70% at 82% 26%,rgba(214,214,220,.7),transparent 55%),
@@ -1023,10 +1023,22 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 /* hero — scroll-driven word sequence (WordHero) */
 .sv-wordhero{position:relative;height:300vh}            /* height set by JS from startVh+items*spaceVh */
 .sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
-.sv-wordhero-eye{position:absolute;top:16vh;color:var(--gold-ink);font-size:clamp(.56rem,1.4vw,.7rem)}
-.sv-wordhero-stage{position:relative;width:100%;height:1.1em;display:flex;align-items:center;justify-content:center}
+/* frozen SOVAN (pinned above the scrolling words) */
+.sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(16px,4vh,44px)}
+.sv-bigmark{display:flex;margin:0;font-weight:500;line-height:.85;color:var(--ink);
+  font-size:clamp(2.8rem,11vw,8rem);letter-spacing:.07em}
+.sv-bigmark span{display:inline-block;opacity:0;transform:translateY(.4em) scale(.92);filter:blur(10px);
+  animation:sv-letter 1.1s var(--sv-ease) forwards}
+.sv-bigmark span:nth-child(1){animation-delay:.12s}
+.sv-bigmark span:nth-child(2){animation-delay:.24s}
+.sv-bigmark span:nth-child(3){animation-delay:.36s}
+.sv-bigmark span:nth-child(4){animation-delay:.48s}
+.sv-bigmark span:nth-child(5){animation-delay:.60s}
+.sv-bigeye{margin-top:clamp(8px,1.5vh,16px);color:var(--gold-ink);font-size:clamp(.54rem,1.3vw,.66rem);
+  opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
+.sv-wordhero-stage{position:relative;width:100%;height:1.15em;display:flex;align-items:center;justify-content:center}
 .sv-word{position:absolute;margin:0;white-space:nowrap;font-weight:500;letter-spacing:.005em;color:var(--ink);
-  font-size:clamp(3rem,13vw,11rem);line-height:1;opacity:0;pointer-events:none;will-change:transform,opacity,filter}
+  font-size:clamp(2rem,8vw,6rem);line-height:1;opacity:0;pointer-events:none;will-change:transform,opacity,filter}
 .sv-wordhero-glow{position:absolute;width:60vmax;height:60vmax;border-radius:50%;pointer-events:none;
   filter:blur(70px);opacity:.16;will-change:opacity;
   background:radial-gradient(closest-side,hsl(var(--sv-hue,42) 65% 58%),transparent)}
@@ -1205,8 +1217,6 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
             <button class="fbnav-link" data-view="files" onclick="showView('files')">Upload</button>
             <button class="fbnav-link" data-view="recents" onclick="showView('recents')">Recent</button>
             <button class="fbnav-link" data-view="browser" onclick="showView('browser')">Browse</button>
-            {% if is_admin %}<button class="fbnav-link" data-view="members" onclick="showView('members')">Members</button>{% endif %}
-            {% if is_admin %}<button class="fbnav-link" data-view="admin" onclick="showView('admin')">Admin</button>{% endif %}
           </div>
         </nav>
       </div>
@@ -1278,6 +1288,16 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
             </div>
             <!-- Menu -->
             <div class="pp-menu">
+              {% if is_admin %}
+              <button class="pp-item" onclick="showView('members');document.getElementById('profilePanel').style.display='none'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 19v-2a4 4 0 0 0-3-3.87"/></svg>
+                Members
+              </button>
+              <button class="pp-item" onclick="showView('admin');document.getElementById('profilePanel').style.display='none'">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Admin
+              </button>
+              {% endif %}
               <button class="pp-item" onclick="openEditProfile()">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit Profile
@@ -1409,13 +1429,16 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
         <section class="sv-wordhero" id="svWordHero">
           <div class="sv-wordhero-stick">
             <div class="sv-wordhero-glow" id="svWordGlow" aria-hidden="true"></div>
-            <span class="sv-mono sv-wordhero-eye">SOVAN · Atelier Archive</span>
+            <div class="sv-frozen">
+              <h1 class="sv-display sv-bigmark" aria-label="SOVAN"><span>S</span><span>O</span><span>V</span><span>A</span><span>N</span></h1>
+              <span class="sv-mono sv-bigeye">Atelier Archive</span>
+            </div>
             <div class="sv-wordhero-stage">
-              <h1 class="sv-display sv-word">design.</h1>
-              <h1 class="sv-display sv-word">Couture.</h1>
-              <h1 class="sv-display sv-word">Craft.</h1>
-              <h1 class="sv-display sv-word">Legacy.</h1>
-              <h1 class="sv-display sv-word">ship.</h1>
+              <div class="sv-display sv-word">design.</div>
+              <div class="sv-display sv-word">Couture.</div>
+              <div class="sv-display sv-word">Craft.</div>
+              <div class="sv-display sv-word">Legacy.</div>
+              <div class="sv-display sv-word">ship.</div>
             </div>
             <div class="sv-scrollcue" aria-hidden="true"><span></span></div>
           </div>
