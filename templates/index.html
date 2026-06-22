@@ -3136,154 +3136,172 @@ function formatBytes(b){
 </script>
 
 <script>
-/* ── SOVAN gold-foil canvas renderer (perf: single reused offscreen canvas) ── */
+/* ── SOVAN gold-foil canvas renderer — optimised for 60 fps ──────────────── *
+ * Key perf changes vs previous version:
+ *  1. Base layer (gold + waves + shadows) only redrawn every 3 frames — waves
+ *     move at 0.55 rad/s so 50ms delta is imperceptible.
+ *  2. Glitter uses globalAlpha + shadowBlur instead of per-dot radialGradient —
+ *     eliminates 280 gradient object allocations per frame.
+ *  3. Font fitted using actualBoundingBox ink metrics so serifs never clip.
+ * ─────────────────────────────────────────────────────────────────────────── */
 (function(){
-  var cv = document.getElementById('svGoldCanvas');
+  var cv=document.getElementById('svGoldCanvas');
   if(!cv) return;
-  var cx = cv.getContext('2d');
-  var DPR = Math.min(window.devicePixelRatio||1, 2);
+  var cx=cv.getContext('2d');
+  var DPR=Math.min(window.devicePixelRatio||1,2);
 
-  var W=0, H=0, maskData=null, glitter=[];
-  var os=document.createElement('canvas'), oc=os.getContext('2d');
-  var rafId=0, running=false;
+  var W=0,H=0,_fs=0,maskData=null,glitter=[];
+  /* two offscreen canvases: base (slow, every 3 frames) + composite (every frame) */
+  var baseC=document.createElement('canvas'), baseX=baseC.getContext('2d');
+  var compC=document.createElement('canvas'), compX=compC.getContext('2d');
+  var running=false, frameN=0;
 
-  var GLITTER_COUNT=280;
-  var WAVE_SPD=0.55;
+  var GC=240; /* glitter count — reduced slightly for headroom */
+  var WAVE_SPD=0.5;
   var WAVES=[
-    {ox:.12,oy:.32,rx:.38,ry:.52,sx:.65,sy:.48},
-    {ox:.52,oy:.18,rx:.30,ry:.46,sx:.88,sy:.72},
-    {ox:.78,oy:.62,rx:.34,ry:.42,sx:.58,sy:.85},
-    {ox:.33,oy:.72,rx:.26,ry:.36,sx:.50,sy:.60},
-    {ox:.88,oy:.30,rx:.24,ry:.32,sx:.78,sy:.50}
+    {ox:.10,oy:.30,rx:.40,ry:.55,sx:.60,sy:.45},
+    {ox:.50,oy:.16,rx:.32,ry:.48,sx:.85,sy:.70},
+    {ox:.76,oy:.60,rx:.36,ry:.44,sx:.55,sy:.80},
+    {ox:.30,oy:.70,rx:.28,ry:.38,sx:.48,sy:.58},
+    {ox:.86,oy:.28,rx:.26,ry:.34,sx:.75,sy:.48}
   ];
 
-  var _fs=0;
+  /* ── font sizing: use ink bounding box so serifs never clip ── */
   function calcFont(){
-    /* start from height, then shrink until text fits within 94% of width */
-    var base=Math.min(W*.95,H*1.12);
+    var base=Math.min(H*1.08,W*0.92);
     cx.font='700 '+base+'px "Bodoni Moda",Georgia,serif';
-    var tw=cx.measureText('SOVAN').width;
-    if(tw>W*.93) base=base*(W*.93/tw);
+    var m=cx.measureText('SOVAN');
+    /* actualBoundingBoxLeft/Right give true ink edges incl. serifs */
+    var inkW=(m.actualBoundingBoxLeft||0)+(m.actualBoundingBoxRight||m.width);
+    var cap=W*0.88; /* 6% breathing room each side */
+    if(inkW>cap) base=Math.floor(base*(cap/inkW));
     _fs=Math.floor(base);
-    return '700 '+_fs+'px "Bodoni Moda",Georgia,serif';
   }
-  function fontStr(){ return '700 '+_fs+'px "Bodoni Moda",Georgia,serif'; }
+  function fstr(){ return '700 '+_fs+'px "Bodoni Moda",Georgia,serif'; }
 
   function resize(){
-    var rect=cv.getBoundingClientRect();
-    var nw=Math.round(rect.width||cv.offsetWidth||600);
-    var nh=Math.round(rect.height||cv.offsetHeight||150);
-    if(nw===W && nh===H) return;
+    var r=cv.getBoundingClientRect();
+    var nw=Math.round(r.width||cv.offsetWidth||600);
+    var nh=Math.round(r.height||cv.offsetHeight||150);
+    if(nw===W&&nh===H) return;
     W=nw; H=nh;
     cv.width=W*DPR; cv.height=H*DPR;
     cx.setTransform(DPR,0,0,DPR,0,0);
-    os.width=W; os.height=H;
-    calcFont();
-    buildMask(); buildGlitter();
+    baseC.width=W; baseC.height=H;
+    compC.width=W; compC.height=H;
+    calcFont(); buildMask(); buildGlitter();
+    frameN=0; /* force base redraw */
   }
 
   function buildMask(){
-    var mc=document.createElement('canvas');
-    mc.width=W; mc.height=H;
+    var mc=document.createElement('canvas'); mc.width=W; mc.height=H;
     var m=mc.getContext('2d');
-    m.font=fontStr(); m.textAlign='center'; m.textBaseline='middle';
+    m.font=fstr(); m.textAlign='center'; m.textBaseline='middle';
     m.fillStyle='#fff'; m.fillText('SOVAN',W/2,H/2);
     maskData=m.getImageData(0,0,W,H);
   }
-
   function inside(x,y){
-    var px=x|0, py=y|0;
+    var px=x|0,py=y|0;
     if(px<0||py<0||px>=W||py>=H) return false;
     return maskData.data[(py*W+px)*4+3]>30;
   }
-
   function buildGlitter(){
     glitter=[];
     var tries=0;
-    while(glitter.length<GLITTER_COUNT && tries<18000){
+    while(glitter.length<GC&&tries<16000){
       tries++;
-      var x=3+Math.random()*(W-6), y=3+Math.random()*(H-6);
-      if(inside(x,y)) glitter.push({
-        x:x,y:y,
-        r:0.5+Math.random()*1.8,
+      var x=4+Math.random()*(W-8),y=4+Math.random()*(H-8);
+      if(inside(x,y)) glitter.push({x:x,y:y,
+        r:0.6+Math.random()*1.6,
         phase:Math.random()*6.28,
-        spd:0.8+Math.random()*2.0,
-        bright:0.5+Math.random()*0.5
-      });
+        spd:0.7+Math.random()*1.8,
+        bright:0.55+Math.random()*0.45});
     }
   }
 
-  function draw(t){
-    /* reuse os — just clear it */
-    oc.clearRect(0,0,W,H);
-
-    /* 1. bright gold base */
-    oc.fillStyle='#eba800';
-    oc.fillRect(0,0,W,H);
-
-    /* 2. fabric-wave highlights — reused gradient objects not needed;
-          radialGradient is cheap; the key saving is no new canvas per frame */
+  /* ── draw base layer (gold + waves + shadows) — called every 3 frames ── */
+  function drawBase(t){
+    baseX.clearRect(0,0,W,H);
+    baseX.fillStyle='#eba800';
+    baseX.fillRect(0,0,W,H);
     for(var i=0;i<WAVES.length;i++){
       var wv=WAVES[i];
       var ph=t*WAVE_SPD+i*1.27;
-      var wx=W*(wv.ox+Math.sin(ph*wv.sx)*.17);
-      var wy=H*(wv.oy+Math.cos(ph*wv.sy)*.21);
+      var wx=W*(wv.ox+Math.sin(ph*wv.sx)*.16);
+      var wy=H*(wv.oy+Math.cos(ph*wv.sy)*.20);
       var rr=Math.max(W*wv.rx,H*wv.ry);
-      var g=oc.createRadialGradient(wx,wy,0,wx,wy,rr);
-      g.addColorStop(0,'rgba(255,248,170,.75)');
-      g.addColorStop(.30,'rgba(255,222,70,.38)');
-      g.addColorStop(.68,'rgba(240,175,15,.10)');
-      g.addColorStop(1,'rgba(200,125,0,0)');
-      oc.save();
-      oc.translate(wx,wy); oc.scale(W*wv.rx/rr,H*wv.ry/rr); oc.translate(-wx,-wy);
-      oc.fillStyle=g;
-      oc.beginPath(); oc.arc(wx,wy,rr,0,6.28); oc.fill();
-      oc.restore();
+      var g=baseX.createRadialGradient(wx,wy,0,wx,wy,rr);
+      g.addColorStop(0,'rgba(255,248,168,.74)');
+      g.addColorStop(.30,'rgba(255,220,65,.36)');
+      g.addColorStop(.70,'rgba(240,172,12,.08)');
+      g.addColorStop(1,'rgba(200,122,0,0)');
+      baseX.save();
+      baseX.translate(wx,wy); baseX.scale(W*wv.rx/rr,H*wv.ry/rr); baseX.translate(-wx,-wy);
+      baseX.fillStyle=g; baseX.beginPath(); baseX.arc(wx,wy,rr,0,6.28); baseX.fill();
+      baseX.restore();
     }
+    var s1=baseX.createLinearGradient(W*.08,0,W*.44,H);
+    s1.addColorStop(0,'rgba(90,52,0,0)'); s1.addColorStop(.5,'rgba(88,50,0,.22)'); s1.addColorStop(1,'rgba(90,52,0,0)');
+    baseX.fillStyle=s1; baseX.fillRect(0,0,W,H);
+    var s2=baseX.createLinearGradient(W*.58,0,W*.92,H);
+    s2.addColorStop(0,'rgba(88,50,0,0)'); s2.addColorStop(.5,'rgba(82,46,0,.18)'); s2.addColorStop(1,'rgba(88,50,0,0)');
+    baseX.fillStyle=s2; baseX.fillRect(0,0,W,H);
+  }
 
-    /* 3. crease shadows */
-    var s1=oc.createLinearGradient(W*.08,0,W*.44,H);
-    s1.addColorStop(0,'rgba(100,58,0,0)'); s1.addColorStop(.5,'rgba(95,54,0,.24)'); s1.addColorStop(1,'rgba(100,58,0,0)');
-    oc.fillStyle=s1; oc.fillRect(0,0,W,H);
-    var s2=oc.createLinearGradient(W*.58,0,W*.92,H);
-    s2.addColorStop(0,'rgba(100,58,0,0)'); s2.addColorStop(.5,'rgba(90,50,0,.20)'); s2.addColorStop(1,'rgba(100,58,0,0)');
-    oc.fillStyle=s2; oc.fillRect(0,0,W,H);
-
-    /* 4. micro-glitter — draw only a subset each frame for perf on mobile */
-    var step = W < 500 ? 2 : 1; /* skip every other dot on narrow screens */
-    for(var j=0;j<glitter.length;j+=step){
+  /* ── draw glitter — globalAlpha + shadowBlur, zero gradient objects ── */
+  function drawGlitter(t){
+    compX.clearRect(0,0,W,H);
+    compX.save();
+    compX.shadowColor='rgba(255,240,140,.7)';
+    compX.shadowBlur=5;
+    compX.fillStyle='rgba(255,255,220,1)';
+    for(var j=0;j<glitter.length;j++){
       var gp=glitter[j];
       var pulse=(Math.sin(t*gp.spd+gp.phase)+1)*0.5;
-      var alpha=gp.bright*(0.05+pulse*0.95);
-      if(alpha<0.04) continue;
-      var r=gp.r*(0.25+pulse*0.75);
-      var rg=oc.createRadialGradient(gp.x,gp.y,0,gp.x,gp.y,r*4);
-      rg.addColorStop(0,'rgba(255,255,210,'+Math.min(alpha,1)+')');
-      rg.addColorStop(.45,'rgba(255,225,90,'+(alpha*.35)+')');
-      rg.addColorStop(1,'rgba(255,190,30,0)');
-      oc.fillStyle=rg; oc.beginPath(); oc.arc(gp.x,gp.y,r*4,0,6.28); oc.fill();
-      oc.fillStyle='rgba(255,255,228,'+Math.min(alpha*1.6,1)+')';
-      oc.beginPath(); oc.arc(gp.x,gp.y,r*.7,0,6.28); oc.fill();
+      var alpha=gp.bright*(0.04+pulse*0.96);
+      if(alpha<0.05) continue;
+      var r=gp.r*(0.3+pulse*0.7);
+      compX.globalAlpha=Math.min(alpha,1);
+      compX.beginPath(); compX.arc(gp.x,gp.y,r,0,6.28); compX.fill();
     }
+    compX.restore();
+    /* clip glitter to text shape */
+    compX.globalCompositeOperation='destination-in';
+    compX.font=fstr(); compX.textAlign='center'; compX.textBaseline='middle';
+    compX.fillStyle='#fff'; compX.fillText('SOVAN',W/2,H/2);
+    compX.globalCompositeOperation='source-over';
+  }
 
-    /* 5. clip to text */
-    oc.globalCompositeOperation='destination-in';
-    oc.font=fontStr(); oc.textAlign='center'; oc.textBaseline='middle';
-    oc.fillStyle='#fff'; oc.fillText('SOVAN',W/2,H/2);
-    oc.globalCompositeOperation='source-over';
+  function draw(t){
+    /* base: refresh every 3 frames (~50ms at 60fps) — waves barely move */
+    if(frameN%3===0) drawBase(t);
+    drawGlitter(t);
+    frameN++;
 
+    /* final composite: base clipped to text, then glitter on top */
     cx.clearRect(0,0,W,H);
-    cx.drawImage(os,0,0);
+    /* clip base to text */
+    cx.save();
+    cx.font=fstr(); cx.textAlign='center'; cx.textBaseline='middle';
+    cx.beginPath();
+    /* use clip path via fillText on temp canvas, draw base inside clip */
+    /* simpler: draw base to main, then use destination-in text clip */
+    cx.drawImage(baseC,0,0);
+    cx.globalCompositeOperation='destination-in';
+    cx.fillStyle='#fff'; cx.fillText('SOVAN',W/2,H/2);
+    cx.globalCompositeOperation='source-over';
+    cx.restore();
+    /* overlay glitter (already clipped) */
+    cx.drawImage(compC,0,0);
   }
 
   function loop(){
-    if(document.hidden){ running=false; return; }
+    if(document.hidden){running=false;return;}
     draw(performance.now()/1000);
-    rafId=requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
   }
-
   document.addEventListener('visibilitychange',function(){
-    if(!document.hidden && !running){ running=true; loop(); }
+    if(!document.hidden&&!running){running=true;loop();}
   });
 
   document.fonts.ready.then(function(){
