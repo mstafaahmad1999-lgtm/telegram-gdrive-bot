@@ -1026,17 +1026,17 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-wordhero{position:relative;height:300vh}            /* height set by JS from startVh+items*spaceVh */
 .sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:clamp(13vh,17vh,20vh);overflow:hidden}
 /* frozen SOVAN — raised, Bodoni, live metallic-gold shimmer */
-.sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(20px,5vh,56px)}
+.sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(40px,8vh,80px)}
 /* SOVAN wordmark — solid gold by default + live shimmer overlay where supported.
    Single text node (no per-letter spans) so stacking contexts can't break the
    gradient clip. The wordmark fades in once on entry, the shimmer loops forever. */
 /* SOVAN — canvas-rendered bright gold foil with micro-glitter */
 .sv-bigmark-canvas{
   display:block;
-  width:clamp(260px,88vw,820px);
-  height:clamp(80px,22vw,210px);
+  width:clamp(300px,96vw,960px);
+  height:clamp(90px,20vw,220px);
   margin:0 auto;
-  filter:drop-shadow(0 4px 24px rgba(220,170,40,.35));
+  filter:drop-shadow(0 4px 28px rgba(220,170,40,.38));
 }
 .sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
   font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
@@ -3136,163 +3136,153 @@ function formatBytes(b){
 </script>
 
 <script>
-/* ── SOVAN gold-foil canvas renderer ──────────────────────────────────────── */
+/* ── SOVAN gold-foil canvas renderer (perf: single reused offscreen canvas) ── */
 (function(){
-  const cv = document.getElementById('svGoldCanvas');
+  var cv = document.getElementById('svGoldCanvas');
   if(!cv) return;
-  const cx = cv.getContext('2d');
-  const DPR = Math.min(window.devicePixelRatio||1, 2);
+  var cx = cv.getContext('2d');
+  var DPR = Math.min(window.devicePixelRatio||1, 2);
 
-  let W, H, maskData, glitter=[];
-  const GLITTER_COUNT = 320;
-  const WAVE_SPD = 0.9; /* how fast the fabric light shifts */
+  var W=0, H=0, maskData=null, glitter=[];
+  var os=document.createElement('canvas'), oc=os.getContext('2d');
+  var rafId=0, running=false;
 
-  const WAVES = [
+  var GLITTER_COUNT=280;
+  var WAVE_SPD=0.55;
+  var WAVES=[
     {ox:.12,oy:.32,rx:.38,ry:.52,sx:.65,sy:.48},
     {ox:.52,oy:.18,rx:.30,ry:.46,sx:.88,sy:.72},
     {ox:.78,oy:.62,rx:.34,ry:.42,sx:.58,sy:.85},
     {ox:.33,oy:.72,rx:.26,ry:.36,sx:.50,sy:.60},
-    {ox:.88,oy:.30,rx:.24,ry:.32,sx:.78,sy:.50},
+    {ox:.88,oy:.30,rx:.24,ry:.32,sx:.78,sy:.50}
   ];
 
+  function fontStr(){ return '700 '+Math.min(W*.80,H*1.10)+'px "Bodoni Moda",Georgia,serif'; }
+
   function resize(){
-    const rect = cv.getBoundingClientRect();
-    W = Math.round(rect.width  || cv.offsetWidth  || 600);
-    H = Math.round(rect.height || cv.offsetHeight || 150);
-    cv.width  = W * DPR;
-    cv.height = H * DPR;
-    cx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    buildMask();
-    buildGlitter();
+    var rect=cv.getBoundingClientRect();
+    var nw=Math.round(rect.width||cv.offsetWidth||600);
+    var nh=Math.round(rect.height||cv.offsetHeight||150);
+    if(nw===W && nh===H) return;
+    W=nw; H=nh;
+    cv.width=W*DPR; cv.height=H*DPR;
+    cx.setTransform(DPR,0,0,DPR,0,0);
+    os.width=W; os.height=H;
+    buildMask(); buildGlitter();
   }
 
-  function fontStr(){ return '700 '+Math.min(W*.79,H*1.08)+'px "Bodoni Moda",Georgia,serif'; }
-
   function buildMask(){
-    const mc = document.createElement('canvas');
-    mc.width = W; mc.height = H;
-    const m = mc.getContext('2d');
-    m.font = fontStr();
-    m.textAlign = 'center'; m.textBaseline = 'middle';
-    m.fillStyle = '#fff';
-    m.fillText('SOVAN', W/2, H/2);
-    maskData = m.getImageData(0,0,W,H);
+    var mc=document.createElement('canvas');
+    mc.width=W; mc.height=H;
+    var m=mc.getContext('2d');
+    m.font=fontStr(); m.textAlign='center'; m.textBaseline='middle';
+    m.fillStyle='#fff'; m.fillText('SOVAN',W/2,H/2);
+    maskData=m.getImageData(0,0,W,H);
   }
 
   function inside(x,y){
-    const px=Math.floor(x), py=Math.floor(y);
+    var px=x|0, py=y|0;
     if(px<0||py<0||px>=W||py>=H) return false;
-    return maskData.data[(py*W+px)*4+3] > 30;
+    return maskData.data[(py*W+px)*4+3]>30;
   }
 
   function buildGlitter(){
-    glitter = [];
-    let tries = 0;
-    while(glitter.length < GLITTER_COUNT && tries < 20000){
+    glitter=[];
+    var tries=0;
+    while(glitter.length<GLITTER_COUNT && tries<18000){
       tries++;
-      const x = 3 + Math.random()*(W-6);
-      const y = 3 + Math.random()*(H-6);
-      if(inside(x,y)){
-        glitter.push({
-          x, y,
-          r:     0.4 + Math.random()*1.8,
-          phase: Math.random()*Math.PI*2,
-          spd:   0.7 + Math.random()*2.2,
-          bright:0.5 + Math.random()*0.5
-        });
-      }
+      var x=3+Math.random()*(W-6), y=3+Math.random()*(H-6);
+      if(inside(x,y)) glitter.push({
+        x:x,y:y,
+        r:0.5+Math.random()*1.8,
+        phase:Math.random()*6.28,
+        spd:0.8+Math.random()*2.0,
+        bright:0.5+Math.random()*0.5
+      });
     }
   }
 
   function draw(t){
-    cx.clearRect(0,0,W,H);
+    /* reuse os — just clear it */
+    oc.clearRect(0,0,W,H);
 
-    /* offscreen: build texture, then destination-in clips to text */
-    const os = document.createElement('canvas');
-    os.width=W; os.height=H;
-    const oc = os.getContext('2d');
-
-    /* 1 — bright saturated gold base */
-    oc.fillStyle = '#e9a900';
+    /* 1. bright gold base */
+    oc.fillStyle='#eba800';
     oc.fillRect(0,0,W,H);
 
-    /* 2 — fabric-wave highlight ellipses */
-    WAVES.forEach(function(wv,i){
-      const ph = t*WAVE_SPD + i*1.27;
-      const wx = W*(wv.ox + Math.sin(ph*wv.sx)*.17);
-      const wy = H*(wv.oy + Math.cos(ph*wv.sy)*.21);
-      const rr = Math.max(W*wv.rx, H*wv.ry);
-      const g  = oc.createRadialGradient(wx,wy,0, wx,wy,rr);
-      g.addColorStop(0,   'rgba(255,248,170,.78)');
-      g.addColorStop(.28, 'rgba(255,225,80,.42)');
-      g.addColorStop(.65, 'rgba(240,180,20,.12)');
-      g.addColorStop(1,   'rgba(200,130,0,0)');
+    /* 2. fabric-wave highlights — reused gradient objects not needed;
+          radialGradient is cheap; the key saving is no new canvas per frame */
+    for(var i=0;i<WAVES.length;i++){
+      var wv=WAVES[i];
+      var ph=t*WAVE_SPD+i*1.27;
+      var wx=W*(wv.ox+Math.sin(ph*wv.sx)*.17);
+      var wy=H*(wv.oy+Math.cos(ph*wv.sy)*.21);
+      var rr=Math.max(W*wv.rx,H*wv.ry);
+      var g=oc.createRadialGradient(wx,wy,0,wx,wy,rr);
+      g.addColorStop(0,'rgba(255,248,170,.75)');
+      g.addColorStop(.30,'rgba(255,222,70,.38)');
+      g.addColorStop(.68,'rgba(240,175,15,.10)');
+      g.addColorStop(1,'rgba(200,125,0,0)');
       oc.save();
-      oc.translate(wx,wy);
-      oc.scale(W*wv.rx/rr, H*wv.ry/rr);
-      oc.translate(-wx,-wy);
-      oc.fillStyle = g;
-      oc.beginPath(); oc.arc(wx,wy,rr,0,Math.PI*2); oc.fill();
+      oc.translate(wx,wy); oc.scale(W*wv.rx/rr,H*wv.ry/rr); oc.translate(-wx,-wy);
+      oc.fillStyle=g;
+      oc.beginPath(); oc.arc(wx,wy,rr,0,6.28); oc.fill();
       oc.restore();
-    });
+    }
 
-    /* 3 — fold shadow creases */
-    [[.08,.44],[.58,.92]].forEach(function(p){
-      const sh = oc.createLinearGradient(W*p[0],0, W*p[1],H);
-      sh.addColorStop(0,  'rgba(110,65,0,0)');
-      sh.addColorStop(.5, 'rgba(100,58,0,.26)');
-      sh.addColorStop(1,  'rgba(110,65,0,0)');
-      oc.fillStyle=sh; oc.fillRect(0,0,W,H);
-    });
+    /* 3. crease shadows */
+    var s1=oc.createLinearGradient(W*.08,0,W*.44,H);
+    s1.addColorStop(0,'rgba(100,58,0,0)'); s1.addColorStop(.5,'rgba(95,54,0,.24)'); s1.addColorStop(1,'rgba(100,58,0,0)');
+    oc.fillStyle=s1; oc.fillRect(0,0,W,H);
+    var s2=oc.createLinearGradient(W*.58,0,W*.92,H);
+    s2.addColorStop(0,'rgba(100,58,0,0)'); s2.addColorStop(.5,'rgba(90,50,0,.20)'); s2.addColorStop(1,'rgba(100,58,0,0)');
+    oc.fillStyle=s2; oc.fillRect(0,0,W,H);
 
-    /* 4 — micro-glitter dots */
-    glitter.forEach(function(g){
-      const pulse = (Math.sin(t*g.spd+g.phase)+1)/2;
-      const alpha = g.bright*(.06+pulse*.94);
-      if(alpha < .04) return;
-      const r = g.r*(.25+pulse*.75);
-      /* soft glow halo */
-      const rg = oc.createRadialGradient(g.x,g.y,0, g.x,g.y,r*4);
-      rg.addColorStop(0,   'rgba(255,255,215,'+Math.min(alpha,1)+')');
-      rg.addColorStop(.45, 'rgba(255,228,100,'+(alpha*.38)+')');
-      rg.addColorStop(1,   'rgba(255,195,40,0)');
-      oc.fillStyle=rg;
-      oc.beginPath(); oc.arc(g.x,g.y,r*4,0,Math.PI*2); oc.fill();
-      /* hard bright centre */
-      oc.fillStyle='rgba(255,255,230,'+Math.min(alpha*1.7,1)+')';
-      oc.beginPath(); oc.arc(g.x,g.y,r*.75,0,Math.PI*2); oc.fill();
-    });
+    /* 4. micro-glitter — draw only a subset each frame for perf on mobile */
+    var step = W < 500 ? 2 : 1; /* skip every other dot on narrow screens */
+    for(var j=0;j<glitter.length;j+=step){
+      var gp=glitter[j];
+      var pulse=(Math.sin(t*gp.spd+gp.phase)+1)*0.5;
+      var alpha=gp.bright*(0.05+pulse*0.95);
+      if(alpha<0.04) continue;
+      var r=gp.r*(0.25+pulse*0.75);
+      var rg=oc.createRadialGradient(gp.x,gp.y,0,gp.x,gp.y,r*4);
+      rg.addColorStop(0,'rgba(255,255,210,'+Math.min(alpha,1)+')');
+      rg.addColorStop(.45,'rgba(255,225,90,'+(alpha*.35)+')');
+      rg.addColorStop(1,'rgba(255,190,30,0)');
+      oc.fillStyle=rg; oc.beginPath(); oc.arc(gp.x,gp.y,r*4,0,6.28); oc.fill();
+      oc.fillStyle='rgba(255,255,228,'+Math.min(alpha*1.6,1)+')';
+      oc.beginPath(); oc.arc(gp.x,gp.y,r*.7,0,6.28); oc.fill();
+    }
 
-    /* 5 — clip entire texture to the SOVAN text shape */
-    oc.globalCompositeOperation = 'destination-in';
-    oc.font = fontStr();
-    oc.textAlign='center'; oc.textBaseline='middle';
-    oc.fillStyle='#fff';
-    oc.fillText('SOVAN', W/2, H/2);
+    /* 5. clip to text */
+    oc.globalCompositeOperation='destination-in';
+    oc.font=fontStr(); oc.textAlign='center'; oc.textBaseline='middle';
+    oc.fillStyle='#fff'; oc.fillText('SOVAN',W/2,H/2);
+    oc.globalCompositeOperation='source-over';
 
+    cx.clearRect(0,0,W,H);
     cx.drawImage(os,0,0);
   }
 
   function loop(){
+    if(document.hidden){ running=false; return; }
     draw(performance.now()/1000);
-    requestAnimationFrame(loop);
+    rafId=requestAnimationFrame(loop);
   }
 
-  /* pause when tab hidden to save CPU */
   document.addEventListener('visibilitychange',function(){
-    if(!document.hidden) requestAnimationFrame(loop);
+    if(!document.hidden && !running){ running=true; loop(); }
   });
 
-  /* init after Bodoni Moda loads */
   document.fonts.ready.then(function(){
     resize();
-    /* recompute if container resizes (e.g. orientation change) */
     if(window.ResizeObserver){
-      new ResizeObserver(function(){ resize(); }).observe(cv);
+      new ResizeObserver(resize).observe(cv);
     } else {
-      window.addEventListener('resize', resize);
+      window.addEventListener('resize',resize);
     }
-    loop();
+    running=true; loop();
   });
 })();
 </script>
