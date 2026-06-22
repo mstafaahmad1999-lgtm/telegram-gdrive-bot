@@ -3157,7 +3157,17 @@ function formatBytes(b){
     {ox:.88,oy:.30,rx:.24,ry:.32,sx:.78,sy:.50}
   ];
 
-  function fontStr(){ return '700 '+Math.min(W*.80,H*1.10)+'px "Bodoni Moda",Georgia,serif'; }
+  var _fs=0;
+  function calcFont(){
+    /* start from height, then shrink until text fits within 94% of width */
+    var base=Math.min(W*.95,H*1.12);
+    cx.font='700 '+base+'px "Bodoni Moda",Georgia,serif';
+    var tw=cx.measureText('SOVAN').width;
+    if(tw>W*.93) base=base*(W*.93/tw);
+    _fs=Math.floor(base);
+    return '700 '+_fs+'px "Bodoni Moda",Georgia,serif';
+  }
+  function fontStr(){ return '700 '+_fs+'px "Bodoni Moda",Georgia,serif'; }
 
   function resize(){
     var rect=cv.getBoundingClientRect();
@@ -3168,6 +3178,7 @@ function formatBytes(b){
     cv.width=W*DPR; cv.height=H*DPR;
     cx.setTransform(DPR,0,0,DPR,0,0);
     os.width=W; os.height=H;
+    calcFont();
     buildMask(); buildGlitter();
   }
 
