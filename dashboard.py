@@ -48,6 +48,7 @@ HISTORY_FILE = "history.json"
 USERS_FILE = os.getenv("USERS_FILE", "users.json")
 ACCOUNTS_FILE = os.getenv("ACCOUNTS_FILE", "accounts.json")
 NOTIFICATIONS_FILE = "notifications.json"
+FEATURED_FILE = "featured.json"
 MAX_HISTORY = 500
 MAX_NOTIFICATIONS = 200
 PER_PAGE = 20
@@ -124,6 +125,23 @@ def _load_notifications() -> list[dict]:
 def _save_notifications(notifications: list[dict]) -> None:
     with open(NOTIFICATIONS_FILE, "w") as f:
         json.dump(notifications[-MAX_NOTIFICATIONS:], f, indent=2)
+
+
+def _load_featured() -> list[str]:
+    """Owner-curated list of featured file_ids (newest pin last)."""
+    if os.path.exists(FEATURED_FILE):
+        try:
+            with open(FEATURED_FILE) as f:
+                data = json.load(f)
+                return [str(x) for x in data] if isinstance(data, list) else []
+        except Exception:
+            pass
+    return []
+
+
+def _save_featured(ids: list[str]) -> None:
+    with open(FEATURED_FILE, "w") as f:
+        json.dump(ids[-60:], f, indent=2)
 
 
 def _notify(type_: str, message: str, data: dict | None = None) -> None:
@@ -1163,6 +1181,60 @@ def archive_media(file_id):
         return send_file(path, conditional=True, download_name=os.path.basename(path))
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+# ── featured (owner-curated home highlights) ──────────────────────────────────
+
+def _media_type(mime: str) -> str:
+    if (mime or "").startswith("video/"):
+        return "video"
+    if (mime or "").startswith("image/"):
+        return "image"
+    return "other"
+
+
+@app.route("/api/featured")
+@login_required
+def api_featured():
+    import drive_service as ds
+    out = []
+    changed = False
+    ids = _load_featured()
+    for fid in list(ids):
+        try:
+            m = ds.get_file_info(fid)
+            out.append({
+                "id": m["id"],
+                "name": m["name"],
+                "date": m.get("createdTime", ""),
+                "type": _media_type(m.get("mimeType", "")),
+            })
+        except Exception:
+            ids.remove(fid)   # prune files that no longer exist
+            changed = True
+    if changed:
+        _save_featured(ids)
+    out.reverse()  # newest pin first
+    return jsonify({"ok": True, "items": out})
+
+
+@app.route("/api/featured/toggle", methods=["POST"])
+@login_required
+@admin_required
+def api_featured_toggle():
+    data = request.get_json(force=True)
+    fid = (data.get("file_id") or "").strip()
+    if not fid:
+        return jsonify({"ok": False, "error": "Missing file_id"}), 400
+    ids = _load_featured()
+    if fid in ids:
+        ids.remove(fid)
+        featured = False
+    else:
+        ids.append(fid)
+        featured = True
+    _save_featured(ids)
+    return jsonify({"ok": True, "featured": featured})
 
 
 # ── run ───────────────────────────────────────────────────────────────────────

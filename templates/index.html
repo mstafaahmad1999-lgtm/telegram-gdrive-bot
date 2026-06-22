@@ -6,7 +6,7 @@
 <title>SOVAN Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Bodoni+Moda:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Reset ── */
@@ -153,9 +153,10 @@ body{
 .sw-total{font-size:.66rem;color:var(--rail-fg-dim);margin-top:2px}
 
 /* ── Main ── */
-.main{display:flex;flex-direction:column;min-height:100vh;background:transparent}
+.main{display:flex;flex-direction:column;min-height:100vh;background:transparent;min-width:0;overflow-x:clip}
 .topbar{
-  display:flex;align-items:center;gap:14px;padding:14px 24px;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
+  padding:14px clamp(14px,3vw,28px);
   min-height:64px;
   background:transparent;
   position:sticky;top:0;z-index:50;
@@ -192,7 +193,7 @@ body{
 }
 
 /* ── Content / views ── */
-.content{padding:24px 28px 64px;max-width:1500px;width:100%}
+.content{padding:24px 28px 64px;max-width:1500px;width:100%;min-width:0}
 .view{display:none}
 .view.active{display:block;animation:viewIn .25s var(--ease)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -634,34 +635,35 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .tb-nav-btn.active{background:var(--accent);color:#fff}
 
 /* ── Glossy dark pill navbar ── */
-.fbnav{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6}
+.fbnav{grid-column:2;justify-self:center;z-index:6}
 /* ── Light cinematic glass nav (flat — no backdrop-filter, for performance) ── */
 .fbnav-pill{
-  position:relative;display:flex;align-items:center;gap:4px;
-  padding:6px 10px 6px 6px;
+  position:relative;display:flex;align-items:center;gap:6px;
+  padding:7px 16px 7px 12px;
   background:linear-gradient(rgba(248,246,242,.66),rgba(248,246,242,.66)),rgba(255,255,255,.2);
   border:1px solid rgba(90,82,64,.16);
   border-radius:100px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 18px 44px -22px rgba(60,55,45,.5);
 }
 .fbnav-pill::before{display:none}
-/* left wordmark */
+/* left wordmark — Bodoni Moda, editorial */
 .fbnav-avatar{
   flex-shrink:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.2rem;
-  letter-spacing:.2em;color:var(--ink);padding:0 8px 0 12px;position:relative;z-index:2;
+  font-family:'Bodoni Moda',Georgia,serif;font-weight:700;font-size:1.28rem;
+  letter-spacing:.24em;color:var(--ink);padding:0 12px 0 14px;position:relative;z-index:2;
+  border-right:1px solid rgba(90,82,64,.14);margin-right:4px;
 }
-/* text nav links */
-.fbnav-links{display:flex;align-items:center;gap:2px;padding:0 6px;position:relative;z-index:2}
+/* text nav links — Bodoni Moda small caps */
+.fbnav-links{display:flex;align-items:center;gap:3px;padding:0 8px;position:relative;z-index:2}
 .fbnav-link{
   background:none;border:none;border-radius:100px;
-  color:rgba(33,30,24,.5);
-  font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;
-  font-size:.62rem;font-weight:500;
-  padding:9px 14px;cursor:none;white-space:nowrap;
-  transition:color .2s,background .2s;
+  color:rgba(33,30,24,.52);
+  font-family:'Bodoni Moda',Georgia,serif;text-transform:uppercase;letter-spacing:.18em;
+  font-size:.72rem;font-weight:600;
+  padding:9px 18px;cursor:none;white-space:nowrap;
+  transition:color .25s,background .25s;
 }
-.fbnav-link:hover:not(.active){color:rgba(33,30,24,.85);background:rgba(201,168,76,.08)}
+.fbnav-link:hover:not(.active){color:rgba(33,30,24,.9);background:rgba(201,168,76,.08)}
 .fbnav-link.active{color:var(--ink);background:rgba(201,168,76,.18);box-shadow:inset 0 0 0 1px rgba(201,168,76,.42)}
 /* right search pill */
 .fbnav-search-pill{
@@ -679,7 +681,7 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   display:flex;align-items:center;justify-content:center;color:var(--ink-dim);padding:0}
 .fbnav-search-close svg{width:9px;height:9px}
 /* right cluster: search + bell + avatar at top-right */
-.topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;position:relative;z-index:7}
+.topbar-right{display:flex;align-items:center;gap:10px;grid-column:3;justify-self:end;position:relative;z-index:7}
 .topbar-search-wrap{display:flex;align-items:center;gap:0;position:relative}
 .topbar-search-box{
   position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);
@@ -975,8 +977,8 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%)}
 
 /* ── Cinematic Home view ── */
-#view-home{max-width:1180px;margin:0 auto}
-.sv-section{position:relative;padding:clamp(40px,8vh,90px) clamp(4px,3vw,40px)}
+#view-home{max-width:1180px;width:100%;margin:0 auto;min-width:0}
+.sv-section{position:relative;width:100%;min-width:0;padding:clamp(40px,8vh,90px) clamp(4px,3vw,40px)}
 .sv-eyebrow{font-size:.62rem;color:var(--gold-ink)}
 .sv-h2{font-size:clamp(1.7rem,4vw,2.7rem);margin-top:8px;color:var(--ink)}
 .sv-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:24px}
@@ -1022,11 +1024,17 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 
 /* hero — scroll-driven word sequence (WordHero) */
 .sv-wordhero{position:relative;height:300vh}            /* height set by JS from startVh+items*spaceVh */
-.sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
-/* frozen SOVAN (pinned above the scrolling words) */
-.sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(16px,4vh,44px)}
-.sv-bigmark{display:flex;margin:0;font-weight:500;line-height:.85;color:var(--ink);
-  font-size:clamp(2.8rem,11vw,8rem);letter-spacing:.07em}
+.sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:clamp(13vh,17vh,20vh);overflow:hidden}
+/* frozen SOVAN — raised, Bodoni, live metallic-gold shimmer */
+.sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(20px,5vh,56px)}
+.sv-bigmark{position:relative;display:flex;margin:0;font-family:'Bodoni Moda',Georgia,serif;font-weight:700;
+  line-height:.82;letter-spacing:.05em;font-size:clamp(3.6rem,15vw,11rem);
+  /* brushed-gold gradient clipped to the glyphs + slow light sweep */
+  background:linear-gradient(100deg,#8a6a22 0%,#caa54a 16%,#f3e2a8 30%,#fffbe9 38%,#e9cf86 48%,#caa54a 60%,#8a6a22 76%,#caa54a 100%);
+  background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  animation:sv-shine 6.5s linear infinite;
+  filter:drop-shadow(0 2px 14px rgba(201,168,76,.28))}
+@keyframes sv-shine{0%{background-position:0% 50%}100%{background-position:250% 50%}}
 .sv-bigmark span{display:inline-block;opacity:0;transform:translateY(.4em) scale(.92);filter:blur(10px);
   animation:sv-letter 1.1s var(--sv-ease) forwards}
 .sv-bigmark span:nth-child(1){animation-delay:.12s}
@@ -1034,8 +1042,8 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-bigmark span:nth-child(3){animation-delay:.36s}
 .sv-bigmark span:nth-child(4){animation-delay:.48s}
 .sv-bigmark span:nth-child(5){animation-delay:.60s}
-.sv-bigeye{margin-top:clamp(8px,1.5vh,16px);color:var(--gold-ink);font-size:clamp(.54rem,1.3vw,.66rem);
-  opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
+.sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
+  font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
 .sv-wordhero-stage{position:relative;width:100%;height:1.15em;display:flex;align-items:center;justify-content:center}
 .sv-word{position:absolute;margin:0;white-space:nowrap;font-weight:500;letter-spacing:.005em;color:var(--ink);
   font-size:clamp(2rem,8vw,6rem);line-height:1;opacity:0;pointer-events:none;will-change:transform,opacity,filter}
@@ -1047,26 +1055,36 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-reveal{opacity:0;transform:translateY(22px);filter:blur(6px);transition:opacity .8s var(--sv-ease),transform .8s var(--sv-ease),filter .8s var(--sv-ease)}
 .sv-reveal.in{opacity:1;transform:none;filter:blur(0)}
 
-/* featured strip (flat glass cards) */
-.sv-strip{display:flex;gap:16px;overflow-x:auto;padding:4px 2px 18px;scrollbar-width:none;cursor:grab}
-.sv-strip::-webkit-scrollbar{display:none}
-.sv-strip.drag{cursor:grabbing}
-.sv-card{flex:0 0 auto;width:clamp(200px,24vw,250px);border-radius:14px;overflow:hidden;
-  background:rgba(255,255,255,.5);border:1px solid rgba(90,82,64,.16);box-shadow:0 18px 40px -26px rgba(60,55,45,.6)}
-.sv-plate{aspect-ratio:3/4;width:100%}
-.sv-cap{display:flex;flex-direction:column;gap:4px;padding:13px 15px 15px;border-top:1px solid rgba(90,82,64,.14)}
-.sv-cap-name{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.04em;color:var(--ink)}
-.sv-cap-cat{font-size:.56rem;color:var(--gold-ink);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.14em}
+/* ── continuous marquee galleries ── */
+.sv-marquee{position:relative;width:100%;max-width:100%;overflow:hidden;contain:layout paint;padding:6px 0 18px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.sv-track{display:flex;gap:16px;width:max-content;animation:sv-scroll 60s linear infinite;will-change:transform}
+.sv-marquee--rev .sv-track{animation-direction:reverse}
+.sv-marquee:hover .sv-track{animation-play-state:paused}
+@keyframes sv-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-/* recently added (flat glass panel + tiles) */
-.sv-panel{padding:clamp(18px,3vw,30px);border-radius:20px;background:linear-gradient(rgba(248,246,242,.55),rgba(248,246,242,.55)),rgba(255,255,255,.14);border:1px solid rgba(201,168,76,.4);box-shadow:0 30px 70px -34px rgba(60,55,45,.5)}
-.sv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-.sv-tile{position:relative;aspect-ratio:4/5;border-radius:12px;overflow:hidden;border:1px solid rgba(201,168,76,.4);
-  box-shadow:0 16px 32px -24px rgba(60,55,45,.6);transition:transform .45s var(--sv-ease),box-shadow .45s var(--sv-ease);cursor:none}
-.sv-tile:hover{transform:translateY(-4px);box-shadow:0 28px 50px -28px rgba(60,55,45,.7)}
-.sv-tile-cap{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 11px;
-  background:linear-gradient(to top,rgba(13,13,13,.82),transparent);font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.04em;color:#f5f2ec}
-@media(max-width:860px){.sv-grid{grid-template-columns:repeat(2,1fr)}}
+.sv-card{flex:0 0 auto;width:clamp(190px,22vw,240px);border-radius:14px;overflow:hidden;
+  background:rgba(255,255,255,.5);border:1px solid rgba(90,82,64,.16);box-shadow:0 18px 40px -26px rgba(60,55,45,.6);
+  transition:transform .4s var(--sv-ease),box-shadow .4s var(--sv-ease)}
+.sv-card:hover{transform:translateY(-4px);box-shadow:0 28px 54px -28px rgba(60,55,45,.72)}
+.sv-card-media{position:relative;aspect-ratio:3/4;width:100%;overflow:hidden;background:#14110c}
+.sv-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.sv-cap{display:flex;flex-direction:column;gap:4px;padding:12px 15px 15px;border-top:1px solid rgba(90,82,64,.14)}
+.sv-cap-name{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.04em;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-cap-cat{font-size:.56rem;color:var(--gold-ink);font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.14em}
+/* admin hover controls */
+.sv-ctrls{position:absolute;top:8px;right:8px;display:flex;gap:6px;opacity:0;transform:translateY(-4px);
+  transition:opacity .2s,transform .2s;z-index:3}
+.sv-card:hover .sv-ctrls{opacity:1;transform:none}
+.sv-ctrls button{width:30px;height:30px;border-radius:9px;border:1px solid rgba(255,255,255,.3);
+  background:rgba(13,13,13,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:#f5f2ec;display:flex;align-items:center;justify-content:center;cursor:none;transition:background .15s}
+.sv-ctrls button:hover{background:rgba(201,168,76,.85);color:#1a1408}
+.sv-ctrls button.on{background:rgba(201,168,76,.9);color:#1a1408}
+.sv-ctrls svg{width:14px;height:14px}
+.sv-ctrls button.del:hover{background:#c0392b;color:#fff}
 
 /* category tiles */
 .sv-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
@@ -1110,8 +1128,8 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
 
 /* ── Mobile topbar: stack the right cluster over a full-width scrollable nav ── */
 @media(max-width:820px){
-  .topbar{flex-wrap:wrap;padding:10px 12px;gap:8px;min-height:0}
-  .fbnav{position:static;transform:none;order:2;width:100%}
+  .topbar{display:flex;flex-wrap:wrap;padding:10px 12px;gap:8px;min-height:0}
+  .fbnav{position:static;transform:none;order:2;width:100%;justify-self:stretch}
   .fbnav-pill{width:100%;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:6px 8px}
   .fbnav-pill::-webkit-scrollbar{display:none}
   .fbnav-avatar{font-size:1.05rem;padding:0 6px;letter-spacing:.16em}
@@ -1126,6 +1144,10 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
 /* hero respects reduced motion (show everything statically, no animation) */
 @media(prefers-reduced-motion:reduce){
   .sv-scrollcue{animation:none!important;opacity:1!important}
+  .sv-bigmark{animation:none!important}
+  .sv-bigmark span{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}
+  .sv-track{animation:none!important}
+  .sv-marquee{overflow-x:auto}
   .sv-wordhero{height:auto!important}
   .sv-wordhero-stick{position:static;height:auto;padding:16vh 0;overflow:visible}
   .sv-wordhero-stage{height:auto;flex-wrap:wrap;gap:8px 22px}
@@ -1137,7 +1159,7 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
 }
 </style>
 </head>
-<body>
+<body data-admin="{{ '1' if is_admin else '' }}">
 
 <!-- ── SOVAN cinematic atmosphere layers ── -->
 <div class="sv-marble" aria-hidden="true"></div>
@@ -1215,7 +1237,6 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
           <div class="fbnav-links">
             <button class="fbnav-link active" data-view="home" onclick="showView('home')">Home</button>
             <button class="fbnav-link" data-view="files" onclick="showView('files')">Upload</button>
-            <button class="fbnav-link" data-view="recents" onclick="showView('recents')">Recent</button>
             <button class="fbnav-link" data-view="browser" onclick="showView('browser')">Browse</button>
           </div>
         </nav>
@@ -1450,21 +1471,19 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
             <span class="sv-mono sv-eyebrow">Featured</span>
             <h2 class="sv-display sv-h2">Selected pieces</h2>
           </div></div>
-          <div class="sv-strip" id="svStrip"></div>
+          <div class="sv-marquee"><div class="sv-track" id="svStrip"></div></div>
         </div>
 
         <!-- Recently added -->
         <div class="sv-section sv-reveal">
-          <div class="sv-panel">
-            <div class="sv-head">
-              <div>
-                <span class="sv-mono sv-eyebrow">Latest</span>
-                <h2 class="sv-display sv-h2">Recently added</h2>
-              </div>
-              <button class="sv-viewall" onclick="showView('recents')">View all →</button>
+          <div class="sv-head">
+            <div>
+              <span class="sv-mono sv-eyebrow">Latest</span>
+              <h2 class="sv-display sv-h2">Recently added</h2>
             </div>
-            <div class="sv-grid" id="svRecent"></div>
+            <button class="sv-viewall" onclick="showView('recents')">View all →</button>
           </div>
+          <div class="sv-marquee sv-marquee--rev"><div class="sv-track" id="svRecent"></div></div>
         </div>
 
         <!-- Categories -->
@@ -2911,36 +2930,81 @@ function formatBytes(b){
   function isImg(n){return /\.(jpe?g|png|webp|gif|avif|bmp)$/i.test(n||'')}
   function bgFor(it,i){return (isImg(it.name)?"url('/api/browser/thumbnail/"+encodeURIComponent(it.id)+"') center/cover no-repeat, ":"")+plate(i)}
 
-  function cardHTML(name,cat,bg){
-    return '<article class="sv-card"><div class="sv-plate" style="background:'+bg+'" role="img" aria-label="'+name+', '+cat+'"></div>'
-      +'<div class="sv-cap"><span class="sv-cap-name">'+name+'</span><span class="sv-cap-cat">'+cat+'</span></div></article>';
+  /* capability + role */
+  var _coarse=matchMedia('(pointer:coarse)').matches;
+  var _reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var _low=(navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||8)<=4||_coarse;
+  var canAuto=!_coarse&&!_reduce&&!_low;     // autoplay video previews only on capable desktops
+  var isAdmin=document.body.getAttribute('data-admin')==='1';
+
+  function isVid(it){return it.type==='video'||/\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(it.name||'')}
+  function isImage(it){return it.type==='image'||isImg(it.name)}
+  function mediaHTML(it,i){
+    if(it.ph) return '<div class="sv-media" style="background:'+plate(i)+'"></div>';
+    if(isVid(it)) return '<video class="sv-media" src="/api/browser/download/'+encodeURIComponent(it.id)+'" muted loop playsinline preload="metadata"'+(canAuto?' autoplay':'')+'></video>';
+    if(isImage(it)) return '<div class="sv-media" style="background:url(\'/api/browser/thumbnail/'+encodeURIComponent(it.id)+'\') center/cover no-repeat,'+plate(i)+'"></div>';
+    return '<div class="sv-media" style="background:'+plate(i)+'"></div>';
   }
-  function tileHTML(name,bg){
-    return '<div class="sv-tile" style="background:'+bg+'" onclick="showView(\'recents\')"><span class="sv-tile-cap">'+name+'</span></div>';
+  function ctrlsHTML(it,featured){
+    if(!isAdmin||it.ph) return '';
+    var pin='<button class="'+(featured?'on':'')+'" title="'+(featured?'Unpin':'Pin to Featured')+'" onclick="svPin(event,\''+it.id+'\')"><svg viewBox="0 0 24 24" fill="'+(featured?'currentColor':'none')+'" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5l2.8 6 6.6.6-5 4.4 1.5 6.5L12 16.8 6.1 20l1.5-6.5-5-4.4 6.6-.6z"/></svg></button>';
+    var ren='<button title="Rename" onclick="svRename(event,\''+it.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>';
+    var del='<button class="del" title="Delete" onclick="svDelete(event,\''+it.id+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>';
+    return '<div class="sv-ctrls">'+pin+ren+del+'</div>';
+  }
+  function cardHTML(it,i,featured){
+    var cat=it.cat||catLabel(it.folder||it.type);
+    return '<article class="sv-card" data-id="'+(it.id||'')+'">'
+      +'<div class="sv-card-media">'+mediaHTML(it,i)+ctrlsHTML(it,featured)+'</div>'
+      +'<div class="sv-cap"><span class="sv-cap-name">'+cleanName(it.name)+'</span><span class="sv-cap-cat">'+esc(cat)+'</span></div></article>';
   }
   function catHTML(name,count,seed){
     return '<a class="sv-cat" style="background:'+plate(seed)+'" onclick="showView(\'browser\')" aria-label="'+esc(name)+', '+count+' items">'
       +'<div class="sv-cat-veil"><div class="sv-cat-name">'+esc(name)+'</div><div class="sv-cat-count">'+Number(count).toLocaleString()+' items</div></div></a>';
   }
 
-  /* paint curated placeholders immediately (instant, never blank) */
-  if(strip) strip.innerHTML=FEATURED.map(function(p,i){return cardHTML(p.n,p.c,plate(i))}).join('');
-  if(rec) rec.innerHTML=RECENT.map(function(p,i){return tileHTML(p.n,plate(i+3))}).join('');
+  /* fill a marquee track: repeat to span the container, then duplicate for a seamless 0→-50% loop */
+  function fillTrack(track,items,featured){
+    if(!track) return;
+    if(!items||!items.length){track.innerHTML='';return;}
+    var seg=items.map(function(it,i){return cardHTML(it,i,featured)}).join('');
+    track.style.animation='none';track.innerHTML=seg;
+    var cont=track.parentElement,guard=0;
+    while(track.scrollWidth<cont.clientWidth*1.2&&guard++<8){track.insertAdjacentHTML('beforeend',seg)}
+    track.innerHTML=track.innerHTML+track.innerHTML;   // exact double → seamless loop
+    track.style.animation='';
+  }
+
+  var PH_F=FEATURED.map(function(p){return {id:'',name:p.n,cat:p.c,ph:true}});
+  var PH_R=RECENT.map(function(p){return {id:'',name:p.n,cat:'Archive',ph:true}});
+
+  /* instant placeholders (never blank) */
+  fillTrack(strip,PH_F,true);
+  fillTrack(rec,PH_R,false);
   if(cats) cats.innerHTML=CATS.map(function(p,i){return catHTML(p.n,p.k,i+7)}).join('');
 
-  /* upgrade to real archive data when available; placeholders stay on any failure */
-  (async function(){
+  /* load real galleries; placeholders remain on failure/empty */
+  async function loadGalleries(){
     try{
-      var m=await (await fetch('/api/archive/manifest')).json();
-      var items=[].concat(m.images||[],m.videos||[]).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
-      if(items.length){
-        if(strip) strip.innerHTML=items.slice(0,8).map(function(it,i){return cardHTML(cleanName(it.name),catLabel(it.folder),bgFor(it,i))}).join('');
-        if(rec) rec.innerHTML=items.slice(0,4).map(function(it,i){return tileHTML(cleanName(it.name),bgFor(it,i))}).join('');
-      }
+      var fj=await (await fetch('/api/featured')).json();
+      if(fj.ok&&fj.items&&fj.items.length) fillTrack(strip,fj.items.slice(0,10),true);
     }catch(e){}
     try{
+      var m=await (await fetch('/api/archive/manifest')).json();
+      var imgs=(m.images||[]).map(function(x){x.type='image';return x});
+      var vids=(m.videos||[]).map(function(x){x.type='video';return x});
+      var items=imgs.concat(vids).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
+      if(items.length) fillTrack(rec,items.slice(0,10),false);
+    }catch(e){}
+  }
+  window.__svReload=loadGalleries;
+  loadGalleries();
+
+  /* categories from real folders */
+  (async function(){
+    try{
       var fd=await (await fetch('/api/folders?parent=root')).json();
-      if(fd.ok && fd.folders && fd.folders.length){
+      if(fd.ok&&fd.folders&&fd.folders.length){
         var folders=fd.folders.slice(0,6);
         var counts=await Promise.all(folders.map(function(f){
           return fetch('/api/browser?parent='+encodeURIComponent(f.id)).then(function(r){return r.json()})
@@ -2951,14 +3015,19 @@ function formatBytes(b){
     }catch(e){}
   })();
 
-  /* ── drag-to-scroll on featured strip ── */
-  if(strip){
-    var down=false,sx=0,sl=0;
-    strip.addEventListener('pointerdown',function(e){down=true;sx=e.clientX;sl=strip.scrollLeft;strip.classList.add('drag')});
-    strip.addEventListener('pointermove',function(e){if(down)strip.scrollLeft=sl-(e.clientX-sx)});
-    function up(){down=false;strip.classList.remove('drag')}
-    strip.addEventListener('pointerup',up);strip.addEventListener('pointerleave',up);
-  }
+  /* ── admin inline actions ── */
+  function _post(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()})}
+  window.svPin=function(e,id){e.stopPropagation();_post('/api/featured/toggle',{file_id:id}).then(function(d){
+    if(d&&d.ok){showToast(d.featured?'Pinned to Featured':'Unpinned',true);loadGalleries()}else{showToast((d&&d.error)||'Failed',false)}
+  }).catch(function(){showToast('Network error',false)})};
+  window.svRename=function(e,id){e.stopPropagation();var n=prompt('Rename to:');if(!n)return;
+    _post('/api/browser/rename',{file_id:id,new_name:n}).then(function(d){
+      if(d&&d.ok){showToast('Renamed',true);loadGalleries()}else{showToast((d&&d.error)||'Failed',false)}
+    }).catch(function(){showToast('Network error',false)})};
+  window.svDelete=function(e,id){e.stopPropagation();if(!confirm('Delete this file permanently?'))return;
+    _post('/api/files/delete',{file_id:id}).then(function(d){
+      if(d&&d.ok){showToast('Deleted',true);loadGalleries()}else{showToast((d&&d.error)||'Failed',false)}
+    }).catch(function(){showToast('Network error',false)})};
 
   /* ── capability tier ── */
   var coarse=matchMedia('(pointer:coarse)').matches;
