@@ -1027,21 +1027,31 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:clamp(13vh,17vh,20vh);overflow:hidden}
 /* frozen SOVAN — raised, Bodoni, live metallic-gold shimmer */
 .sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(20px,5vh,56px)}
-.sv-bigmark{position:relative;display:flex;margin:0;font-family:'Bodoni Moda',Georgia,serif;font-weight:700;
-  line-height:.82;letter-spacing:.05em;font-size:clamp(3.6rem,15vw,11rem);
-  /* brushed-gold gradient clipped to the glyphs + slow light sweep */
-  background:linear-gradient(100deg,#8a6a22 0%,#caa54a 16%,#f3e2a8 30%,#fffbe9 38%,#e9cf86 48%,#caa54a 60%,#8a6a22 76%,#caa54a 100%);
-  background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
-  animation:sv-shine 6.5s linear infinite;
+.sv-bigmark{position:relative;display:inline-block;margin:0;font-family:'Bodoni Moda',Georgia,serif;font-weight:700;
+  line-height:.85;letter-spacing:.05em;font-size:clamp(3.6rem,15vw,11rem);white-space:nowrap;
+  color:#caa54a;        /* fallback: solid gold if @supports below isn't supported */
   filter:drop-shadow(0 2px 14px rgba(201,168,76,.28))}
+@supports (-webkit-background-clip:text) or (background-clip:text){
+  .sv-bigmark{
+    /* brushed-gold gradient clipped to the glyphs + slow light sweep.
+       Spans use opacity-only entrance — transform/filter on children would
+       create a stacking context and break the parent's background-clip:text */
+    background:linear-gradient(100deg,#8a6a22 0%,#caa54a 14%,#f0d480 28%,#fff6c4 38%,#f0d480 48%,#caa54a 64%,#8a6a22 80%,#caa54a 100%);
+    background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;
+    animation:sv-shine 6s linear infinite;
+  }
+}
 @keyframes sv-shine{0%{background-position:0% 50%}100%{background-position:250% 50%}}
-.sv-bigmark span{display:inline-block;opacity:0;transform:translateY(.4em) scale(.92);filter:blur(10px);
-  animation:sv-letter 1.1s var(--sv-ease) forwards}
-.sv-bigmark span:nth-child(1){animation-delay:.12s}
-.sv-bigmark span:nth-child(2){animation-delay:.24s}
-.sv-bigmark span:nth-child(3){animation-delay:.36s}
-.sv-bigmark span:nth-child(4){animation-delay:.48s}
-.sv-bigmark span:nth-child(5){animation-delay:.60s}
+/* pure-opacity entrance only — transform/filter would create a stacking
+   context and break the parent's background-clip:text on the letters */
+@keyframes sv-letter-in{from{opacity:0}to{opacity:1}}
+.sv-bigmark span{display:inline-block;opacity:0;animation:sv-letter-in .9s var(--sv-ease) forwards}
+.sv-bigmark span:nth-child(1){animation-delay:.10s}
+.sv-bigmark span:nth-child(2){animation-delay:.22s}
+.sv-bigmark span:nth-child(3){animation-delay:.34s}
+.sv-bigmark span:nth-child(4){animation-delay:.46s}
+.sv-bigmark span:nth-child(5){animation-delay:.58s}
 .sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
   font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
 .sv-wordhero-stage{position:relative;width:100%;height:1.15em;display:flex;align-items:center;justify-content:center}
@@ -1085,6 +1095,9 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-ctrls button.on{background:rgba(201,168,76,.9);color:#1a1408}
 .sv-ctrls svg{width:14px;height:14px}
 .sv-ctrls button.del:hover{background:#c0392b;color:#fff}
+.sv-empty{flex:1;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  padding:36px 28px;border:1px dashed rgba(201,168,76,.45);border-radius:14px;width:100%;text-align:center}
+.sv-empty-msg{font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.04em;color:rgba(33,30,24,.7);max-width:50ch;line-height:1.6}
 
 /* category tiles */
 .sv-cats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
@@ -2983,19 +2996,38 @@ function formatBytes(b){
   fillTrack(rec,PH_R,false);
   if(cats) cats.innerHTML=CATS.map(function(p,i){return catHTML(p.n,p.k,i+7)}).join('');
 
-  /* load real galleries; placeholders remain on failure/empty */
+  function showHint(track,msg,actLabel,actHref){
+    if(!track) return;
+    track.style.animation='none';
+    track.innerHTML='<div class="sv-empty"><div class="sv-empty-msg">'+esc(msg)+'</div>'
+      +(actLabel?'<button class="sv-cta" onclick="showView(\''+actHref+'\')">'+esc(actLabel)+'</button>':'')+'</div>';
+  }
+
+  /* load real galleries; explicit errors + empty-state UX */
   async function loadGalleries(){
+    var hasRecent=false;
+    /* Recently Added (manifest) */
     try{
-      var fj=await (await fetch('/api/featured')).json();
-      if(fj.ok&&fj.items&&fj.items.length) fillTrack(strip,fj.items.slice(0,10),true);
-    }catch(e){}
-    try{
-      var m=await (await fetch('/api/archive/manifest')).json();
+      var r=await fetch('/api/archive/manifest');
+      if(!r.ok) throw new Error('manifest HTTP '+r.status);
+      var m=await r.json();
       var imgs=(m.images||[]).map(function(x){x.type='image';return x});
       var vids=(m.videos||[]).map(function(x){x.type='video';return x});
       var items=imgs.concat(vids).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
-      if(items.length) fillTrack(rec,items.slice(0,10),false);
-    }catch(e){}
+      if(items.length){ fillTrack(rec,items.slice(0,10),false); hasRecent=true; }
+      else if(isAdmin) showHint(rec,'No files yet — upload some to start your archive.','Open Upload','files');
+    }catch(e){console.warn('[SOVAN] manifest load failed:',e);
+      if(isAdmin) showHint(rec,'Could not load files. Restart the dashboard server and refresh.','',null);}
+    /* Featured (pins) */
+    try{
+      var r2=await fetch('/api/featured');
+      if(!r2.ok) throw new Error('featured HTTP '+r2.status);
+      var fj=await r2.json();
+      if(fj.ok&&fj.items&&fj.items.length) fillTrack(strip,fj.items.slice(0,10),true);
+      else if(isAdmin&&hasRecent) showHint(strip,'Nothing pinned yet — hover a card in Recently Added and click the star to feature it here.','',null);
+      else if(isAdmin) showHint(strip,'Upload your first piece, then pin it here.','Open Upload','files');
+    }catch(e){console.warn('[SOVAN] featured load failed:',e);
+      if(isAdmin) showHint(strip,'Pin endpoint missing. On Termux: pkill -f dashboard.py && python dashboard.py &','',null);}
   }
   window.__svReload=loadGalleries;
   loadGalleries();
