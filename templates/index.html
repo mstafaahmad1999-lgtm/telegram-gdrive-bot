@@ -1030,39 +1030,13 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 /* SOVAN wordmark — solid gold by default + live shimmer overlay where supported.
    Single text node (no per-letter spans) so stacking contexts can't break the
    gradient clip. The wordmark fades in once on entry, the shimmer loops forever. */
-/* SOVAN — always visible by default (no opacity animation to fail), with the
-   metallic shimmer running where browser supports background-clip:text. */
-.sv-bigmark{position:relative;display:inline-block;margin:0;font-family:'Bodoni Moda',Georgia,serif;font-weight:700;
-  line-height:.85;letter-spacing:.05em;font-size:clamp(3.6rem,15vw,11rem);white-space:nowrap;
-  color:#b88a26;
-  filter:drop-shadow(0 2px 14px rgba(201,168,76,.28));
-}
-@supports (-webkit-background-clip:text) or (background-clip:text){
-  .sv-bigmark{
-    /* Rich liquid gold foil: deep amber base + warm gold midtones +
-       scattered bright hotspots that catch light as the sweep moves */
-    background:
-      radial-gradient(ellipse 20% 55% at 30% 38%,rgba(255,248,200,.96) 0%,rgba(255,222,80,.5) 35%,transparent 68%),
-      radial-gradient(ellipse 18% 50% at 68% 58%,rgba(255,236,130,.7) 0%,rgba(220,160,30,.4) 38%,transparent 65%),
-      radial-gradient(ellipse 12% 40% at 52% 25%,rgba(255,255,210,.6) 0%,transparent 55%),
-      linear-gradient(108deg,
-        #6b4c10 0%,#9e720a 6%,#c8940e 12%,#e8bc38 20%,
-        #fde170 26%,#fff7b8 32%,#fde170 37%,
-        #d4a020 44%,#b07c08 52%,#8a5c06 58%,
-        #c49010 66%,#e8be40 74%,#fff4a8 80%,
-        #d8a820 87%,#9a6a0a 94%,#7a5010 100%);
-    background-size:500% 100%;
-    -webkit-background-clip:text;background-clip:text;
-    color:transparent;-webkit-text-fill-color:transparent;
-    animation:sv-foil 11s ease-in-out infinite;
-  }
-}
-@keyframes sv-foil{
-  0%  {background-position:0%   50%}
-  30% {background-position:140% 50%}
-  55% {background-position:260% 50%}
-  75% {background-position:370% 50%}
-  100%{background-position:500% 50%}
+/* SOVAN — canvas-rendered bright gold foil with micro-glitter */
+.sv-bigmark-canvas{
+  display:block;
+  width:clamp(260px,88vw,820px);
+  height:clamp(80px,22vw,210px);
+  margin:0 auto;
+  filter:drop-shadow(0 4px 24px rgba(220,170,40,.35));
 }
 .sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
   font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
@@ -1475,7 +1449,7 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
           <div class="sv-wordhero-stick">
             <div class="sv-wordhero-glow" id="svWordGlow" aria-hidden="true"></div>
             <div class="sv-frozen">
-              <h1 class="sv-display sv-bigmark">SOVAN</h1>
+              <canvas id="svGoldCanvas" class="sv-bigmark-canvas" aria-label="SOVAN"></canvas>
               <span class="sv-mono sv-bigeye">Atelier Archive</span>
             </div>
             <div class="sv-wordhero-stage">
@@ -3158,6 +3132,168 @@ function formatBytes(b){
   addEventListener('scroll',function(){if(!tick){tick=true;requestAnimationFrame(upd)}},{passive:true});
   addEventListener('resize',function(){setH();upd()});
   upd();
+})();
+</script>
+
+<script>
+/* ── SOVAN gold-foil canvas renderer ──────────────────────────────────────── */
+(function(){
+  const cv = document.getElementById('svGoldCanvas');
+  if(!cv) return;
+  const cx = cv.getContext('2d');
+  const DPR = Math.min(window.devicePixelRatio||1, 2);
+
+  let W, H, maskData, glitter=[];
+  const GLITTER_COUNT = 320;
+  const WAVE_SPD = 0.9; /* how fast the fabric light shifts */
+
+  const WAVES = [
+    {ox:.12,oy:.32,rx:.38,ry:.52,sx:.65,sy:.48},
+    {ox:.52,oy:.18,rx:.30,ry:.46,sx:.88,sy:.72},
+    {ox:.78,oy:.62,rx:.34,ry:.42,sx:.58,sy:.85},
+    {ox:.33,oy:.72,rx:.26,ry:.36,sx:.50,sy:.60},
+    {ox:.88,oy:.30,rx:.24,ry:.32,sx:.78,sy:.50},
+  ];
+
+  function resize(){
+    const rect = cv.getBoundingClientRect();
+    W = Math.round(rect.width  || cv.offsetWidth  || 600);
+    H = Math.round(rect.height || cv.offsetHeight || 150);
+    cv.width  = W * DPR;
+    cv.height = H * DPR;
+    cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    buildMask();
+    buildGlitter();
+  }
+
+  function fontStr(){ return '700 '+Math.min(W*.79,H*1.08)+'px "Bodoni Moda",Georgia,serif'; }
+
+  function buildMask(){
+    const mc = document.createElement('canvas');
+    mc.width = W; mc.height = H;
+    const m = mc.getContext('2d');
+    m.font = fontStr();
+    m.textAlign = 'center'; m.textBaseline = 'middle';
+    m.fillStyle = '#fff';
+    m.fillText('SOVAN', W/2, H/2);
+    maskData = m.getImageData(0,0,W,H);
+  }
+
+  function inside(x,y){
+    const px=Math.floor(x), py=Math.floor(y);
+    if(px<0||py<0||px>=W||py>=H) return false;
+    return maskData.data[(py*W+px)*4+3] > 30;
+  }
+
+  function buildGlitter(){
+    glitter = [];
+    let tries = 0;
+    while(glitter.length < GLITTER_COUNT && tries < 20000){
+      tries++;
+      const x = 3 + Math.random()*(W-6);
+      const y = 3 + Math.random()*(H-6);
+      if(inside(x,y)){
+        glitter.push({
+          x, y,
+          r:     0.4 + Math.random()*1.8,
+          phase: Math.random()*Math.PI*2,
+          spd:   0.7 + Math.random()*2.2,
+          bright:0.5 + Math.random()*0.5
+        });
+      }
+    }
+  }
+
+  function draw(t){
+    cx.clearRect(0,0,W,H);
+
+    /* offscreen: build texture, then destination-in clips to text */
+    const os = document.createElement('canvas');
+    os.width=W; os.height=H;
+    const oc = os.getContext('2d');
+
+    /* 1 — bright saturated gold base */
+    oc.fillStyle = '#e9a900';
+    oc.fillRect(0,0,W,H);
+
+    /* 2 — fabric-wave highlight ellipses */
+    WAVES.forEach(function(wv,i){
+      const ph = t*WAVE_SPD + i*1.27;
+      const wx = W*(wv.ox + Math.sin(ph*wv.sx)*.17);
+      const wy = H*(wv.oy + Math.cos(ph*wv.sy)*.21);
+      const rr = Math.max(W*wv.rx, H*wv.ry);
+      const g  = oc.createRadialGradient(wx,wy,0, wx,wy,rr);
+      g.addColorStop(0,   'rgba(255,248,170,.78)');
+      g.addColorStop(.28, 'rgba(255,225,80,.42)');
+      g.addColorStop(.65, 'rgba(240,180,20,.12)');
+      g.addColorStop(1,   'rgba(200,130,0,0)');
+      oc.save();
+      oc.translate(wx,wy);
+      oc.scale(W*wv.rx/rr, H*wv.ry/rr);
+      oc.translate(-wx,-wy);
+      oc.fillStyle = g;
+      oc.beginPath(); oc.arc(wx,wy,rr,0,Math.PI*2); oc.fill();
+      oc.restore();
+    });
+
+    /* 3 — fold shadow creases */
+    [[.08,.44],[.58,.92]].forEach(function(p){
+      const sh = oc.createLinearGradient(W*p[0],0, W*p[1],H);
+      sh.addColorStop(0,  'rgba(110,65,0,0)');
+      sh.addColorStop(.5, 'rgba(100,58,0,.26)');
+      sh.addColorStop(1,  'rgba(110,65,0,0)');
+      oc.fillStyle=sh; oc.fillRect(0,0,W,H);
+    });
+
+    /* 4 — micro-glitter dots */
+    glitter.forEach(function(g){
+      const pulse = (Math.sin(t*g.spd+g.phase)+1)/2;
+      const alpha = g.bright*(.06+pulse*.94);
+      if(alpha < .04) return;
+      const r = g.r*(.25+pulse*.75);
+      /* soft glow halo */
+      const rg = oc.createRadialGradient(g.x,g.y,0, g.x,g.y,r*4);
+      rg.addColorStop(0,   'rgba(255,255,215,'+Math.min(alpha,1)+')');
+      rg.addColorStop(.45, 'rgba(255,228,100,'+(alpha*.38)+')');
+      rg.addColorStop(1,   'rgba(255,195,40,0)');
+      oc.fillStyle=rg;
+      oc.beginPath(); oc.arc(g.x,g.y,r*4,0,Math.PI*2); oc.fill();
+      /* hard bright centre */
+      oc.fillStyle='rgba(255,255,230,'+Math.min(alpha*1.7,1)+')';
+      oc.beginPath(); oc.arc(g.x,g.y,r*.75,0,Math.PI*2); oc.fill();
+    });
+
+    /* 5 — clip entire texture to the SOVAN text shape */
+    oc.globalCompositeOperation = 'destination-in';
+    oc.font = fontStr();
+    oc.textAlign='center'; oc.textBaseline='middle';
+    oc.fillStyle='#fff';
+    oc.fillText('SOVAN', W/2, H/2);
+
+    cx.drawImage(os,0,0);
+  }
+
+  function loop(){
+    draw(performance.now()/1000);
+    requestAnimationFrame(loop);
+  }
+
+  /* pause when tab hidden to save CPU */
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) requestAnimationFrame(loop);
+  });
+
+  /* init after Bodoni Moda loads */
+  document.fonts.ready.then(function(){
+    resize();
+    /* recompute if container resizes (e.g. orientation change) */
+    if(window.ResizeObserver){
+      new ResizeObserver(function(){ resize(); }).observe(cv);
+    } else {
+      window.addEventListener('resize', resize);
+    }
+    loop();
+  });
 })();
 </script>
 </body>
