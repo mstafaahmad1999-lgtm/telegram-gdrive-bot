@@ -1039,13 +1039,31 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 }
 @supports (-webkit-background-clip:text) or (background-clip:text){
   .sv-bigmark{
-    background:linear-gradient(100deg,#8a6a22 0%,#caa54a 14%,#f0d480 28%,#fff6c4 38%,#f0d480 48%,#caa54a 64%,#8a6a22 80%,#caa54a 100%);
-    background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
+    /* Rich liquid gold foil: deep amber base + warm gold midtones +
+       scattered bright hotspots that catch light as the sweep moves */
+    background:
+      radial-gradient(ellipse 20% 55% at 30% 38%,rgba(255,248,200,.96) 0%,rgba(255,222,80,.5) 35%,transparent 68%),
+      radial-gradient(ellipse 18% 50% at 68% 58%,rgba(255,236,130,.7) 0%,rgba(220,160,30,.4) 38%,transparent 65%),
+      radial-gradient(ellipse 12% 40% at 52% 25%,rgba(255,255,210,.6) 0%,transparent 55%),
+      linear-gradient(108deg,
+        #6b4c10 0%,#9e720a 6%,#c8940e 12%,#e8bc38 20%,
+        #fde170 26%,#fff7b8 32%,#fde170 37%,
+        #d4a020 44%,#b07c08 52%,#8a5c06 58%,
+        #c49010 66%,#e8be40 74%,#fff4a8 80%,
+        #d8a820 87%,#9a6a0a 94%,#7a5010 100%);
+    background-size:500% 100%;
+    -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
-    animation:sv-shine 6s linear infinite;
+    animation:sv-foil 11s ease-in-out infinite;
   }
 }
-@keyframes sv-shine{0%{background-position:0% 50%}100%{background-position:250% 50%}}
+@keyframes sv-foil{
+  0%  {background-position:0%   50%}
+  30% {background-position:140% 50%}
+  55% {background-position:260% 50%}
+  75% {background-position:370% 50%}
+  100%{background-position:500% 50%}
+}
 .sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
   font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
 .sv-wordhero-stage{position:relative;width:100%;height:1.15em;display:flex;align-items:center;justify-content:center}
