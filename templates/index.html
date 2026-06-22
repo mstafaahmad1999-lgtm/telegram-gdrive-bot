@@ -1027,15 +1027,18 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
 .sv-wordhero-stick{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:clamp(13vh,17vh,20vh);overflow:hidden}
 /* frozen SOVAN — raised, Bodoni, live metallic-gold shimmer */
 .sv-frozen{display:flex;flex-direction:column;align-items:center;margin-bottom:clamp(20px,5vh,56px)}
+/* SOVAN wordmark — solid gold by default + live shimmer overlay where supported.
+   Single text node (no per-letter spans) so stacking contexts can't break the
+   gradient clip. The wordmark fades in once on entry, the shimmer loops forever. */
+/* SOVAN — always visible by default (no opacity animation to fail), with the
+   metallic shimmer running where browser supports background-clip:text. */
 .sv-bigmark{position:relative;display:inline-block;margin:0;font-family:'Bodoni Moda',Georgia,serif;font-weight:700;
   line-height:.85;letter-spacing:.05em;font-size:clamp(3.6rem,15vw,11rem);white-space:nowrap;
-  color:#caa54a;        /* fallback: solid gold if @supports below isn't supported */
-  filter:drop-shadow(0 2px 14px rgba(201,168,76,.28))}
+  color:#b88a26;
+  filter:drop-shadow(0 2px 14px rgba(201,168,76,.28));
+}
 @supports (-webkit-background-clip:text) or (background-clip:text){
   .sv-bigmark{
-    /* brushed-gold gradient clipped to the glyphs + slow light sweep.
-       Spans use opacity-only entrance — transform/filter on children would
-       create a stacking context and break the parent's background-clip:text */
     background:linear-gradient(100deg,#8a6a22 0%,#caa54a 14%,#f0d480 28%,#fff6c4 38%,#f0d480 48%,#caa54a 64%,#8a6a22 80%,#caa54a 100%);
     background-size:250% 100%;-webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
@@ -1043,15 +1046,6 @@ input[type=checkbox].row-check{accent-color:var(--accent);width:15px;height:15px
   }
 }
 @keyframes sv-shine{0%{background-position:0% 50%}100%{background-position:250% 50%}}
-/* pure-opacity entrance only — transform/filter would create a stacking
-   context and break the parent's background-clip:text on the letters */
-@keyframes sv-letter-in{from{opacity:0}to{opacity:1}}
-.sv-bigmark span{display:inline-block;opacity:0;animation:sv-letter-in .9s var(--sv-ease) forwards}
-.sv-bigmark span:nth-child(1){animation-delay:.10s}
-.sv-bigmark span:nth-child(2){animation-delay:.22s}
-.sv-bigmark span:nth-child(3){animation-delay:.34s}
-.sv-bigmark span:nth-child(4){animation-delay:.46s}
-.sv-bigmark span:nth-child(5){animation-delay:.58s}
 .sv-bigeye{margin-top:clamp(10px,1.8vh,18px);color:var(--gold-ink);font-size:clamp(.55rem,1.3vw,.68rem);
   font-family:'Bodoni Moda',Georgia,serif;letter-spacing:.34em;opacity:0;animation:sv-fade 1s var(--sv-ease) .9s forwards}
 .sv-wordhero-stage{position:relative;width:100%;height:1.15em;display:flex;align-items:center;justify-content:center}
@@ -1157,8 +1151,7 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
 /* hero respects reduced motion (show everything statically, no animation) */
 @media(prefers-reduced-motion:reduce){
   .sv-scrollcue{animation:none!important;opacity:1!important}
-  .sv-bigmark{animation:none!important}
-  .sv-bigmark span{animation:none!important;opacity:1!important;transform:none!important;filter:none!important}
+  .sv-bigmark{animation:none!important;opacity:1!important}
   .sv-track{animation:none!important}
   .sv-marquee{overflow-x:auto}
   .sv-wordhero{height:auto!important}
@@ -1464,7 +1457,7 @@ body.sv-low *{backdrop-filter:none!important;-webkit-backdrop-filter:none!import
           <div class="sv-wordhero-stick">
             <div class="sv-wordhero-glow" id="svWordGlow" aria-hidden="true"></div>
             <div class="sv-frozen">
-              <h1 class="sv-display sv-bigmark" aria-label="SOVAN"><span>S</span><span>O</span><span>V</span><span>A</span><span>N</span></h1>
+              <h1 class="sv-display sv-bigmark">SOVAN</h1>
               <span class="sv-mono sv-bigeye">Atelier Archive</span>
             </div>
             <div class="sv-wordhero-stage">

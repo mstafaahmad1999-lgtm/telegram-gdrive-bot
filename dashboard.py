@@ -1085,65 +1085,76 @@ def archive():
 
 
 def _build_archive_manifest():
-    """Walk the archive tree and return {images:[...], videos:[...]} newest first."""
+    """Walk the archive tree and return {images:[...], videos:[...]} newest first.
+
+    Recursive scan of EVERY folder so any upload anywhere in the archive shows
+    up on Home, not just files in folders named 'IMAGE'/'VIDEO'.
+    """
     import drive_service as ds
 
-    IMAGE_NAMES = {"image", "images", "img", "designs archive"}
-    VIDEO_NAMES = {"video", "videos", "vide0", "vids"}
-    ANIME_NAMES = {"anime", "animes"}
+    IMAGE_MIME = ("image/",)
+    VIDEO_MIME = ("video/",)
+    ANIME_HINTS = ("anime",)
 
-    IMAGE_MIME = ("image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")
-    VIDEO_MIME = ("video/mp4", "video/quicktime", "video/webm", "video/x-matroska",
-                  "video/x-msvideo", "video/mpeg")
+    images: list[dict] = []
+    videos: list[dict] = []
+    SEEN: set[str] = set()
+    MAX_DEPTH = 4
+    MAX_FILES = 800   # hard cap so a huge archive doesn't blow the response
 
-    images = []
-    videos = []
+    def _label_for(folder_path_lower: str, mime: str) -> str:
+        if any(h in folder_path_lower for h in ANIME_HINTS):
+            return "anime"
+        if mime.startswith("video/"):
+            return "video"
+        return "image"
 
-    def _files_in(folder_id, folder_label):
-        """Collect all files in a folder (all pages) and classify into images/videos."""
+    def _scan(folder_id: str, path_lower: str, depth: int):
+        # files in this folder
         token = None
         while True:
             batch, token = ds.list_files(folder_id, page_token=token)
             for f in batch:
-                mime = f.get("mimeType", "")
+                fid = f["id"]
+                if fid in SEEN:
+                    continue
+                SEEN.add(fid)
+                mime = (f.get("mimeType") or "").lower()
                 entry = {
-                    "id": f["id"],
+                    "id": fid,
                     "name": f["name"],
                     "date": f.get("createdTime", f.get("modifiedTime", "")),
-                    "folder": folder_label,
+                    "folder": _label_for(path_lower, mime),
                 }
-                if any(mime.startswith(m) for m in IMAGE_MIME):
+                if mime.startswith(IMAGE_MIME):
                     images.append(entry)
-                elif any(mime.startswith(m) for m in VIDEO_MIME):
+                elif mime.startswith(VIDEO_MIME):
                     videos.append(entry)
+                if len(images) + len(videos) >= MAX_FILES:
+                    return
             if not token:
                 break
+        if depth >= MAX_DEPTH:
+            return
+        # recurse into sub-folders
+        sub_token = None
+        while True:
+            subs, sub_token = ds.list_folders(folder_id, page_token=sub_token)
+            for sf in subs:
+                child_path = (path_lower + "/" + sf["name"].lower()).strip("/")
+                _scan(sf["id"], child_path, depth + 1)
+                if len(images) + len(videos) >= MAX_FILES:
+                    return
+            if not sub_token:
+                break
 
-    # scan root's top-level folders to find IMAGE and VIDEO buckets
-    root_folders, _ = ds.list_folders("root")
-    for folder in root_folders:
-        fname = folder["name"].lower().strip()
-        if any(n in fname for n in IMAGE_NAMES):
-            # look one level deeper for anime sub-folder
-            sub_folders, _ = ds.list_folders(folder["id"])
-            for sf in sub_folders:
-                sfname = sf["name"].lower().strip()
-                if any(n in sfname for n in ANIME_NAMES):
-                    _files_in(sf["id"], "anime")
-                else:
-                    _files_in(sf["id"], "image")
-            _files_in(folder["id"], "image")
-        elif any(n in fname for n in VIDEO_NAMES):
-            _files_in(folder["id"], "video")
+    try:
+        _scan("root", "", 0)
+    except Exception:
+        pass
 
-    # also scan root-level files so a flat archive (no sub-folders yet) still shows up.
-    # _files_in already classifies by MIME type, so videos at root go to the Motion tab.
-    _files_in("root", "image")
-
-    # sort newest first
     images.sort(key=lambda x: x["date"], reverse=True)
     videos.sort(key=lambda x: x["date"], reverse=True)
-
     return {"images": images, "videos": videos}
 
 
