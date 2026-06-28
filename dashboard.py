@@ -817,6 +817,37 @@ def api_browser_download(file_id):
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+# ── download folder as zip ───────────────────────────────────────────────────
+
+@app.route("/api/browser/download-folder/<folder_id>")
+@login_required
+def api_browser_download_folder(folder_id):
+    import drive_service, zipfile, io
+    try:
+        folder_name = drive_service.get_folder_name(folder_id)
+        folder_path = drive_service._abspath(folder_id)
+        if not os.path.isdir(folder_path):
+            return jsonify({"ok": False, "error": "Folder not found"}), 404
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(folder_path):
+                for fname in files:
+                    abs_path = os.path.join(root, fname)
+                    arc_name = os.path.relpath(abs_path, folder_path)
+                    zf.write(abs_path, arc_name)
+        buf.seek(0)
+        safe_name = "".join(c if c.isalnum() or c in "._- " else "_" for c in folder_name)
+        return send_file(
+            buf,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name=f"{safe_name}.zip"
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 # ── batch delete ─────────────────────────────────────────────────────────────
 
 @app.route("/api/files/delete-batch", methods=["POST"])
